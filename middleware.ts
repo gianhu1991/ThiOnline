@@ -5,8 +5,18 @@ import { getJWT } from './lib/jwt'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Cho phép truy cập trang login, init-admin, debug-db và tất cả API routes
-  if (pathname === '/login' || pathname === '/init-admin' || pathname === '/debug-db' || pathname.startsWith('/api/')) {
+  // Cho phép truy cập công khai:
+  // - Trang login, init-admin, debug-db
+  // - Trang làm bài thi (public link)
+  // - Tất cả API routes
+  if (
+    pathname === '/login' || 
+    pathname === '/init-admin' || 
+    pathname === '/debug-db' || 
+    pathname.startsWith('/api/') ||
+    pathname.match(/^\/exams\/[^/]+\/take$/) || // /exams/[id]/take
+    pathname.match(/^\/exams\/[^/]+\/result$/) // /exams/[id]/result
+  ) {
     return NextResponse.next()
   }
 
