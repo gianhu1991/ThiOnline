@@ -37,7 +37,15 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error('Login error:', error)
-    return NextResponse.json({ error: 'Lỗi khi đăng nhập' }, { status: 500 })
+    // Kiểm tra nếu bảng User chưa tồn tại
+    if (error.message?.includes('does not exist') || error.code === 'P2021' || error.message?.includes('User')) {
+      return NextResponse.json({ 
+        error: 'Hệ thống chưa được khởi tạo. Vui lòng tạo user admin trước.' 
+      }, { status: 500 })
+    }
+    return NextResponse.json({ 
+      error: 'Lỗi khi đăng nhập: ' + (error.message || 'Unknown error') 
+    }, { status: 500 })
   }
 }
 
