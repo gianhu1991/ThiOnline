@@ -90,7 +90,7 @@ export default function ExamsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {exams.map((exam) => {
+          {Array.isArray(exams) && exams.map((exam) => {
             const status = getStatus(exam)
             return (
               <div key={exam.id} className="bg-white p-6 rounded-lg shadow-lg">

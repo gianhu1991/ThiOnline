@@ -47,17 +47,26 @@ export async function POST(
     }
 
     // Trộn câu hỏi nếu cần
-    let questions = exam.examQuestions.map(eq => eq.question)
-    if (exam.shuffleQuestions) {
+    let questions = Array.isArray(exam.examQuestions) 
+      ? exam.examQuestions.map(eq => eq.question).filter(q => q !== null && q !== undefined)
+      : []
+    
+    if (exam.shuffleQuestions && questions.length > 0) {
       questions = [...questions].sort(() => Math.random() - 0.5)
     }
 
     // Trộn đáp án nếu cần
-    if (exam.shuffleAnswers) {
+    if (exam.shuffleAnswers && questions.length > 0) {
       questions = questions.map(q => {
-        const options = JSON.parse(q.options)
-        const shuffled = [...options].sort(() => Math.random() - 0.5)
-        return { ...q, options: JSON.stringify(shuffled) }
+        try {
+          const options = JSON.parse(q.options || '[]')
+          const shuffled = Array.isArray(options) 
+            ? [...options].sort(() => Math.random() - 0.5)
+            : []
+          return { ...q, options: JSON.stringify(shuffled) }
+        } catch {
+          return { ...q, options: '[]' }
+        }
       })
     }
 
@@ -69,7 +78,7 @@ export async function POST(
         timeLimit: exam.timeLimit,
         questionCount: exam.questionCount,
       },
-      questions,
+      questions: Array.isArray(questions) ? questions : [],
       attemptNumber: attemptCount + 1,
     })
   } catch (error: any) {

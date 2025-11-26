@@ -54,14 +54,22 @@ export default function TakeExamPage() {
       })
 
       const data = await res.json()
-      if (res.ok) {
-        setExamData(data)
-        setTimeLeft(data.exam.timeLimit * 60) // Chuyển phút sang giây
+      if (res.ok && data) {
+        // Đảm bảo questions là array
+        const questions = Array.isArray(data.questions) ? data.questions : []
+        setExamData({
+          ...data,
+          questions,
+        })
+        if (data.exam && data.exam.timeLimit) {
+          setTimeLeft(data.exam.timeLimit * 60) // Chuyển phút sang giây
+        }
       } else {
-        alert('Lỗi: ' + data.error)
+        alert('Lỗi: ' + (data?.error || 'Không thể bắt đầu bài thi'))
         router.push('/exams')
       }
     } catch (error) {
+      console.error('Error starting exam:', error)
       alert('Lỗi khi bắt đầu bài thi')
       router.push('/exams')
     }

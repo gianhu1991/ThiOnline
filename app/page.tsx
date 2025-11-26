@@ -11,26 +11,35 @@ export default function Home() {
     const fetchStats = async () => {
       try {
         const [questionsRes, examsRes] = await Promise.allSettled([
-          fetch('/api/questions'),
-          fetch('/api/exams'),
+          fetch('/api/questions').catch(() => ({ ok: false })),
+          fetch('/api/exams').catch(() => ({ ok: false })),
         ])
 
         let questions = 0
         if (questionsRes.status === 'fulfilled' && questionsRes.value.ok) {
-          const data = await questionsRes.value.json()
-          questions = Array.isArray(data) ? data.length : 0
+          try {
+            const data = await questionsRes.value.json()
+            questions = Array.isArray(data) ? data.length : 0
+          } catch {
+            questions = 0
+          }
         }
 
         let exams = 0
         if (examsRes.status === 'fulfilled' && examsRes.value.ok) {
-          const data = await examsRes.value.json()
-          exams = Array.isArray(data) ? data.length : 0
+          try {
+            const data = await examsRes.value.json()
+            exams = Array.isArray(data) ? data.length : 0
+          } catch {
+            exams = 0
+          }
         }
 
         setStats({ questions, exams, results: 0 })
       } catch (error) {
         // Ignore errors, keep default stats
         console.error('Error fetching stats:', error)
+        setStats({ questions: 0, exams: 0, results: 0 })
       }
     }
 
