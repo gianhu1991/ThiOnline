@@ -5,8 +5,8 @@ import { getJWT } from './lib/jwt'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Cho phép truy cập trang login, init-admin và tất cả API routes
-  if (pathname === '/login' || pathname === '/init-admin' || pathname.startsWith('/api/')) {
+  // Cho phép truy cập trang login, init-admin, debug-db và tất cả API routes
+  if (pathname === '/login' || pathname === '/init-admin' || pathname === '/debug-db' || pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
 

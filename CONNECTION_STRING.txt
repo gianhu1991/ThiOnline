@@ -1,0 +1,6 @@
+Connection String cho Vercel:
+
+postgresql://postgres:Nhuchi%400105@db.fqgnechgzwckonjyqifq.supabase.co:5432/postgres
+
+Lưu ý: @ trong mật khẩu đã được encode thành %40
+

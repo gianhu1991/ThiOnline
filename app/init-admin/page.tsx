@@ -27,7 +27,18 @@ export default function InitAdminPage() {
           router.push('/login')
         }, 2000)
       } else {
-        setError(data.error || 'Lỗi khi tạo user admin')
+        const errorMsg = data.error || 'Lỗi khi tạo user admin'
+        // Kiểm tra nếu là lỗi kết nối database
+        if (errorMsg.includes('Can\'t reach database') || errorMsg.includes('database server')) {
+          setError(
+            '❌ Không thể kết nối database. Vui lòng kiểm tra:\n' +
+            '1. DATABASE_URL trong Vercel Environment Variables\n' +
+            '2. Thử dùng Connection Pooling URL (port 6543) thay vì Direct (port 5432)\n' +
+            '3. Kiểm tra database server có đang chạy không'
+          )
+        } else {
+          setError(errorMsg + (data.details ? '\n' + data.details : ''))
+        }
       }
     } catch (error: any) {
       setError('Lỗi: ' + error.message)
