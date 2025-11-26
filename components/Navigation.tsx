@@ -2,24 +2,38 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function Navigation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [username, setUsername] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const pathname = usePathname()
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsAuthenticated(true)
+        setUsername(data.user?.username || null)
+      } else {
+        setIsAuthenticated(false)
+        setUsername(null)
+      }
+    } catch (error) {
+      setIsAuthenticated(false)
+      setUsername(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Kiểm tra authentication
-    fetch('/api/auth/me')
-      .then(res => {
-        setIsAuthenticated(res.ok)
-      })
-      .catch(() => {
-        setIsAuthenticated(false)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [])
+    checkAuth()
+  }, [pathname]) // Re-check khi route thay đổi
 
   if (loading) {
     return (
@@ -65,11 +79,23 @@ export default function Navigation() {
               <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
                 Cài đặt
               </Link>
-              <form action="/api/auth/logout" method="POST" className="inline">
-                <button type="submit" className="text-white hover:text-blue-200 transition-colors font-medium cursor-pointer">
-                  Đăng xuất
-                </button>
-              </form>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/auth/logout', { method: 'POST' })
+                    if (res.ok) {
+                      setIsAuthenticated(false)
+                      setUsername(null)
+                      window.location.href = '/login'
+                    }
+                  } catch (error) {
+                    console.error('Logout error:', error)
+                  }
+                }}
+                className="text-white hover:text-blue-200 transition-colors font-medium cursor-pointer"
+              >
+                Đăng xuất{username ? ` (${username})` : ''}
+              </button>
             </div>
           )}
         </div>

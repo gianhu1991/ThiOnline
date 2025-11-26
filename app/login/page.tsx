@@ -25,8 +25,8 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        router.push('/')
-        router.refresh()
+        // Force reload để Navigation component cập nhật
+        window.location.href = '/'
       } else {
         setError(data.error || 'Đăng nhập thất bại')
       }

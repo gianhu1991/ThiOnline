@@ -1,0 +1,9 @@
+Connection Pooling String cho Vercel (ĐÚNG):
+
+postgresql://postgres.fqgnechgzwckonjyqifq:Nhuchi%400105@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+
+Lưu ý: 
+- @ trong mật khẩu đã được encode thành %40
+- Port 6543 (Connection Pooling - Khuyến nghị cho Vercel)
+- Host: aws-1-ap-southeast-1.pooler.supabase.com
+
