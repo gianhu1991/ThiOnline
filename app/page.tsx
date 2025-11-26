@@ -15,13 +15,17 @@ export default function Home() {
           fetch('/api/exams'),
         ])
 
-        const questions = questionsRes.status === 'fulfilled' && questionsRes.value.ok
-          ? (await questionsRes.value.json()).length || 0
-          : 0
+        let questions = 0
+        if (questionsRes.status === 'fulfilled' && questionsRes.value.ok) {
+          const data = await questionsRes.value.json()
+          questions = Array.isArray(data) ? data.length : 0
+        }
 
-        const exams = examsRes.status === 'fulfilled' && examsRes.value.ok
-          ? (await examsRes.value.json()).length || 0
-          : 0
+        let exams = 0
+        if (examsRes.status === 'fulfilled' && examsRes.value.ok) {
+          const data = await examsRes.value.json()
+          exams = Array.isArray(data) ? data.length : 0
+        }
 
         setStats({ questions, exams, results: 0 })
       } catch (error) {

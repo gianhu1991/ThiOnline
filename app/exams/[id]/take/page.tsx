@@ -166,8 +166,14 @@ export default function TakeExamPage() {
       </div>
 
       <div className="space-y-6">
-        {examData.questions.map((q, index) => {
-          const options = JSON.parse(q.options)
+        {Array.isArray(examData.questions) && examData.questions.map((q, index) => {
+          let options: string[] = []
+          try {
+            const parsed = JSON.parse(q.options)
+            options = Array.isArray(parsed) ? parsed : []
+          } catch {
+            options = []
+          }
           const isMultiple = q.type === 'multiple'
           const selectedAnswers = answers[q.id] || []
 
@@ -181,7 +187,7 @@ export default function TakeExamPage() {
               </div>
 
               <div className="ml-11 space-y-2">
-                {options.map((option: string, optIndex: number) => {
+                {Array.isArray(options) && options.map((option: string, optIndex: number) => {
                   const optionLabel = option.charAt(0) // A, B, C, D...
                   const isChecked = selectedAnswers.includes(optionLabel)
 

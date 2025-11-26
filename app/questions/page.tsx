@@ -184,8 +184,17 @@ export default function QuestionsPage() {
         ) : (
           <div className="space-y-4">
             {questions.map((q, index) => {
-              const options = JSON.parse(q.options)
-              const correctAnswers = JSON.parse(q.correctAnswers)
+              let options: string[] = []
+              let correctAnswers: string[] = []
+              try {
+                const parsedOptions = JSON.parse(q.options)
+                options = Array.isArray(parsedOptions) ? parsedOptions : []
+                const parsedAnswers = JSON.parse(q.correctAnswers)
+                correctAnswers = Array.isArray(parsedAnswers) ? parsedAnswers : []
+              } catch {
+                options = []
+                correctAnswers = []
+              }
               
               return (
                 <div key={q.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
