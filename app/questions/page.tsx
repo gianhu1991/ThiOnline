@@ -20,21 +20,7 @@ export default function QuestionsPage() {
   const [fileType, setFileType] = useState<'excel' | 'pdf'>('excel')
   const [category, setCategory] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  
-  // Danh sách lĩnh vực mẫu
-  const categories = [
-    'Toán học',
-    'Vật lý',
-    'Hóa học',
-    'Sinh học',
-    'Văn học',
-    'Lịch sử',
-    'Địa lý',
-    'Tiếng Anh',
-    'Tin học',
-    'GDCD',
-    'Khác'
-  ]
+  const [categories, setCategories] = useState<string[]>([])
 
 
   const fetchQuestions = async () => {
@@ -57,6 +43,37 @@ export default function QuestionsPage() {
   useEffect(() => {
     fetchQuestions()
   }, [selectedCategory])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories')
+      const data = await res.json()
+      const categoryNames = Array.isArray(data) 
+        ? data.map((cat: any) => cat.name)
+        : []
+      setCategories(categoryNames)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      // Fallback to default categories if API fails
+      setCategories([
+        'Toán học',
+        'Vật lý',
+        'Hóa học',
+        'Sinh học',
+        'Văn học',
+        'Lịch sử',
+        'Địa lý',
+        'Tiếng Anh',
+        'Tin học',
+        'GDCD',
+        'Khác'
+      ])
+    }
+  }
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault()

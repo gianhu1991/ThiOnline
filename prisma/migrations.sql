@@ -92,3 +92,11 @@ BEGIN
     END IF;
 END $$;
 
+-- Tạo bảng Category
+CREATE TABLE IF NOT EXISTS "Category" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL UNIQUE,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
+);
+
