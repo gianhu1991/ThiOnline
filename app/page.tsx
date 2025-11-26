@@ -11,12 +11,12 @@ export default function Home() {
     const fetchStats = async () => {
       try {
         const [questionsRes, examsRes] = await Promise.allSettled([
-          fetch('/api/questions').catch(() => ({ ok: false })),
-          fetch('/api/exams').catch(() => ({ ok: false })),
+          fetch('/api/questions'),
+          fetch('/api/exams'),
         ])
 
         let questions = 0
-        if (questionsRes.status === 'fulfilled' && questionsRes.value.ok) {
+        if (questionsRes.status === 'fulfilled' && questionsRes.value instanceof Response && questionsRes.value.ok) {
           try {
             const data = await questionsRes.value.json()
             questions = Array.isArray(data) ? data.length : 0
@@ -26,7 +26,7 @@ export default function Home() {
         }
 
         let exams = 0
-        if (examsRes.status === 'fulfilled' && examsRes.value.ok) {
+        if (examsRes.status === 'fulfilled' && examsRes.value instanceof Response && examsRes.value.ok) {
           try {
             const data = await examsRes.value.json()
             exams = Array.isArray(data) ? data.length : 0
