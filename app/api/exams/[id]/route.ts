@@ -28,6 +28,51 @@ export async function GET(
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json()
+    const {
+      title,
+      description,
+      questionCount,
+      timeLimit,
+      startDate,
+      endDate,
+      shuffleQuestions,
+      shuffleAnswers,
+      maxAttempts,
+    } = body
+
+    // Validation
+    if (!title || !questionCount || !timeLimit || !startDate || !endDate || !maxAttempts) {
+      return NextResponse.json({ error: 'Thiếu thông tin bắt buộc' }, { status: 400 })
+    }
+
+    const exam = await prisma.exam.update({
+      where: { id: params.id },
+      data: {
+        title,
+        description: description || null,
+        questionCount: parseInt(questionCount),
+        timeLimit: parseInt(timeLimit),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        shuffleQuestions: shuffleQuestions === true || shuffleQuestions === 'true',
+        shuffleAnswers: shuffleAnswers === true || shuffleAnswers === 'true',
+        maxAttempts: parseInt(maxAttempts),
+      },
+    })
+
+    return NextResponse.json({ success: true, exam })
+  } catch (error: any) {
+    console.error('Error updating exam:', error)
+    return NextResponse.json({ error: 'Lỗi khi cập nhật bài thi' }, { status: 500 })
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
