@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="card">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
-            <p className="text-gray-600">Hệ thống Thi Trắc Nghiệm Online</p>
+            <p className="text-gray-600">TTVT Nho Quan- Phần mềm đào tạo kỹ thuật</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">

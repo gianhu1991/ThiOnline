@@ -6,7 +6,7 @@ import Navigation from '@/components/Navigation'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Thi Trắc Nghiệm Online - Hệ thống thi trực tuyến chuyên nghiệp',
+  title: 'TTVT Nho Quan- Phần mềm đào tạo kỹ thuật',
   description: 'Hệ thống thi trắc nghiệm trực tuyến với đầy đủ tính năng quản lý ngân hàng câu hỏi, tạo bài thi và làm bài thi',
 }
 
@@ -24,7 +24,7 @@ export default function RootLayout({
         </main>
         <footer className="bg-gray-800 text-white py-8 mt-12">
           <div className="container mx-auto px-4 text-center">
-            <p className="text-gray-400">© 2024 Hệ thống Thi Trắc Nghiệm Online. All rights reserved.</p>
+            <p className="text-gray-400">© 2024 TTVT Nho Quan- Phần mềm đào tạo kỹ thuật. All rights reserved.</p>
           </div>
         </footer>
       </body>

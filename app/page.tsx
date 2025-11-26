@@ -51,8 +51,8 @@ export default function Home() {
       {/* Hero Section */}
       <div className="text-center mb-16">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-          Hệ thống Thi Trắc Nghiệm
-          <span className="text-blue-600 block">Online Chuyên Nghiệp</span>
+          TTVT Nho Quan
+          <span className="text-blue-600 block">Phần mềm đào tạo kỹ thuật</span>
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Quản lý ngân hàng câu hỏi, tạo bài thi và tổ chức thi trắc nghiệm trực tuyến một cách dễ dàng và hiệu quả
