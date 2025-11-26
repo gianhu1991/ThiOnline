@@ -97,11 +97,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Tên đăng nhập mặc định: <span className="font-semibold">admin</span></p>
-            <p>Mật khẩu mặc định: <span className="font-semibold">Bdnb@999</span></p>
-          </div>
         </div>
       </div>
     </div>
