@@ -49,11 +49,12 @@ export default function Navigation() {
       <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold flex items-center gap-2">
+            <Link href="/" className="text-2xl font-bold flex items-center gap-2 whitespace-nowrap">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              TTVT Nho Quan- Phần mềm đào tạo kỹ thuật
+              <span className="hidden md:inline">TTVT Nho Quan- Phần mềm đào tạo kỹ thuật</span>
+              <span className="md:hidden">TTVT Nho Quan</span>
             </Link>
           </div>
         </div>
@@ -83,7 +84,7 @@ export default function Navigation() {
                 Quản lý bài thi
               </Link>
               {userRole === 'admin' && (
-                <Link href="/exams/create" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+                <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium">
                   Tạo bài thi
                 </Link>
               )}
