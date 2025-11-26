@@ -161,13 +161,13 @@ export default function TakeExamPage() {
             />
           </div>
           <div>
-            <label className="block mb-2 font-medium">Mã số sinh viên</label>
+            <label className="block mb-2 font-medium">Mã nhân viên</label>
             <input
               type="text"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
               className="border rounded px-4 py-2 w-full"
-              placeholder="Nhập mã số sinh viên (nếu có)"
+              placeholder="Nhập mã nhân viên (nếu có)"
             />
           </div>
         </div>

@@ -81,7 +81,7 @@ export default function ExamResultsPage() {
                   Họ và tên
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                  Mã số
+                  Mã nhân viên
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
                   Điểm
