@@ -10,9 +10,10 @@ export default function Home() {
     // Fetch stats với error handling tốt hơn
     const fetchStats = async () => {
       try {
-        const [questionsRes, examsRes] = await Promise.allSettled([
+        const [questionsRes, examsRes, resultsRes] = await Promise.allSettled([
           fetch('/api/questions'),
           fetch('/api/exams'),
+          fetch('/api/results/count'),
         ])
 
         let questions = 0
@@ -35,7 +36,17 @@ export default function Home() {
           }
         }
 
-        setStats({ questions, exams, results: 0 })
+        let results = 0
+        if (resultsRes.status === 'fulfilled' && resultsRes.value instanceof Response && resultsRes.value.ok) {
+          try {
+            const data = await resultsRes.value.json()
+            results = typeof data.count === 'number' ? data.count : 0
+          } catch {
+            results = 0
+          }
+        }
+
+        setStats({ questions, exams, results })
       } catch (error) {
         // Ignore errors, keep default stats
         console.error('Error fetching stats:', error)
