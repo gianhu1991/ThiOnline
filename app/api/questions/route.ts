@@ -7,7 +7,12 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(questions)
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error fetching questions:', error)
+    // Nếu bảng chưa tồn tại, trả về mảng rỗng
+    if (error.message?.includes('does not exist') || error.code === 'P2021') {
+      return NextResponse.json([])
+    }
     return NextResponse.json({ error: 'Lỗi khi lấy danh sách câu hỏi' }, { status: 500 })
   }
 }

@@ -86,19 +86,29 @@ export default function QuestionsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Ngân hàng câu hỏi</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Ngân hàng câu hỏi</h1>
+        <p className="text-gray-600">Quản lý và import câu hỏi từ file Excel hoặc PDF</p>
+      </div>
 
       {/* Form import */}
-      <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
-        <h2 className="text-xl font-semibold mb-4">Import câu hỏi</h2>
-        <form onSubmit={handleImport} className="space-y-4">
+      <div className="card mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold">Import câu hỏi</h2>
+        </div>
+        <form onSubmit={handleImport} className="space-y-6">
           <div>
-            <label className="block mb-2 font-medium">Loại file:</label>
+            <label className="block mb-2 font-semibold text-gray-700">Loại file:</label>
             <select
               value={fileType}
               onChange={(e) => setFileType(e.target.value as 'excel' | 'pdf')}
-              className="border rounded px-4 py-2 w-full"
+              className="input-field"
             >
               <option value="excel">Excel (.xlsx, .xls)</option>
               <option value="pdf">PDF (.pdf)</option>
@@ -106,80 +116,123 @@ export default function QuestionsPage() {
           </div>
 
           <div>
-            <label className="block mb-2 font-medium">Chọn file:</label>
+            <label className="block mb-2 font-semibold text-gray-700">Chọn file:</label>
             <input
               type="file"
               accept={fileType === 'excel' ? '.xlsx,.xls' : '.pdf'}
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="border rounded px-4 py-2 w-full"
+              className="input-field"
               required
             />
-            <p className="text-sm text-gray-500 mt-2">
-              {fileType === 'excel' 
-                ? 'Format Excel: Câu hỏi | Đáp án 1 | Đáp án 2 | ... | Đáp án đúng (A,B) | Loại (single/multiple)'
-                : 'Format PDF: Câu hỏi\nA. Đáp án 1\nB. Đáp án 2\nĐáp án: A'}
-            </p>
+            <div className="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium mb-1">📋 Format yêu cầu:</p>
+              <p className="text-sm text-blue-700">
+                {fileType === 'excel' 
+                  ? 'Excel: Câu hỏi | Đáp án 1 | Đáp án 2 | ... | Đáp án đúng (A,B) | Loại (single/multiple)'
+                  : 'PDF: Câu hỏi\nA. Đáp án 1\nB. Đáp án 2\nĐáp án: A'}
+              </p>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={uploading || !file}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? 'Đang import...' : 'Import câu hỏi'}
+            {uploading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang import...
+              </span>
+            ) : (
+              'Import câu hỏi'
+            )}
           </button>
         </form>
       </div>
 
       {/* Danh sách câu hỏi */}
-      <div className="bg-white rounded-lg shadow-lg">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold">
-            Tổng số câu hỏi: {questions.length}
-          </h2>
+      <div className="card">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Danh sách câu hỏi</h2>
+            <p className="text-gray-600 mt-1">Tổng số: <span className="font-semibold text-blue-600">{questions.length}</span> câu hỏi</p>
+          </div>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center">Đang tải...</div>
+          <div className="py-12 text-center">
+            <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-gray-600">Đang tải...</p>
+          </div>
         ) : questions.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            Chưa có câu hỏi nào. Hãy import câu hỏi từ file Excel hoặc PDF.
+          <div className="py-12 text-center">
+            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-gray-500 text-lg mb-2">Chưa có câu hỏi nào</p>
+            <p className="text-gray-400">Hãy import câu hỏi từ file Excel hoặc PDF</p>
           </div>
         ) : (
-          <div className="divide-y">
-            {questions.map((q) => {
+          <div className="space-y-4">
+            {questions.map((q, index) => {
               const options = JSON.parse(q.options)
               const correctAnswers = JSON.parse(q.correctAnswers)
               
               return (
-                <div key={q.id} className="p-6 hover:bg-gray-50">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={q.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      <p className="font-medium mb-2">{q.content}</p>
-                      <div className="space-y-1 mb-2">
-                        {options.map((opt: string, idx: number) => (
-                          <div key={idx} className="text-sm text-gray-600">
-                            {opt}
-                            {correctAnswers.includes(opt.charAt(0)) && (
-                              <span className="ml-2 text-green-600 font-semibold">✓</span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="flex items-start gap-3 mb-4">
+                        <span className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                          {index + 1}
+                        </span>
+                        <p className="font-semibold text-lg text-gray-900 flex-1">{q.content}</p>
                       </div>
-                      <div className="flex gap-2 text-sm">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      <div className="ml-11 space-y-2 mb-4">
+                        {options.map((opt: string, idx: number) => {
+                          const isCorrect = correctAnswers.includes(opt.charAt(0))
+                          return (
+                            <div key={idx} className={`flex items-center gap-2 p-2 rounded ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                              <span className="font-medium text-gray-700">{opt}</span>
+                              {isCorrect && (
+                                <span className="ml-auto bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="ml-11 flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          q.type === 'single' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-purple-100 text-purple-700'
+                        }`}>
                           {q.type === 'single' ? 'Chọn 1 đáp án' : 'Chọn nhiều đáp án'}
                         </span>
-                        <span className="text-gray-500">
-                          {new Date(q.createdAt).toLocaleDateString('vi-VN')}
+                        <span className="text-sm text-gray-500">
+                          {new Date(q.createdAt).toLocaleDateString('vi-VN', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
                         </span>
                       </div>
                     </div>
                     <button
                       onClick={() => handleDelete(q.id)}
-                      className="ml-4 text-red-600 hover:text-red-800"
+                      className="flex-shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                      title="Xóa câu hỏi"
                     >
-                      Xóa
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </button>
                   </div>
                 </div>
