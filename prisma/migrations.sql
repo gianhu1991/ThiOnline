@@ -60,3 +60,24 @@ CREATE TABLE IF NOT EXISTS "ExamResult" (
 
 CREATE INDEX IF NOT EXISTS "ExamResult_examId_idx" ON "ExamResult"("examId");
 
+-- Tạo bảng User
+CREATE TABLE IF NOT EXISTS "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "username" TEXT NOT NULL UNIQUE,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
+);
+
+-- Tạo bảng User
+CREATE TABLE IF NOT EXISTS "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "username" TEXT NOT NULL UNIQUE,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
+);
+
+-- Tạo user admin mặc định (mật khẩu sẽ được hash khi init)
+-- Lưu ý: Mật khẩu mặc định là Bdnb@999, sẽ được hash bằng bcrypt
+

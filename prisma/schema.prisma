@@ -67,3 +67,11 @@ model ExamResult {
 
   @@index([examId])
 }
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

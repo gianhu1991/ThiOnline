@@ -40,6 +40,14 @@ export default function RootLayout({
                 <Link href="/exams/create" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
                   Tạo bài thi
                 </Link>
+                <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
+                  Cài đặt
+                </Link>
+                <form action="/api/auth/logout" method="POST" className="inline">
+                  <button type="submit" className="text-white hover:text-blue-200 transition-colors font-medium">
+                    Đăng xuất
+                  </button>
+                </form>
               </div>
             </div>
           </div>
