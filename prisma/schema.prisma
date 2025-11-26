@@ -73,6 +73,9 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   password  String   // Hashed password
+  role      String   @default("user") // "admin" hoặc "user"
+  fullName  String?  // Họ và tên
+  email     String?  // Email
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -82,4 +85,18 @@ model Category {
   name      String   @unique // Tên lĩnh vực
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String   // Tiêu đề video
+  description String?  // Mô tả video
+  url         String   // URL video (YouTube, Vimeo, hoặc direct link)
+  thumbnail   String?  // URL thumbnail
+  category    String?  // Danh mục video
+  isPublic    Boolean  @default(true) // Công khai hay không
+  viewCount   Int      @default(0) // Số lượt xem
+  uploadedBy  String?  // Username người upload
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -12,7 +12,7 @@ export async function getJWT(request: NextRequest) {
     }
 
     const { payload } = await jwtVerify(token, secret)
-    return payload as { userId: string; username: string }
+    return payload as { userId: string; username: string; role?: string }
   } catch {
     return null
   }

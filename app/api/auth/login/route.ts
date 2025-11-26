@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { SignJWT } from 'jose'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production')
@@ -18,13 +19,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tên đăng nhập hoặc mật khẩu không đúng' }, { status: 401 })
     }
 
-    // Tạo JWT token
-    const token = await new SignJWT({ userId: user.id, username: user.username })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .sign(secret)
+        // Lấy role từ database
+        const userFromDb = await prisma.user.findUnique({
+          where: { username: user.username },
+          select: { id: true, username: true, role: true },
+        })
 
-    const response = NextResponse.json({ success: true, user: { username: user.username } })
+        // Tạo JWT token
+        const token = await new SignJWT({ 
+          userId: user.id, 
+          username: user.username,
+          role: userFromDb?.role || 'user'
+        })
+          .setProtectedHeader({ alg: 'HS256' })
+          .setExpirationTime('24h')
+          .sign(secret)
+
+        const response = NextResponse.json({ 
+          success: true, 
+          user: { 
+            username: user.username,
+            role: userFromDb?.role || 'user'
+          } 
+        })
     
     // Set cookie
     response.cookies.set('auth-token', token, {

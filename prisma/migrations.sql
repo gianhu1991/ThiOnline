@@ -100,3 +100,45 @@ CREATE TABLE IF NOT EXISTS "Category" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- Thêm cột role, fullName, email vào bảng User (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'User' AND column_name = 'role'
+    ) THEN
+        ALTER TABLE "User" ADD COLUMN "role" TEXT DEFAULT 'user';
+        -- Set admin user role
+        UPDATE "User" SET "role" = 'admin' WHERE "username" = 'admin';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'User' AND column_name = 'fullName'
+    ) THEN
+        ALTER TABLE "User" ADD COLUMN "fullName" TEXT;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'User' AND column_name = 'email'
+    ) THEN
+        ALTER TABLE "User" ADD COLUMN "email" TEXT;
+    END IF;
+END $$;
+
+-- Tạo bảng Video
+CREATE TABLE IF NOT EXISTS "Video" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "url" TEXT NOT NULL,
+    "thumbnail" TEXT,
+    "category" TEXT,
+    "isPublic" BOOLEAN DEFAULT true,
+    "viewCount" INTEGER DEFAULT 0,
+    "uploadedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
+);
+

@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 export default function Navigation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [username, setUsername] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const pathname = usePathname()
 
@@ -19,13 +20,16 @@ export default function Navigation() {
         const data = await res.json()
         setIsAuthenticated(true)
         setUsername(data.user?.username || null)
+        setUserRole(data.user?.role || null)
       } else {
         setIsAuthenticated(false)
         setUsername(null)
+        setUserRole(null)
       }
     } catch (error) {
       setIsAuthenticated(false)
       setUsername(null)
+      setUserRole(null)
     } finally {
       setLoading(false)
     }
@@ -73,12 +77,24 @@ export default function Navigation() {
               <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium">
                 Quản lý bài thi
               </Link>
-              <Link href="/exams/create" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-                Tạo bài thi
+              {userRole === 'admin' && (
+                <Link href="/exams/create" className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+                  Tạo bài thi
+                </Link>
+              )}
+              <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
+                Video thực hành
               </Link>
-              <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
-                Cài đặt
-              </Link>
+              {userRole === 'admin' && (
+                <>
+                  <Link href="/videos/manage" className="hover:text-blue-200 transition-colors font-medium">
+                    Quản lý video
+                  </Link>
+                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
+                    Cài đặt
+                  </Link>
+                </>
+              )}
               <button
                 onClick={async () => {
                   try {
