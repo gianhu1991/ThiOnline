@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import Navigation from '@/components/Navigation'
+import ConditionalLayout from '@/components/ConditionalLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,24 +18,9 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={inter.className}>
-        <Navigation />
-        <main className="min-h-screen bg-gray-50">
-          {children}
-        </main>
-        <Footer />
+        <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="bg-gray-800 text-white py-8 mt-12">
-      <div className="container mx-auto px-4 text-center">
-        <p className="text-gray-400 mb-2">© 2025 TTVT Nho Quan- Phần mềm đào tạo kỹ thuật</p>
-        <p className="text-gray-500 text-sm">Phát triển bởi nhuqg.nbh</p>
-      </div>
-    </footer>
   )
 }
 
