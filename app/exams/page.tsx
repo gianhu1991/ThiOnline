@@ -32,9 +32,11 @@ export default function ExamsPage() {
     try {
       const res = await fetch('/api/exams')
       const data = await res.json()
-      setExams(data)
+      // Đảm bảo data là array
+      setExams(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching exams:', error)
+      setExams([])
     } finally {
       setLoading(false)
     }

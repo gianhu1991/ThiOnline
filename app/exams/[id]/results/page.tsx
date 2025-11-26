@@ -33,9 +33,11 @@ export default function ExamResultsPage() {
     try {
       const res = await fetch(`/api/exams/${examId}/results`)
       const data = await res.json()
-      setResults(data)
+      // Đảm bảo data là array
+      setResults(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching results:', error)
+      setResults([])
     } finally {
       setLoading(false)
     }

@@ -28,9 +28,11 @@ export default function CreateExamPage() {
     try {
       const res = await fetch('/api/questions')
       const data = await res.json()
-      setQuestions(data)
+      // Đảm bảo data là array
+      setQuestions(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching questions:', error)
+      setQuestions([])
     } finally {
       setLoading(false)
     }
