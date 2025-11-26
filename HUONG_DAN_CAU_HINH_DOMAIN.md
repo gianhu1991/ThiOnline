@@ -24,8 +24,13 @@ Khi domain hiển thị **"Invalid Configuration"**, nghĩa là DNS records chư
 
 ### 2.1. Xác định nhà cung cấp Domain
 
+**⚠️ QUAN TRỌNG:** Nếu domain của bạn được mua từ Google Domains:
+- Google Domains đã được **Squarespace mua lại** (từ 7/9/2023)
+- Tất cả domain từ Google Domains đã được **chuyển sang Squarespace**
+- Bạn cần đăng nhập vào **Squarespace** để quản lý DNS
+
 Domain `.app` thường được mua từ:
-- **Google Domains** (hiện tại là Squarespace)
+- **Squarespace** (từ Google Domains chuyển sang) ⭐ **Nếu bạn thấy thông báo về Squarespace, dùng cách này**
 - **Namecheap**
 - **GoDaddy**
 - **Cloudflare**
@@ -33,11 +38,53 @@ Domain `.app` thường được mua từ:
 
 ### 2.2. Đăng nhập vào quản lý Domain
 
+#### Nếu domain từ Google Domains (đã chuyển sang Squarespace):
+
+1. **Truy cập Squarespace:**
+   - Vào: **https://www.squarespace.com**
+   - Hoặc: **https://domains.squarespace.com**
+
+2. **Đăng nhập:**
+   - Sử dụng **email và mật khẩu** mà bạn đã dùng cho Google Domains
+   - Hoặc click **"Sign in with Google"** nếu bạn đã liên kết tài khoản
+
+3. **Tìm domain của bạn:**
+   - Sau khi đăng nhập, vào **"Domains"** hoặc **"My Domains"**
+   - Tìm domain `ttvtnhoquantest.app`
+
+4. **Vào DNS Settings:**
+   - Click vào domain
+   - Tìm tab **"DNS Settings"** hoặc **"DNS Records"**
+   - Hoặc click **"Manage DNS"**
+
+#### Nếu domain từ nhà cung cấp khác:
+
 1. Truy cập website của nhà cung cấp domain
 2. Đăng nhập vào tài khoản
 3. Tìm phần **"DNS Management"** hoặc **"DNS Settings"** hoặc **"Manage DNS"**
 
 ### 2.3. Thêm DNS Record
+
+#### Trên Squarespace:
+
+1. **Vào DNS Settings:**
+   - Click vào domain `ttvtnhoquantest.app`
+   - Scroll xuống tìm phần **"DNS Records"** hoặc **"Custom Records"**
+
+2. **Thêm A Record:**
+   - Click **"Add Record"** hoặc **"Add"**
+   - Chọn **"A Record"** từ dropdown
+   - Điền thông tin:
+     - **Host:** `@` hoặc để trống (đại diện cho domain chính)
+     - **Points to:** `216.198.79.1` (hoặc IP mà Vercel cung cấp)
+     - **TTL:** `3600` hoặc để mặc định
+   - Click **"Save"** hoặc **"Add Record"**
+
+3. **Xóa records cũ (nếu có):**
+   - Nếu có A records cũ trỏ đến IP khác, xóa chúng đi
+   - Chỉ giữ lại A record mới trỏ đến IP của Vercel
+
+#### Trên các nhà cung cấp khác:
 
 **Cách 1: Thêm A Record (Khuyến nghị)**
 
