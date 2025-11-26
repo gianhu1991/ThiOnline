@@ -20,10 +20,37 @@ export default function VideosPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [categories, setCategories] = useState<string[]>([])
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    url: '',
+    thumbnail: '',
+    category: '',
+    isPublic: true,
+  })
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchVideos()
+    checkUserRole()
   }, [selectedCategory])
+
+  const checkUserRole = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.user?.role || null)
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error)
+    }
+  }
 
   const fetchVideos = async () => {
     setLoading(true)
@@ -74,11 +101,60 @@ export default function VideosPage() {
     return null
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
+
+    try {
+      const res = await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert('Thêm video thành công!')
+        setShowAddModal(false)
+        setFormData({
+          title: '',
+          description: '',
+          url: '',
+          thumbnail: '',
+          category: '',
+          isPublic: true,
+        })
+        fetchVideos()
+      } else {
+        setError(data.error || 'Lỗi khi lưu video')
+      }
+    } catch (error) {
+      setError('Lỗi khi lưu video')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Video thực hành</h1>
-        <p className="text-gray-600">Xem các video hướng dẫn thực hành</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Video thực hành</h1>
+          <p className="text-gray-600">Xem các video hướng dẫn thực hành</p>
+        </div>
+        {userRole === 'admin' && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Thêm video
+          </button>
+        )}
       </div>
 
       {categories.length > 0 && (
@@ -154,6 +230,117 @@ export default function VideosPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Add Video Modal */}
+      {showAddModal && userRole === 'admin' && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Thêm video mới</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Tiêu đề *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">URL Video *</label>
+                <input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  className="input-field"
+                  placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Thumbnail URL (tùy chọn)</label>
+                <input
+                  type="url"
+                  value={formData.thumbnail}
+                  onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
+                  className="input-field"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Mô tả</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="input-field"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Danh mục</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="input-field"
+                  placeholder="Ví dụ: Hướng dẫn, Thực hành, Lý thuyết..."
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor="isPublic" className="font-medium">Công khai (mọi người có thể xem)</label>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setFormData({
+                      title: '',
+                      description: '',
+                      url: '',
+                      thumbnail: '',
+                      category: '',
+                      isPublic: true,
+                    })
+                    setError('')
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Đang lưu...' : 'Thêm video'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
