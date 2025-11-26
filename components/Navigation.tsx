@@ -39,6 +39,11 @@ export default function Navigation() {
     checkAuth()
   }, [pathname]) // Re-check khi route thay đổi
 
+  // Ẩn navigation trên trang login và register
+  if (pathname === '/login' || pathname === '/register') {
+    return null
+  }
+
   if (loading) {
     return (
       <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
