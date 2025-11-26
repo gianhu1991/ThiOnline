@@ -34,8 +34,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Kiểm tra quyền admin cho các trang quản lý
-  if (pathname.startsWith('/videos/manage') || 
-      pathname.startsWith('/questions') ||
+  if (pathname.startsWith('/questions') ||
       pathname.startsWith('/exams/create') ||
       pathname.startsWith('/exams/') && pathname.includes('/edit') ||
       pathname.startsWith('/settings')) {

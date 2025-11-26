@@ -30,6 +30,9 @@ export default function VideosPage() {
     category: '',
     isPublic: true,
   })
+  const [uploadType, setUploadType] = useState<'url' | 'file'>('url')
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -107,10 +110,53 @@ export default function VideosPage() {
     setSubmitting(true)
 
     try {
+      let videoUrl = formData.url
+
+      // Nếu upload từ file
+      if (uploadType === 'file' && videoFile) {
+        setUploadingFile(true)
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', videoFile)
+
+        const uploadRes = await fetch('/api/videos/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const uploadData = await uploadRes.json()
+
+        if (!uploadRes.ok || !uploadData.success) {
+          setError(uploadData.error || 'Lỗi khi upload video')
+          setSubmitting(false)
+          setUploadingFile(false)
+          return
+        }
+
+        videoUrl = uploadData.url
+        setUploadingFile(false)
+      }
+
+      // Kiểm tra URL nếu chọn URL
+      if (uploadType === 'url' && !videoUrl) {
+        setError('Vui lòng nhập URL video hoặc chọn file để upload')
+        setSubmitting(false)
+        return
+      }
+
+      // Kiểm tra file nếu chọn upload
+      if (uploadType === 'file' && !videoFile) {
+        setError('Vui lòng chọn file video để upload')
+        setSubmitting(false)
+        return
+      }
+
       const res = await fetch('/api/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          url: videoUrl,
+        }),
       })
 
       const data = await res.json()
@@ -126,6 +172,8 @@ export default function VideosPage() {
           category: '',
           isPublic: true,
         })
+        setUploadType('url')
+        setVideoFile(null)
         fetchVideos()
       } else {
         setError(data.error || 'Lỗi khi lưu video')
@@ -134,6 +182,7 @@ export default function VideosPage() {
       setError('Lỗi khi lưu video')
     } finally {
       setSubmitting(false)
+      setUploadingFile(false)
     }
   }
 
@@ -251,16 +300,73 @@ export default function VideosPage() {
               </div>
 
               <div>
-                <label className="block mb-2 font-semibold text-gray-700">URL Video *</label>
-                <input
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className="input-field"
-                  placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
-                  required
-                />
-                <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+                <label className="block mb-2 font-semibold text-gray-700">Nguồn video *</label>
+                <div className="mb-4 flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="uploadType"
+                      value="url"
+                      checked={uploadType === 'url'}
+                      onChange={(e) => setUploadType('url')}
+                      className="mr-2"
+                    />
+                    <span>Nhập URL</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="uploadType"
+                      value="file"
+                      checked={uploadType === 'file'}
+                      onChange={(e) => setUploadType('file')}
+                      className="mr-2"
+                    />
+                    <span>Upload từ PC</span>
+                  </label>
+                </div>
+
+                {uploadType === 'url' ? (
+                  <>
+                    <input
+                      type="url"
+                      value={formData.url}
+                      onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                      className="input-field"
+                      placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
+                      required={uploadType === 'url'}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          // Kiểm tra kích thước (100MB)
+                          const maxSize = 100 * 1024 * 1024
+                          if (file.size > maxSize) {
+                            alert('File quá lớn. Kích thước tối đa là 100MB')
+                            e.target.value = ''
+                            return
+                          }
+                          setVideoFile(file)
+                        }
+                      }}
+                      className="input-field"
+                      required={uploadType === 'file'}
+                    />
+                    {videoFile && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Đã chọn: {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">Hỗ trợ các định dạng video: MP4, AVI, MOV, MKV... (tối đa 100MB)</p>
+                  </>
+                )}
               </div>
 
               <div>
@@ -325,6 +431,8 @@ export default function VideosPage() {
                       category: '',
                       isPublic: true,
                     })
+                    setUploadType('url')
+                    setVideoFile(null)
                     setError('')
                   }}
                   className="flex-1 bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400"
@@ -333,10 +441,10 @@ export default function VideosPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {submitting ? 'Đang lưu...' : 'Thêm video'}
+                  {uploadingFile ? 'Đang upload...' : submitting ? 'Đang lưu...' : 'Thêm video'}
                 </button>
               </div>
             </form>

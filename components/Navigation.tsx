@@ -92,14 +92,9 @@ export default function Navigation() {
                 Video thực hành
               </Link>
               {userRole === 'admin' && (
-                <>
-                  <Link href="/videos/manage" className="hover:text-blue-200 transition-colors font-medium">
-                    Quản lý video
-                  </Link>
-                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
-                    Cài đặt
-                  </Link>
-                </>
+                <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
+                  Cài đặt
+                </Link>
               )}
               <button
                 onClick={async () => {
