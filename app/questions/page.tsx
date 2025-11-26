@@ -8,6 +8,7 @@ interface Question {
   type: string
   options: string
   correctAnswers: string
+  category: string | null
   createdAt: string
 }
 
@@ -17,14 +18,31 @@ export default function QuestionsPage() {
   const [uploading, setUploading] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [fileType, setFileType] = useState<'excel' | 'pdf'>('excel')
+  const [category, setCategory] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  
+  // Danh sách lĩnh vực mẫu
+  const categories = [
+    'Toán học',
+    'Vật lý',
+    'Hóa học',
+    'Sinh học',
+    'Văn học',
+    'Lịch sử',
+    'Địa lý',
+    'Tiếng Anh',
+    'Tin học',
+    'GDCD',
+    'Khác'
+  ]
 
-  useEffect(() => {
-    fetchQuestions()
-  }, [])
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch('/api/questions')
+      const url = selectedCategory === 'all' 
+        ? '/api/questions' 
+        : `/api/questions?category=${encodeURIComponent(selectedCategory)}`
+      const res = await fetch(url)
       const data = await res.json()
       // Đảm bảo data là array
       setQuestions(Array.isArray(data) ? data : [])
@@ -36,10 +54,19 @@ export default function QuestionsPage() {
     }
   }
 
+  useEffect(() => {
+    fetchQuestions()
+  }, [selectedCategory])
+
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) {
       alert('Vui lòng chọn file')
+      return
+    }
+
+    if (!category.trim()) {
+      alert('Vui lòng chọn lĩnh vực câu hỏi')
       return
     }
 
@@ -48,6 +75,7 @@ export default function QuestionsPage() {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('type', fileType)
+      formData.append('category', category)
 
       const res = await fetch('/api/questions/import', {
         method: 'POST',
@@ -58,6 +86,7 @@ export default function QuestionsPage() {
       if (data.success) {
         alert(data.message)
         setFile(null)
+        setCategory('')
         fetchQuestions()
       } else {
         alert('Lỗi: ' + data.error)
@@ -105,6 +134,37 @@ export default function QuestionsPage() {
           <h2 className="text-2xl font-bold">Import câu hỏi</h2>
         </div>
         <form onSubmit={handleImport} className="space-y-6">
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                window.open('/api/questions/template', '_blank')
+              }}
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Tải file Excel mẫu
+            </button>
+          </div>
+
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">Lĩnh vực câu hỏi *:</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="input-field"
+              required
+            >
+              <option value="">-- Chọn lĩnh vực --</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <p className="text-sm text-gray-500 mt-1">Lĩnh vực này sẽ được áp dụng cho tất cả câu hỏi trong file import</p>
+          </div>
+
           <div>
             <label className="block mb-2 font-semibold text-gray-700">Loại file:</label>
             <select
@@ -130,8 +190,11 @@ export default function QuestionsPage() {
               <p className="text-sm text-blue-800 font-medium mb-1">📋 Format yêu cầu:</p>
               <p className="text-sm text-blue-700">
                 {fileType === 'excel' 
-                  ? 'Excel: Câu hỏi | Đáp án 1 | Đáp án 2 | ... | Đáp án đúng (A,B) | Loại (single/multiple)'
+                  ? 'Excel: Câu hỏi | Đáp án 1 | Đáp án 2 | ... | Đáp án đúng (A,B) | Loại (single/multiple) | Lĩnh vực (tùy chọn)'
                   : 'PDF: Câu hỏi\nA. Đáp án 1\nB. Đáp án 2\nĐáp án: A'}
+              </p>
+              <p className="text-xs text-blue-600 mt-2">
+                💡 Lưu ý: Nếu file Excel có cột "Lĩnh vực", giá trị trong file sẽ được ưu tiên. Nếu không có, sẽ dùng lĩnh vực bạn chọn ở trên.
               </p>
             </div>
           </div>
@@ -162,6 +225,19 @@ export default function QuestionsPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Danh sách câu hỏi</h2>
             <p className="text-gray-600 mt-1">Tổng số: <span className="font-semibold text-blue-600">{questions.length}</span> câu hỏi</p>
+          </div>
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">Lọc theo lĩnh vực:</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input-field"
+            >
+              <option value="all">Tất cả</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -220,6 +296,11 @@ export default function QuestionsPage() {
                         })}
                       </div>
                       <div className="ml-11 flex items-center gap-3">
+                        {q.category && (
+                          <span className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
+                            {q.category}
+                          </span>
+                        )}
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                           q.type === 'single' 
                             ? 'bg-blue-100 text-blue-700' 

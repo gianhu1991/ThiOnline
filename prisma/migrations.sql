@@ -81,3 +81,14 @@ CREATE TABLE IF NOT EXISTS "User" (
 -- Tạo user admin mặc định (mật khẩu sẽ được hash khi init)
 -- Lưu ý: Mật khẩu mặc định là Bdnb@999, sẽ được hash bằng bcrypt
 
+-- Thêm cột category vào bảng Question (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'Question' AND column_name = 'category'
+    ) THEN
+        ALTER TABLE "Question" ADD COLUMN "category" TEXT;
+    END IF;
+END $$;
+

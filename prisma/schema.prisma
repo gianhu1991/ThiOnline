@@ -17,6 +17,7 @@ model Question {
   options     String   // JSON array: ["A. Đáp án 1", "B. Đáp án 2", ...]
   correctAnswers String // JSON array: ["A", "B"] hoặc ["A"]
   explanation String?
+  category    String?  // Lĩnh vực câu hỏi (ví dụ: Toán, Lý, Hóa, Văn, Anh, ...)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   examQuestions ExamQuestion[]

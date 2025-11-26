@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const fileType = formData.get('type') as string
+    const category = formData.get('category') as string || null
 
     if (!file) {
       return NextResponse.json({ error: 'Không có file được tải lên' }, { status: 400 })
@@ -46,11 +47,15 @@ export async function POST(request: NextRequest) {
           correctAnswers.push(...correct.toString().split(',').map((a: string) => a.trim().toUpperCase()))
         }
 
+        // Lấy lĩnh vực từ file hoặc dùng category từ form
+        const questionCategory = row['Lĩnh vực'] || row['Category'] || row['Linh vuc'] || category || null
+
         return {
           content: questionText,
           type: type.toLowerCase() === 'multiple' ? 'multiple' : 'single',
           options: JSON.stringify(options),
           correctAnswers: JSON.stringify(correctAnswers),
+          category: questionCategory,
         }
       }).filter((q: any) => q.content && q.options && q.correctAnswers)
     } else if (fileType === 'pdf' || file.name.endsWith('.pdf')) {
@@ -76,6 +81,7 @@ export async function POST(request: NextRequest) {
               type: currentCorrect.length > 1 ? 'multiple' : 'single',
               options: JSON.stringify(currentOptions),
               correctAnswers: JSON.stringify(currentCorrect),
+              category: category || null,
             })
           }
           currentQuestion = trimmed
@@ -98,6 +104,7 @@ export async function POST(request: NextRequest) {
           type: currentCorrect.length > 1 ? 'multiple' : 'single',
           options: JSON.stringify(currentOptions),
           correctAnswers: JSON.stringify(currentCorrect),
+          category: category || null,
         })
       }
     } else {
