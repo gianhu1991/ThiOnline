@@ -21,6 +21,15 @@ export default function QuestionsPage() {
   const [category, setCategory] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [categories, setCategories] = useState<string[]>([])
+  
+  // Edit question state
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [editOptions, setEditOptions] = useState<string[]>([])
+  const [editCorrectAnswers, setEditCorrectAnswers] = useState<string[]>([])
+  const [editType, setEditType] = useState<'single' | 'multiple'>('single')
+  const [editCategory, setEditCategory] = useState<string>('')
+  const [editLoading, setEditLoading] = useState(false)
 
 
   const fetchQuestions = async () => {
@@ -130,6 +139,177 @@ export default function QuestionsPage() {
       }
     } catch (error) {
       alert('Lỗi khi xóa câu hỏi')
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (questions.length === 0) {
+      alert('Không có câu hỏi nào để xóa')
+      return
+    }
+
+    const confirmMessage = `Bạn có chắc muốn xóa TẤT CẢ ${questions.length} câu hỏi?\n\nHành động này không thể hoàn tác!\n\nNhập "XÓA TẤT CẢ" để xác nhận:`
+    const userInput = prompt(confirmMessage)
+    
+    if (userInput !== 'XÓA TẤT CẢ') {
+      alert('Đã hủy xóa. Bạn cần nhập đúng "XÓA TẤT CẢ" để xác nhận.')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/questions?all=true', {
+        method: 'DELETE',
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert(`Đã xóa thành công ${data.count} câu hỏi`)
+        fetchQuestions()
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể xóa câu hỏi'))
+      }
+    } catch (error) {
+      alert('Lỗi khi xóa câu hỏi')
+    }
+  }
+
+  const handleEdit = (question: Question) => {
+    let options: string[] = []
+    let correctAnswers: string[] = []
+    try {
+      const parsedOptions = JSON.parse(question.options)
+      options = Array.isArray(parsedOptions) ? parsedOptions : []
+      const parsedAnswers = JSON.parse(question.correctAnswers)
+      correctAnswers = Array.isArray(parsedAnswers) ? parsedAnswers : []
+    } catch {
+      options = []
+      correctAnswers = []
+    }
+
+    setEditingQuestion(question)
+    setEditContent(question.content)
+    setEditOptions(options)
+    setEditCorrectAnswers(correctAnswers)
+    setEditType(question.type === 'multiple' ? 'multiple' : 'single')
+    setEditCategory(question.category || '')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingQuestion(null)
+    setEditContent('')
+    setEditOptions([])
+    setEditCorrectAnswers([])
+    setEditType('single')
+    setEditCategory('')
+  }
+
+  const handleUpdateOption = (index: number, value: string) => {
+    const newOptions = [...editOptions]
+    const label = String.fromCharCode(65 + index) // A, B, C, D...
+    // Giữ nguyên label nếu đã có, nếu không thì thêm label mới
+    if (value.startsWith(label + '.')) {
+      newOptions[index] = value
+    } else {
+      // Lấy phần sau label hiện tại (nếu có)
+      const currentOption = newOptions[index]
+      const currentLabel = currentOption.charAt(0)
+      const currentText = currentOption.substring(currentOption.indexOf('.') + 1).trim()
+      // Nếu value không có label, thêm label mới
+      if (!value.match(/^[A-Z]\.\s/)) {
+        newOptions[index] = `${label}. ${value.replace(/^[A-Z]\.\s*/, '')}`
+      } else {
+        newOptions[index] = value
+      }
+    }
+    setEditOptions(newOptions)
+  }
+
+  const handleAddOption = () => {
+    const label = String.fromCharCode(65 + editOptions.length) // A, B, C, D...
+    setEditOptions([...editOptions, `${label}. `])
+  }
+
+  const handleRemoveOption = (index: number) => {
+    const optionLabel = String.fromCharCode(65 + index)
+    const newOptions = editOptions.filter((_, i) => i !== index)
+    // Cập nhật lại label cho các option còn lại
+    const updatedOptions = newOptions.map((opt, i) => {
+      const newLabel = String.fromCharCode(65 + i)
+      const text = opt.substring(opt.indexOf('.') + 1).trim()
+      return `${newLabel}. ${text}`
+    })
+    setEditOptions(updatedOptions)
+    // Remove correct answer if it was for this option
+    setEditCorrectAnswers(editCorrectAnswers.filter(a => a !== optionLabel))
+    // Cập nhật lại label của các correct answers còn lại
+    const updatedCorrectAnswers = editCorrectAnswers
+      .filter(a => a !== optionLabel)
+      .map(a => {
+        const oldIndex = a.charCodeAt(0) - 65
+        if (oldIndex > index) {
+          return String.fromCharCode(65 + oldIndex - 1)
+        }
+        return a
+      })
+    setEditCorrectAnswers(updatedCorrectAnswers)
+  }
+
+  const handleToggleCorrectAnswer = (optionLabel: string) => {
+    if (editType === 'single') {
+      setEditCorrectAnswers([optionLabel])
+    } else {
+      if (editCorrectAnswers.includes(optionLabel)) {
+        setEditCorrectAnswers(editCorrectAnswers.filter(a => a !== optionLabel))
+      } else {
+        setEditCorrectAnswers([...editCorrectAnswers, optionLabel])
+      }
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) {
+      alert('Vui lòng nhập nội dung câu hỏi')
+      return
+    }
+
+    if (editOptions.length < 2) {
+      alert('Cần ít nhất 2 đáp án')
+      return
+    }
+
+    if (editCorrectAnswers.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 đáp án đúng')
+      return
+    }
+
+    setEditLoading(true)
+    try {
+      const res = await fetch(`/api/questions?id=${editingQuestion!.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editContent,
+          options: editOptions,
+          correctAnswers: editCorrectAnswers,
+          type: editType,
+          category: editCategory || null,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert('Cập nhật câu hỏi thành công!')
+        handleCancelEdit()
+        fetchQuestions()
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể cập nhật câu hỏi'))
+      }
+    } catch (error) {
+      alert('Lỗi khi cập nhật câu hỏi')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -243,18 +423,32 @@ export default function QuestionsPage() {
             <h2 className="text-2xl font-bold text-gray-900">Danh sách câu hỏi</h2>
             <p className="text-gray-600 mt-1">Tổng số: <span className="font-semibold text-blue-600">{questions.length}</span> câu hỏi</p>
           </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Lọc theo lĩnh vực:</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input-field"
-            >
-              <option value="all">Tất cả</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+          <div className="flex items-end gap-4">
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Lọc theo lĩnh vực:</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">Tất cả</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            {questions.length > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                title="Xóa tất cả câu hỏi"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Xóa tất cả
+              </button>
+            )}
           </div>
         </div>
 
@@ -334,19 +528,161 @@ export default function QuestionsPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(q.id)}
-                      className="flex-shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                      title="Xóa câu hỏi"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    <div className="flex-shrink-0 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(q)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                        title="Sửa câu hỏi"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(q.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                        title="Xóa câu hỏi"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
             })}
+            
+            {/* Edit Modal */}
+            {editingQuestion && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold">Sửa câu hỏi</h2>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block mb-2 font-semibold text-gray-700">Nội dung câu hỏi *</label>
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="input-field"
+                          rows={3}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 font-semibold text-gray-700">Loại câu hỏi *</label>
+                        <select
+                          value={editType}
+                          onChange={(e) => {
+                            setEditType(e.target.value as 'single' | 'multiple')
+                            if (e.target.value === 'single' && editCorrectAnswers.length > 1) {
+                              setEditCorrectAnswers([editCorrectAnswers[0]])
+                            }
+                          }}
+                          className="input-field"
+                        >
+                          <option value="single">Chọn 1 đáp án</option>
+                          <option value="multiple">Chọn nhiều đáp án</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 font-semibold text-gray-700">Lĩnh vực</label>
+                        <select
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="input-field"
+                        >
+                          <option value="">-- Chọn lĩnh vực --</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="font-semibold text-gray-700">Đáp án *</label>
+                          <button
+                            type="button"
+                            onClick={handleAddOption}
+                            className="text-sm text-blue-600 hover:text-blue-700"
+                          >
+                            + Thêm đáp án
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {editOptions.map((opt, idx) => {
+                            const optionLabel = opt.charAt(0)
+                            const isCorrect = editCorrectAnswers.includes(optionLabel)
+                            return (
+                              <div key={idx} className="flex items-center gap-2">
+                                <input
+                                  type={editType === 'single' ? 'radio' : 'checkbox'}
+                                  checked={isCorrect}
+                                  onChange={() => handleToggleCorrectAnswer(optionLabel)}
+                                  className="mt-1"
+                                />
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => handleUpdateOption(idx, e.target.value)}
+                                  className="input-field flex-1"
+                                  placeholder={`Đáp án ${optionLabel}`}
+                                />
+                                {editOptions.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveOption(idx)}
+                                    className="text-red-600 hover:text-red-700 p-2"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {editOptions.length < 2 && (
+                          <p className="text-sm text-red-600 mt-1">Cần ít nhất 2 đáp án</p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-4 pt-4">
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={editLoading || editOptions.length < 2 || editCorrectAnswers.length === 0}
+                          className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {editLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
