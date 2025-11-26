@@ -66,11 +66,36 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Trộn câu hỏi nếu cần
-    let questions = Array.isArray(exam.examQuestions) 
-      ? exam.examQuestions.map(eq => eq.question).filter(q => q !== null && q !== undefined)
-      : []
+    // Mỗi lần làm bài thi, lấy câu hỏi ngẫu nhiên mới từ ngân hàng
+    const allQuestions = await prisma.question.findMany()
     
+    if (allQuestions.length < exam.questionCount) {
+      return NextResponse.json({ 
+        error: `Ngân hàng câu hỏi chỉ có ${allQuestions.length} câu, không đủ ${exam.questionCount} câu` 
+      }, { status: 400 })
+    }
+
+    // Trộn và chọn ngẫu nhiên câu hỏi mới
+    const shuffled = [...allQuestions].sort(() => Math.random() - 0.5)
+    const selectedQuestions = shuffled.slice(0, exam.questionCount)
+
+    // Xóa các câu hỏi cũ của bài thi (nếu có) và lưu câu hỏi mới
+    await prisma.examQuestion.deleteMany({
+      where: { examId: params.id },
+    })
+
+    await prisma.examQuestion.createMany({
+      data: selectedQuestions.map((q, index) => ({
+        examId: params.id,
+        questionId: q.id,
+        order: index + 1,
+      })),
+    })
+
+    // Lấy câu hỏi đã chọn
+    let questions = selectedQuestions
+    
+    // Trộn thứ tự câu hỏi nếu cần (đã trộn ở trên, nhưng có thể trộn lại)
     if (exam.shuffleQuestions && questions.length > 0) {
       questions = [...questions].sort(() => Math.random() - 0.5)
     }
