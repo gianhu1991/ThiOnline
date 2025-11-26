@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  content     String
+  type        String   // "single" hoặc "multiple"
+  options     String   // JSON array: ["A. Đáp án 1", "B. Đáp án 2", ...]
+  correctAnswers String // JSON array: ["A", "B"] hoặc ["A"]
+  explanation String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  examQuestions ExamQuestion[]
+}
+
+model Exam {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  questionCount   Int
+  timeLimit       Int      // Thời gian làm bài (phút)
+  startDate       DateTime // Thời gian mở bài thi
+  endDate         DateTime // Thời gian đóng bài thi
+  shuffleQuestions Boolean @default(false) // Trộn câu hỏi
+  shuffleAnswers  Boolean @default(false)  // Trộn đáp án
+  maxAttempts     Int      // Số lần làm bài tối đa
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  examQuestions   ExamQuestion[]
+  examResults     ExamResult[]
+}
+
+model ExamQuestion {
+  id         String @id @default(cuid())
+  examId     String
+  questionId String
+  order      Int    // Thứ tự câu hỏi trong bài thi
+  exam       Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionId])
+  @@index([examId])
+}
+
+model ExamResult {
+  id            String   @id @default(cuid())
+  examId        String
+  studentName   String?
+  studentId     String?
+  score         Float    // Điểm số
+  totalQuestions Int
+  correctAnswers Int
+  answers       String   // JSON: { questionId: ["A", "B"] }
+  timeSpent     Int      // Thời gian làm bài (giây)
+  attemptNumber Int      // Lần làm bài thứ mấy
+  completedAt   DateTime @default(now())
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId])
+}
