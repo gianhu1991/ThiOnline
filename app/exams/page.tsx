@@ -70,10 +70,25 @@ export default function ExamsPage() {
     return { text: 'Đang mở', color: 'bg-green-500' }
   }
 
+  const getCurrentTime = () => {
+    return new Date().toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Quản lý bài thi</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Quản lý bài thi</h1>
+          <p className="text-sm text-gray-500 mt-1">Thời gian hiện tại: {getCurrentTime()}</p>
+        </div>
         <Link
           href="/exams/create"
           className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"

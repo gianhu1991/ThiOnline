@@ -23,15 +23,35 @@ export async function POST(
 
     // Kiểm tra thời gian mở bài thi
     const now = new Date()
-    if (now < exam.startDate) {
+    const startDate = new Date(exam.startDate)
+    const endDate = new Date(exam.endDate)
+    
+    // Format thời gian để hiển thị
+    const formatDateTime = (date: Date) => {
+      return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    }
+    
+    if (now < startDate) {
       return NextResponse.json({ 
-        error: 'Bài thi chưa được mở. Thời gian mở: ' + exam.startDate.toLocaleString('vi-VN') 
+        error: `Bài thi chưa được mở.\nThời gian hiện tại: ${formatDateTime(now)}\nThời gian mở: ${formatDateTime(startDate)}`,
+        currentTime: now.toISOString(),
+        startTime: startDate.toISOString(),
       }, { status: 400 })
     }
 
-    if (now > exam.endDate) {
+    if (now > endDate) {
       return NextResponse.json({ 
-        error: 'Bài thi đã đóng. Thời gian đóng: ' + exam.endDate.toLocaleString('vi-VN') 
+        error: `Bài thi đã đóng.\nThời gian hiện tại: ${formatDateTime(now)}\nThời gian đóng: ${formatDateTime(endDate)}`,
+        currentTime: now.toISOString(),
+        endTime: endDate.toISOString(),
       }, { status: 400 })
     }
 
