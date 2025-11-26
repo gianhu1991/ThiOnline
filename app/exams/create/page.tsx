@@ -41,6 +41,19 @@ export default function CreateExamPage() {
   const onSubmit = async (data: any) => {
     setSubmitting(true)
     try {
+      // datetime-local input trả về local time (không có timezone)
+      // Cần convert sang ISO string để gửi lên server
+      const convertToISO = (dateTimeString: string) => {
+        // Thêm seconds nếu chưa có
+        if (dateTimeString.length === 16) {
+          dateTimeString += ':00'
+        }
+        // Tạo Date object từ local time
+        const localDate = new Date(dateTimeString)
+        // Trả về ISO string (sẽ có timezone offset)
+        return localDate.toISOString()
+      }
+
       const res = await fetch('/api/exams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,8 +62,8 @@ export default function CreateExamPage() {
           description: data.description,
           questionCount: parseInt(data.questionCount),
           timeLimit: parseInt(data.timeLimit),
-          startDate: data.startDate,
-          endDate: data.endDate,
+          startDate: convertToISO(data.startDate),
+          endDate: convertToISO(data.endDate),
           shuffleQuestions: data.shuffleQuestions === 'true',
           shuffleAnswers: data.shuffleAnswers === 'true',
           maxAttempts: parseInt(data.maxAttempts) || 1,

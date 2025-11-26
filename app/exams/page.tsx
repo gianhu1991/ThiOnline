@@ -129,11 +129,25 @@ export default function ExamsPage() {
                       </div>
                       <div>
                         <span className="font-medium">Thời gian mở:</span>{' '}
-                        {format(new Date(exam.startDate), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                        {new Date(exam.startDate).toLocaleString('vi-VN', {
+                          timeZone: 'Asia/Ho_Chi_Minh',
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </div>
                       <div>
                         <span className="font-medium">Thời gian đóng:</span>{' '}
-                        {format(new Date(exam.endDate), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                        {new Date(exam.endDate).toLocaleString('vi-VN', {
+                          timeZone: 'Asia/Ho_Chi_Minh',
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </div>
                       <div>
                         <span className="font-medium">Số lần làm:</span> {exam.maxAttempts}

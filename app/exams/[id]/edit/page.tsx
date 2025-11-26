@@ -95,9 +95,25 @@ export default function EditExamPage() {
   const onSubmit = async (data: any) => {
     setSubmitting(true)
     try {
+      // datetime-local input trả về local time (không có timezone)
+      // Cần convert sang ISO string để gửi lên server
+      // Format: "2025-11-26T14:20" -> "2025-11-26T14:20:00" (local time)
+      const convertToISO = (dateTimeString: string) => {
+        // Thêm seconds nếu chưa có
+        if (dateTimeString.length === 16) {
+          dateTimeString += ':00'
+        }
+        // Tạo Date object từ local time
+        const localDate = new Date(dateTimeString)
+        // Trả về ISO string (sẽ có timezone offset)
+        return localDate.toISOString()
+      }
+
       // Validate dates
-      const startDate = new Date(data.startDate)
-      const endDate = new Date(data.endDate)
+      const startDateISO = convertToISO(data.startDate)
+      const endDateISO = convertToISO(data.endDate)
+      const startDate = new Date(startDateISO)
+      const endDate = new Date(endDateISO)
       
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         alert('Thời gian không hợp lệ. Vui lòng kiểm tra lại.')
@@ -119,8 +135,8 @@ export default function EditExamPage() {
           description: data.description,
           questionCount: parseInt(data.questionCount),
           timeLimit: parseInt(data.timeLimit),
-          startDate: data.startDate,
-          endDate: data.endDate,
+          startDate: startDateISO,
+          endDate: endDateISO,
           shuffleQuestions: data.shuffleQuestions === 'true',
           shuffleAnswers: data.shuffleAnswers === 'true',
           maxAttempts: parseInt(data.maxAttempts) || 1,

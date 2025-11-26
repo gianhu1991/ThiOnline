@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5)
     const selectedQuestions = shuffled.slice(0, questionCount)
 
+    // datetime-local input trả về local time (không có timezone)
+    // Cần convert sang UTC để lưu vào database
+    const parseLocalDateTime = (dateTimeString: string) => {
+      // Tạo Date object từ local time string
+      // "2025-11-26T14:20" -> được interpret như local time
+      return new Date(dateTimeString)
+    }
+
     // Tạo bài thi
     const exam = await prisma.exam.create({
       data: {
@@ -57,8 +65,8 @@ export async function POST(request: NextRequest) {
         description,
         questionCount,
         timeLimit,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseLocalDateTime(startDate),
+        endDate: parseLocalDateTime(endDate),
         shuffleQuestions: shuffleQuestions || false,
         shuffleAnswers: shuffleAnswers || false,
         maxAttempts: maxAttempts || 1,
