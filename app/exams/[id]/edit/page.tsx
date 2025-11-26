@@ -49,11 +49,22 @@ export default function EditExamPage() {
         setValue('description', data.description || '')
         setValue('questionCount', data.questionCount)
         setValue('timeLimit', data.timeLimit)
-        // Format dates for datetime-local input
+        // Format dates for datetime-local input (local time, not UTC)
         const startDate = new Date(data.startDate)
         const endDate = new Date(data.endDate)
-        setValue('startDate', startDate.toISOString().slice(0, 16))
-        setValue('endDate', endDate.toISOString().slice(0, 16))
+        
+        // Convert to local time for datetime-local input
+        const formatLocalDateTime = (date: Date) => {
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          const hours = String(date.getHours()).padStart(2, '0')
+          const minutes = String(date.getMinutes()).padStart(2, '0')
+          return `${year}-${month}-${day}T${hours}:${minutes}`
+        }
+        
+        setValue('startDate', formatLocalDateTime(startDate))
+        setValue('endDate', formatLocalDateTime(endDate))
         setValue('maxAttempts', data.maxAttempts)
         setValue('shuffleQuestions', data.shuffleQuestions ? 'true' : '')
         setValue('shuffleAnswers', data.shuffleAnswers ? 'true' : '')
@@ -84,6 +95,22 @@ export default function EditExamPage() {
   const onSubmit = async (data: any) => {
     setSubmitting(true)
     try {
+      // Validate dates
+      const startDate = new Date(data.startDate)
+      const endDate = new Date(data.endDate)
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        alert('Thời gian không hợp lệ. Vui lòng kiểm tra lại.')
+        setSubmitting(false)
+        return
+      }
+      
+      if (startDate >= endDate) {
+        alert('Thời gian mở phải nhỏ hơn thời gian đóng')
+        setSubmitting(false)
+        return
+      }
+
       const res = await fetch(`/api/exams/${examId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -104,11 +131,13 @@ export default function EditExamPage() {
       if (res.ok && result.success) {
         alert('Cập nhật bài thi thành công!')
         router.push('/exams')
+        router.refresh()
       } else {
         alert('Lỗi: ' + (result.error || 'Không thể cập nhật bài thi'))
       }
-    } catch (error) {
-      alert('Lỗi khi cập nhật bài thi')
+    } catch (error: any) {
+      console.error('Update exam error:', error)
+      alert('Lỗi khi cập nhật bài thi: ' + (error.message || 'Unknown error'))
     } finally {
       setSubmitting(false)
     }
