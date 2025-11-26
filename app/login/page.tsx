@@ -39,7 +39,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100" style={{ marginTop: 0, paddingTop: 0 }}>
       <div className="max-w-md w-full mx-4">
         <div className="card">
           <div className="text-center mb-8">
