@@ -109,7 +109,7 @@ export default function TakeExamPage() {
 
       const data = await res.json()
       if (data.success) {
-        router.push(`/exams/${examId}/result?score=${data.result.score}&correct=${data.result.correctAnswers}&total=${data.result.totalQuestions}`)
+        router.push(`/exams/${examId}/result?resultId=${data.result.id}`)
       } else {
         alert('Lỗi: ' + data.error)
       }

@@ -73,6 +73,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       result: {
+        id: result.id,
         score,
         totalQuestions,
         correctAnswers: correctCount,
