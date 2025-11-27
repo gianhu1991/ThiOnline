@@ -24,6 +24,7 @@ interface Exam {
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchExams()
@@ -31,6 +32,7 @@ export default function ExamsPage() {
 
   const fetchExams = async () => {
     try {
+      setError(null)
       const timestamp = Date.now()
       const random = Math.random()
       const res = await fetch(`/api/exams?t=${timestamp}&r=${random}`, {
@@ -41,12 +43,26 @@ export default function ExamsPage() {
           'Pragma': 'no-cache',
         },
       })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định' }))
+        throw new Error(errorData.error || `Lỗi ${res.status}: ${res.statusText}`)
+      }
+      
       const data = await res.json()
+      
       // Đảm bảo data là array
-      setExams(Array.isArray(data) ? data : [])
-    } catch (error) {
+      if (Array.isArray(data)) {
+        setExams(data)
+      } else {
+        console.error('API trả về dữ liệu không phải array:', data)
+        setExams([])
+        setError('Dữ liệu không hợp lệ từ server')
+      }
+    } catch (error: any) {
       console.error('Error fetching exams:', error)
       setExams([])
+      setError(error.message || 'Lỗi khi tải danh sách bài thi')
     } finally {
       setLoading(false)
     }
@@ -136,6 +152,16 @@ export default function ExamsPage() {
 
       {loading ? (
         <div className="text-center py-8">Đang tải...</div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 p-8 rounded-lg shadow-lg text-center">
+          <p className="text-red-600 font-semibold mb-2">Lỗi: {error}</p>
+          <button
+            onClick={fetchExams}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-4"
+          >
+            Thử lại
+          </button>
+        </div>
       ) : exams.length === 0 ? (
         <div className="bg-white p-8 rounded-lg shadow-lg text-center text-gray-500">
           Chưa có bài thi nào. Hãy tạo bài thi mới.
