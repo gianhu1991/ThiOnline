@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Category management
   const [categories, setCategories] = useState<Category[]>([])
@@ -26,8 +27,28 @@ export default function SettingsPage() {
   const [categorySuccess, setCategorySuccess] = useState('')
 
   useEffect(() => {
-    fetchCategories()
+    checkUserRole()
   }, [])
+
+  useEffect(() => {
+    if (userRole === 'admin') {
+      fetchCategories()
+    }
+  }, [userRole])
+
+  const checkUserRole = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.user?.role || null)
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -209,9 +230,10 @@ export default function SettingsPage() {
         </form>
         </div>
 
-        {/* Quản lý lĩnh vực */}
-        <div className="card">
-          <h2 className="text-2xl font-bold mb-6">Quản lý lĩnh vực</h2>
+        {/* Quản lý lĩnh vực - Chỉ dành cho admin */}
+        {userRole === 'admin' && (
+          <div className="card">
+            <h2 className="text-2xl font-bold mb-6">Quản lý lĩnh vực</h2>
 
           <form onSubmit={handleAddCategory} className="space-y-4 mb-6">
             <div>
@@ -278,7 +300,8 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

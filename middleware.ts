@@ -31,10 +31,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents và trang chủ
+  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents, trang chủ và settings
   if (user.role !== 'admin') {
-    // Cho phép truy cập /videos, /documents, và trang chủ (/)
-    if (pathname.startsWith('/videos') || pathname.startsWith('/documents') || pathname === '/') {
+    // Cho phép truy cập /videos, /documents, trang chủ (/) và settings
+    if (pathname.startsWith('/videos') || pathname.startsWith('/documents') || pathname === '/' || pathname === '/settings') {
       return NextResponse.next()
     }
     // Tất cả các trang khác redirect về /videos
@@ -43,11 +43,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Kiểm tra quyền admin cho các trang quản lý
+  // Kiểm tra quyền admin cho các trang quản lý (trừ /settings - cho phép cả user thường)
   if (pathname.startsWith('/questions') ||
       pathname.startsWith('/exams/create') ||
-      pathname.startsWith('/exams/') && pathname.includes('/edit') ||
-      pathname.startsWith('/settings')) {
+      pathname.startsWith('/exams/') && pathname.includes('/edit')) {
     if (user.role !== 'admin') {
       const url = request.nextUrl.clone()
       url.pathname = '/'

@@ -105,6 +105,9 @@ export default function Navigation() {
                   <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Tài liệu KT
                   </Link>
+                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                    Cài đặt
+                  </Link>
                 </>
               )}
               <button

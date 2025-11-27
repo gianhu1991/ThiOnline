@@ -34,6 +34,7 @@ export default function VideosPage() {
   })
   const [uploadType, setUploadType] = useState<'url' | 'file'>('url')
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -207,6 +208,8 @@ export default function VideosPage() {
       // Nếu upload từ file
       if (uploadType === 'file' && videoFile) {
         setUploadingFile(true)
+        
+        // Upload video file
         const uploadFormData = new FormData()
         uploadFormData.append('file', videoFile)
 
@@ -225,7 +228,32 @@ export default function VideosPage() {
         }
 
         videoUrl = uploadData.url
+
+        // Upload thumbnail nếu có
+        let thumbnailUrl = formData.thumbnail
+        if (thumbnailFile) {
+          const thumbnailFormData = new FormData()
+          thumbnailFormData.append('file', thumbnailFile)
+
+          const thumbnailRes = await fetch('/api/videos/upload-thumbnail', {
+            method: 'POST',
+            body: thumbnailFormData,
+          })
+
+          const thumbnailData = await thumbnailRes.json()
+
+          if (thumbnailRes.ok && thumbnailData.success) {
+            thumbnailUrl = thumbnailData.url
+          } else {
+            console.warn('Lỗi khi upload thumbnail:', thumbnailData.error)
+            // Không dừng quá trình, chỉ cảnh báo
+          }
+        }
+
         setUploadingFile(false)
+        
+        // Cập nhật formData với thumbnail URL
+        formData.thumbnail = thumbnailUrl
       }
 
       // Kiểm tra URL nếu chọn URL
@@ -266,6 +294,8 @@ export default function VideosPage() {
         })
         setUploadType('url')
         setVideoFile(null)
+        setThumbnailFile(null)
+        formData.thumbnail = ''
         fetchVideos()
       } else {
         setError(data.error || 'Lỗi khi lưu video')
@@ -463,12 +493,22 @@ export default function VideosPage() {
                 <input
                   type="url"
                   value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  onChange={(e) => {
+                    const url = e.target.value
+                    setFormData({ ...formData, url })
+                    // Tự động lấy thumbnail từ YouTube nếu là YouTube URL
+                    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                      const thumbnail = getYouTubeThumbnail(url)
+                      if (thumbnail && !formData.thumbnail) {
+                        setFormData({ ...formData, url, thumbnail })
+                      }
+                    }
+                  }}
                   className="input-field"
                   placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+                <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp. Thumbnail sẽ tự động lấy từ YouTube.</p>
               </div>
 
               <div>
@@ -478,8 +518,13 @@ export default function VideosPage() {
                   value={formData.thumbnail}
                   onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
                   className="input-field"
-                  placeholder="https://..."
+                  placeholder="https://... (Tự động lấy từ YouTube nếu để trống)"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.url && (formData.url.includes('youtube.com') || formData.url.includes('youtu.be')) 
+                    ? '✓ Thumbnail đã được tự động lấy từ YouTube' 
+                    : 'Nếu là video YouTube, thumbnail sẽ tự động lấy. Chỉ cần nhập nếu muốn dùng thumbnail khác.'}
+                </p>
               </div>
 
               <div>
@@ -602,12 +647,22 @@ export default function VideosPage() {
                     <input
                       type="url"
                       value={formData.url}
-                      onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                      onChange={(e) => {
+                        const url = e.target.value
+                        setFormData({ ...formData, url })
+                        // Tự động lấy thumbnail từ YouTube nếu là YouTube URL
+                        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                          const thumbnail = getYouTubeThumbnail(url)
+                          if (thumbnail && !formData.thumbnail) {
+                            setFormData({ ...formData, url, thumbnail })
+                          }
+                        }
+                      }}
                       className="input-field"
                       placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
                       required={uploadType === 'url'}
                     />
-                    <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+                    <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp. Thumbnail sẽ tự động lấy từ YouTube.</p>
                   </>
                 ) : (
                   <>
@@ -636,20 +691,65 @@ export default function VideosPage() {
                       </p>
                     )}
                     <p className="text-sm text-gray-500 mt-1">Hỗ trợ các định dạng video: MP4, AVI, MOV, MKV... (tối đa 100MB)</p>
+                    
+                    {/* Upload thumbnail cho video từ PC */}
+                    <div className="mt-4">
+                      <label className="block mb-2 font-semibold text-gray-700">Thumbnail (tùy chọn)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            // Kiểm tra kích thước (tối đa 5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              alert('File thumbnail quá lớn. Kích thước tối đa là 5MB')
+                              return
+                            }
+                            setThumbnailFile(file)
+                          }
+                        }}
+                        className="input-field"
+                      />
+                      {thumbnailFile && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">
+                            Đã chọn: {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(2)} KB)
+                          </p>
+                          {thumbnailFile && (
+                            <img 
+                              src={URL.createObjectURL(thumbnailFile)} 
+                              alt="Thumbnail preview" 
+                              className="mt-2 max-w-xs rounded border"
+                              style={{ maxHeight: '150px' }}
+                            />
+                          )}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">Hỗ trợ JPG, PNG, GIF, WebP (tối đa 5MB)</p>
+                    </div>
                   </>
                 )}
               </div>
 
-              <div>
-                <label className="block mb-2 font-semibold text-gray-700">Thumbnail URL (tùy chọn)</label>
-                <input
-                  type="url"
-                  value={formData.thumbnail}
-                  onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                  className="input-field"
-                  placeholder="https://..."
-                />
-              </div>
+              {/* Thumbnail URL chỉ hiển thị khi upload từ URL */}
+              {uploadType === 'url' && (
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">Thumbnail URL (tùy chọn)</label>
+                  <input
+                    type="url"
+                    value={formData.thumbnail}
+                    onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
+                    className="input-field"
+                    placeholder="https://... (Tự động lấy từ YouTube nếu để trống)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.url && (formData.url.includes('youtube.com') || formData.url.includes('youtu.be')) 
+                      ? '✓ Thumbnail đã được tự động lấy từ YouTube' 
+                      : 'Nếu là video YouTube, thumbnail sẽ tự động lấy. Chỉ cần nhập nếu muốn dùng thumbnail khác.'}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block mb-2 font-semibold text-gray-700">Mô tả</label>
