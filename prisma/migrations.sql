@@ -169,3 +169,28 @@ BEGIN
     END IF;
 END $$;
 
+-- Thêm cột isPublic vào bảng Exam (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'Exam' AND column_name = 'isPublic'
+    ) THEN
+        ALTER TABLE "Exam" ADD COLUMN "isPublic" BOOLEAN DEFAULT false;
+    END IF;
+END $$;
+
+-- Tạo bảng ExamAssignment
+CREATE TABLE IF NOT EXISTS "ExamAssignment" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "examId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("examId") REFERENCES "Exam"("id") ON DELETE CASCADE,
+    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
+    UNIQUE("examId", "userId")
+);
+
+CREATE INDEX IF NOT EXISTS "ExamAssignment_examId_idx" ON "ExamAssignment"("examId");
+CREATE INDEX IF NOT EXISTS "ExamAssignment_userId_idx" ON "ExamAssignment"("userId");
+

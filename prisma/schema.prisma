@@ -32,6 +32,7 @@ model Exam {
   startDate       DateTime // Thời gian mở bài thi
   endDate         DateTime // Thời gian đóng bài thi
   isActive        Boolean  @default(true) // Trạng thái bật/tắt thủ công
+  isPublic        Boolean  @default(false) // Công khai (tất cả user có thể làm) hoặc chỉ user được gán
   shuffleQuestions Boolean @default(false) // Trộn câu hỏi
   shuffleAnswers  Boolean @default(false)  // Trộn đáp án
   maxAttempts     Int      // Số lần làm bài tối đa
@@ -39,6 +40,7 @@ model Exam {
   updatedAt       DateTime @updatedAt
   examQuestions   ExamQuestion[]
   examResults     ExamResult[]
+  examAssignments ExamAssignment[]
 }
 
 model ExamQuestion {
@@ -79,6 +81,7 @@ model User {
   email     String?  // Email
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  examAssignments ExamAssignment[]
 }
 
 model Category {
@@ -115,4 +118,17 @@ model Document {
   uploadedBy  String?  // Username người upload
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ExamAssignment {
+  id        String   @id @default(cuid())
+  examId    String
+  userId    String
+  assignedAt DateTime @default(now())
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, userId])
+  @@index([examId])
+  @@index([userId])
 }

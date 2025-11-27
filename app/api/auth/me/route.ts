@@ -12,11 +12,12 @@ export async function GET(request: NextRequest) {
   // Lấy thông tin đầy đủ từ database
   const userFromDb = await prisma.user.findUnique({
     where: { username: user.username },
-    select: { username: true, role: true, fullName: true },
+    select: { id: true, username: true, role: true, fullName: true },
   })
 
   return NextResponse.json({ 
     user: { 
+      id: userFromDb?.id || user.userId,
       username: user.username,
       role: userFromDb?.role || user.role || 'user',
       fullName: userFromDb?.fullName || null,
