@@ -41,6 +41,11 @@ export default function VideosPage() {
     checkUserRole()
   }, [selectedCategory])
 
+  // Re-check user role when component mounts
+  useEffect(() => {
+    checkUserRole()
+  }, [])
+
   const checkUserRole = async () => {
     try {
       const res = await fetch('/api/auth/me', {
@@ -321,8 +326,9 @@ export default function VideosPage() {
                   </div>
                 </Link>
                 {userRole === 'admin' && (
-                  <div className="px-4 pb-4 pt-2 border-t border-gray-200 mt-auto">
+                  <div className="px-4 pb-4 pt-2 border-t border-gray-200">
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
