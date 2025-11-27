@@ -49,13 +49,9 @@ export default function Navigation() {
       <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold flex items-center gap-2 whitespace-nowrap">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span className="hidden md:inline">TTVT Nho Quan- Phần mềm đào tạo kỹ thuật</span>
-              <span className="md:hidden">TTVT Nho Quan</span>
-            </Link>
+            <div className="text-lg md:text-xl font-bold whitespace-nowrap">
+              Đang tải...
+            </div>
           </div>
         </div>
       </nav>
@@ -65,45 +61,48 @@ export default function Navigation() {
   return (
     <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl md:text-2xl font-bold flex items-center gap-2 whitespace-nowrap">
-              <svg className="w-6 h-6 md:w-8 md:h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>TTVT Nho Quan- Phần mềm đào tạo kỹ thuật</span>
-            </Link>
+        <div className="flex items-center justify-between gap-4">
+          {isAuthenticated && username ? (
+            <div className="text-lg md:text-xl font-bold whitespace-nowrap">
+              Xin chào {username}
+            </div>
+          ) : (
+            <div className="text-lg md:text-xl font-bold whitespace-nowrap">
+              TTVT Nho Quan
+            </div>
+          )}
           {isAuthenticated && (
-            <div className="hidden md:flex gap-6 items-center">
+            <div className="flex gap-2 md:gap-3 lg:gap-4 items-center overflow-x-auto">
               {userRole === 'admin' ? (
                 <>
-                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Trang chủ
                   </Link>
-                  <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Ngân hàng câu hỏi
                   </Link>
-                  <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Quản lý bài thi
                   </Link>
-                  <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Tạo bài thi
                   </Link>
-                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Video thực hành
                   </Link>
-                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Tài liệu KT
                   </Link>
-                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Cài đặt
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Video thực hành
                   </Link>
-                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium">
+                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Tài liệu KT
                   </Link>
                 </>
@@ -121,9 +120,9 @@ export default function Navigation() {
                     console.error('Logout error:', error)
                   }
                 }}
-                className="text-white hover:text-blue-200 transition-colors font-medium cursor-pointer"
+                className="text-white hover:text-blue-200 transition-colors font-medium cursor-pointer whitespace-nowrap text-sm md:text-base"
               >
-                Đăng xuất{username ? ` (${username})` : ''}
+                Đăng xuất
               </button>
             </div>
           )}
