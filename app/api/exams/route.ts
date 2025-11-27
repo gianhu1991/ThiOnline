@@ -11,7 +11,13 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(exams)
+    return NextResponse.json(exams, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error: any) {
     console.error('Error fetching exams:', error)
     // Nếu bảng chưa tồn tại, trả về mảng rỗng

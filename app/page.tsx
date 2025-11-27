@@ -45,10 +45,12 @@ export default function Home() {
     // Fetch stats với error handling tốt hơn
     const fetchStats = async () => {
       try {
+        // Thêm timestamp để tránh cache hoàn toàn
+        const timestamp = Date.now()
         const [questionsRes, examsRes, resultsRes] = await Promise.allSettled([
-          fetch('/api/questions', { cache: 'no-store' }),
-          fetch('/api/exams', { cache: 'no-store' }),
-          fetch('/api/results/count', { cache: 'no-store' }),
+          fetch(`/api/questions?t=${timestamp}`, { cache: 'no-store' }),
+          fetch(`/api/exams?t=${timestamp}`, { cache: 'no-store' }),
+          fetch(`/api/results/count?t=${timestamp}`, { cache: 'no-store' }),
         ])
 
         let questions = 0
