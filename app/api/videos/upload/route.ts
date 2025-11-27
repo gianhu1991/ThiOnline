@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         access: 'public',
         contentType: file.type,
         token: token, // Truyền token trực tiếp
+        addRandomSuffix: true, // Tự động thêm suffix ngẫu nhiên để tránh trùng tên
       })
 
       return NextResponse.json({ 
