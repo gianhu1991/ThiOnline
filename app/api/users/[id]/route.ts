@@ -29,10 +29,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Chỉ admin mới được xóa user' }, { status: 403 })
     }
 
-    // Kiểm tra xem có phải super admin không
-    const isUserSuperAdmin = await isSuperAdmin(user.userId)
-    
-    // Không cho phép xóa chính mình (kể cả super admin)
+    // Không cho phép xóa chính mình
     if (user.userId === params.id) {
       return NextResponse.json({ error: 'Bạn không thể xóa chính mình' }, { status: 400 })
     }
