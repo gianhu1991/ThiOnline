@@ -31,6 +31,7 @@ model Exam {
   timeLimit       Int      // Thời gian làm bài (phút)
   startDate       DateTime // Thời gian mở bài thi
   endDate         DateTime // Thời gian đóng bài thi
+  isActive        Boolean  @default(true) // Trạng thái bật/tắt thủ công
   shuffleQuestions Boolean @default(false) // Trộn câu hỏi
   shuffleAnswers  Boolean @default(false)  // Trộn đáp án
   maxAttempts     Int      // Số lần làm bài tối đa

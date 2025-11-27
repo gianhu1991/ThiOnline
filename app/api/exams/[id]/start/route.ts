@@ -21,6 +21,13 @@ export async function POST(
       return NextResponse.json({ error: 'Không tìm thấy bài thi' }, { status: 404 })
     }
 
+    // Kiểm tra trạng thái isActive (tắt/mở thủ công)
+    if (!exam.isActive) {
+      return NextResponse.json({ 
+        error: 'Bài thi đã bị tắt. Vui lòng liên hệ quản trị viên để mở lại.',
+      }, { status: 400 })
+    }
+
     // Kiểm tra thời gian mở bài thi
     const now = new Date()
     const startDate = new Date(exam.startDate)

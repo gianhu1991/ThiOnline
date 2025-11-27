@@ -158,3 +158,14 @@ CREATE TABLE IF NOT EXISTS "Document" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- Thêm cột isActive vào bảng Exam (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'Exam' AND column_name = 'isActive'
+    ) THEN
+        ALTER TABLE "Exam" ADD COLUMN "isActive" BOOLEAN DEFAULT true;
+    END IF;
+END $$;
+

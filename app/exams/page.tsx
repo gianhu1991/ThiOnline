@@ -13,6 +13,7 @@ interface Exam {
   timeLimit: number
   startDate: string
   endDate: string
+  isActive: boolean
   maxAttempts: number
   createdAt: string
   _count: {
@@ -70,6 +71,11 @@ export default function ExamsPage() {
   }
 
   const getStatus = (exam: Exam) => {
+    // Nếu bị tắt thủ công, hiển thị "Đã tắt"
+    if (!exam.isActive) {
+      return { text: 'Đã tắt', color: 'bg-gray-600' }
+    }
+    
     const now = new Date()
     const start = new Date(exam.startDate)
     const end = new Date(exam.endDate)
@@ -77,6 +83,28 @@ export default function ExamsPage() {
     if (now < start) return { text: 'Chưa mở', color: 'bg-gray-500' }
     if (now > end) return { text: 'Đã đóng', color: 'bg-red-500' }
     return { text: 'Đang mở', color: 'bg-green-500' }
+  }
+
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    if (!confirm(`Bạn có chắc muốn ${currentStatus ? 'tắt' : 'mở'} bài thi này?`)) return
+
+    try {
+      const res = await fetch(`/api/exams/${id}/toggle`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert(data.message)
+        fetchExams()
+      } else {
+        alert(data.error || 'Lỗi khi thay đổi trạng thái bài thi')
+      }
+    } catch (error) {
+      alert('Lỗi khi thay đổi trạng thái bài thi')
+    }
   }
 
   const getCurrentTime = () => {
@@ -167,6 +195,20 @@ export default function ExamsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 ml-4">
+                    <button
+                      onClick={() => handleToggleStatus(exam.id, exam.isActive)}
+                      className={`${exam.isActive ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2`}
+                      title={exam.isActive ? 'Tắt bài thi' : 'Mở bài thi'}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {exam.isActive ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        )}
+                      </svg>
+                      {exam.isActive ? 'Tắt' : 'Mở'}
+                    </button>
                     <Link
                       href={`/exams/${exam.id}/edit`}
                       className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-center flex items-center justify-center gap-2"
