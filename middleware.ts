@@ -31,13 +31,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos và documents
+  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents và trang chủ
   if (user.role !== 'admin') {
-    // Chỉ cho phép truy cập /videos, /documents và các trang con của chúng
-    if (pathname.startsWith('/videos') || pathname.startsWith('/documents')) {
+    // Cho phép truy cập /videos, /documents, và trang chủ (/)
+    if (pathname.startsWith('/videos') || pathname.startsWith('/documents') || pathname === '/') {
       return NextResponse.next()
     }
-    // Tất cả các trang khác (bao gồm trang chủ) redirect về /videos
+    // Tất cả các trang khác redirect về /videos
     const url = request.nextUrl.clone()
     url.pathname = '/videos'
     return NextResponse.redirect(url)

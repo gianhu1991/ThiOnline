@@ -8,6 +8,7 @@ export default function Home() {
   const router = useRouter()
   const [stats, setStats] = useState({ questions: 0, exams: 0, results: 0 })
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   useEffect(() => {
     // Kiểm tra authentication
@@ -22,14 +23,10 @@ export default function Home() {
           return
         }
         const data = await res.json()
-        const userRole = data.user?.role
+        const role = data.user?.role
+        setUserRole(role)
         
-        // Nếu là user thường, redirect về videos
-        if (userRole !== 'admin') {
-          router.push('/videos')
-          return
-        }
-        
+        // Cho phép cả admin và user thường xem trang chủ
         setCheckingAuth(false)
       } catch (error) {
         // Lỗi, redirect về login
@@ -155,9 +152,15 @@ export default function Home() {
           <p className="text-gray-600 mb-4">
             Import và quản lý câu hỏi từ file Excel hoặc PDF. Hỗ trợ câu hỏi chọn 1 hoặc nhiều đáp án.
           </p>
-          <Link href="/questions" className="btn-primary inline-block">
-            Quản lý câu hỏi
-          </Link>
+          {userRole === 'admin' ? (
+            <Link href="/questions" className="btn-primary inline-block">
+              Quản lý câu hỏi
+            </Link>
+          ) : (
+            <span className="btn-primary inline-block opacity-50 cursor-not-allowed">
+              Quản lý câu hỏi
+            </span>
+          )}
         </div>
 
         <div className="card hover:shadow-xl transition-shadow">
@@ -170,9 +173,15 @@ export default function Home() {
           <p className="text-gray-600 mb-4">
             Tạo bài thi với đầy đủ tùy chọn: thời gian, số câu hỏi, trộn câu hỏi/đáp án, số lần làm bài.
           </p>
-          <Link href="/exams/create" className="btn-primary inline-block">
-            Tạo bài thi mới
-          </Link>
+          {userRole === 'admin' ? (
+            <Link href="/exams/create" className="btn-primary inline-block">
+              Tạo bài thi mới
+            </Link>
+          ) : (
+            <span className="btn-primary inline-block opacity-50 cursor-not-allowed">
+              Tạo bài thi mới
+            </span>
+          )}
         </div>
 
         <div className="card hover:shadow-xl transition-shadow">
@@ -185,9 +194,15 @@ export default function Home() {
           <p className="text-gray-600 mb-4">
             Xem danh sách bài thi, quản lý thời gian mở/đóng, xem kết quả và thống kê.
           </p>
-          <Link href="/exams" className="btn-primary inline-block">
-            Xem bài thi
-          </Link>
+          {userRole === 'admin' ? (
+            <Link href="/exams" className="btn-primary inline-block">
+              Xem bài thi
+            </Link>
+          ) : (
+            <span className="btn-primary inline-block opacity-50 cursor-not-allowed">
+              Xem bài thi
+            </span>
+          )}
         </div>
       </div>
 
@@ -197,9 +212,15 @@ export default function Home() {
         <p className="text-blue-100 mb-6 text-lg">
           Tạo bài thi đầu tiên của bạn ngay bây giờ
         </p>
-        <Link href="/exams/create" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors inline-block">
-          Tạo bài thi ngay
-        </Link>
+        {userRole === 'admin' ? (
+          <Link href="/exams/create" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors inline-block">
+            Tạo bài thi ngay
+          </Link>
+        ) : (
+          <span className="bg-white bg-opacity-50 text-blue-600 px-8 py-3 rounded-lg font-bold cursor-not-allowed inline-block">
+            Tạo bài thi ngay
+          </span>
+        )}
       </div>
     </div>
   )
