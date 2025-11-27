@@ -52,6 +52,7 @@ export default function SettingsPage() {
     password: '',
     role: 'user',
   })
+  const [showEditPassword, setShowEditPassword] = useState(false)
 
   useEffect(() => {
     checkUserRole()
