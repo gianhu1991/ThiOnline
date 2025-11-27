@@ -321,9 +321,13 @@ export default function VideosPage() {
                   </div>
                 </Link>
                 {userRole === 'admin' && (
-                  <div className="px-4 pb-4 pt-2 border-t border-gray-200">
+                  <div className="px-4 pb-4 pt-2 border-t border-gray-200 mt-auto">
                     <button
-                      onClick={() => handleDelete(video.id)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDelete(video.id)
+                      }}
                       className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium flex items-center justify-center gap-2 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

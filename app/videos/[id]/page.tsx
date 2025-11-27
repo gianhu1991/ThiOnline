@@ -78,61 +78,120 @@ export default function VideoDetailPage() {
   const isYouTube = video.url.includes('youtube.com') || video.url.includes('youtu.be')
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link href="/videos" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
-        ← Quay lại danh sách video
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <Link href="/videos" className="text-blue-600 hover:text-blue-700 mb-6 inline-flex items-center gap-2 font-medium">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Quay lại danh sách video
       </Link>
 
-      <div className="card">
-        <h1 className="text-3xl font-bold mb-4">{video.title}</h1>
-        
-        {video.category && (
-          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm mb-4">
-            {video.category}
-          </span>
-        )}
-
-        <div className="mb-6">
-          {isYouTube ? (
-            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
-              <iframe
-                className="absolute top-0 left-0 w-full h-full"
-                src={embedUrl}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Video Player - Main Content */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {/* Video Player */}
+            <div className="bg-black">
+              {isYouTube ? (
+                <div className="relative pb-[56.25%] h-0 overflow-hidden">
+                  <iframe
+                    className="absolute top-0 left-0 w-full h-full"
+                    src={embedUrl}
+                    title={video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              ) : (
+                <video
+                  controls
+                  className="w-full"
+                  src={video.url}
+                  poster={video.thumbnail || undefined}
+                >
+                  Trình duyệt của bạn không hỗ trợ video.
+                </video>
+              )}
             </div>
-          ) : (
-            <video
-              controls
-              className="w-full rounded-lg"
-              src={video.url}
-            >
-              Trình duyệt của bạn không hỗ trợ video.
-            </video>
-          )}
+
+            {/* Video Info */}
+            <div className="p-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3">{video.title}</h1>
+              
+              {/* Stats Bar */}
+              <div className="flex items-center gap-6 text-sm text-gray-600 mb-4 pb-4 border-b">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-semibold">{video.viewCount.toLocaleString('vi-VN')} lượt xem</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>{new Date(video.createdAt).toLocaleDateString('vi-VN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</span>
+                </div>
+                {video.category && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    {video.category}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              {video.description && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h2 className="text-lg font-semibold mb-2 text-gray-900">Mô tả</h2>
+                  <p className="text-gray-700 whitespace-pre-line leading-relaxed">{video.description}</p>
+                </div>
+              )}
+
+              {/* Upload Info */}
+              {video.uploadedBy && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span><span className="font-medium">Người upload:</span> {video.uploadedBy}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {video.description && (
-          <div className="mb-6">
-            <h2 className="text-xl font-bold mb-2">Mô tả</h2>
-            <p className="text-gray-700 whitespace-pre-line">{video.description}</p>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-sm text-gray-600 border-t pt-4">
-          <div>
-            <span className="font-medium">Lượt xem:</span> {video.viewCount}
-          </div>
-          {video.uploadedBy && (
-            <div>
-              <span className="font-medium">Người upload:</span> {video.uploadedBy}
+        {/* Sidebar - Related Info */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4">
+            <h3 className="text-lg font-bold mb-4 text-gray-900">Thông tin video</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Lượt xem</div>
+                <div className="text-lg font-semibold text-gray-900">{video.viewCount.toLocaleString('vi-VN')}</div>
+              </div>
+              {video.category && (
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Danh mục</div>
+                  <div className="text-lg font-semibold text-gray-900">{video.category}</div>
+                </div>
+              )}
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Ngày đăng</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {new Date(video.createdAt).toLocaleDateString('vi-VN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              </div>
             </div>
-          )}
-          <div>
-            <span className="font-medium">Ngày đăng:</span>{' '}
-            {new Date(video.createdAt).toLocaleDateString('vi-VN')}
           </div>
         </div>
       </div>
