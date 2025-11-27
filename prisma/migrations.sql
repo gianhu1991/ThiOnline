@@ -142,3 +142,19 @@ CREATE TABLE IF NOT EXISTS "Video" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- Tạo bảng Document
+CREATE TABLE IF NOT EXISTS "Document" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "url" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "category" TEXT,
+    "isPublic" BOOLEAN DEFAULT true,
+    "downloadCount" INTEGER DEFAULT 0,
+    "uploadedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
+);
+

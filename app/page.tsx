@@ -46,9 +46,9 @@ export default function Home() {
     const fetchStats = async () => {
       try {
         const [questionsRes, examsRes, resultsRes] = await Promise.allSettled([
-          fetch('/api/questions'),
-          fetch('/api/exams'),
-          fetch('/api/results/count'),
+          fetch('/api/questions', { cache: 'no-store' }),
+          fetch('/api/exams', { cache: 'no-store' }),
+          fetch('/api/results/count', { cache: 'no-store' }),
         ])
 
         let questions = 0
@@ -90,6 +90,11 @@ export default function Home() {
     }
 
     fetchStats()
+    
+    // Auto-refresh stats mỗi 30 giây để cập nhật real-time
+    const interval = setInterval(fetchStats, 30000)
+    
+    return () => clearInterval(interval)
   }, [checkingAuth])
 
   // Hiển thị loading khi đang kiểm tra auth
