@@ -531,7 +531,7 @@ export default function QuestionsPage() {
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="border-2 border-red-600 text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors"
+              className="btn-primary"
             >
               Thêm câu hỏi
             </button>
@@ -809,6 +809,153 @@ export default function QuestionsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal thêm câu hỏi thủ công */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Thêm câu hỏi thủ công</h2>
+                <button
+                  onClick={() => {
+                    setShowAddForm(false)
+                    setNewContent('')
+                    setNewOptions(['A. ', 'B. '])
+                    setNewCorrectAnswers([])
+                    setNewType('single')
+                    setNewCategory('')
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">Nội dung câu hỏi *</label>
+                  <textarea
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    className="input-field"
+                    rows={3}
+                    placeholder="Nhập nội dung câu hỏi..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">Loại câu hỏi *</label>
+                  <select
+                    value={newType}
+                    onChange={(e) => {
+                      setNewType(e.target.value as 'single' | 'multiple')
+                      if (e.target.value === 'single' && newCorrectAnswers.length > 1) {
+                        setNewCorrectAnswers([newCorrectAnswers[0]])
+                      }
+                    }}
+                    className="input-field"
+                  >
+                    <option value="single">Chọn 1 đáp án</option>
+                    <option value="multiple">Chọn nhiều đáp án</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">Lĩnh vực</label>
+                  <select
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">-- Chọn lĩnh vực --</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="font-semibold text-gray-700">Đáp án *</label>
+                    <button
+                      type="button"
+                      onClick={handleAddNewOption}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      + Thêm đáp án
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {newOptions.map((opt, idx) => {
+                      const optionLabel = opt.charAt(0)
+                      const isCorrect = newCorrectAnswers.includes(optionLabel)
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type={newType === 'single' ? 'radio' : 'checkbox'}
+                            checked={isCorrect}
+                            onChange={() => handleToggleNewCorrectAnswer(optionLabel)}
+                            className="mt-1"
+                            name={newType === 'single' ? 'newCorrectAnswer' : undefined}
+                          />
+                          <input
+                            type="text"
+                            value={opt}
+                            onChange={(e) => handleUpdateNewOption(idx, e.target.value)}
+                            className="input-field flex-1"
+                            placeholder={`Đáp án ${optionLabel}`}
+                          />
+                          {newOptions.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveNewOption(idx)}
+                              className="text-red-600 hover:text-red-700 p-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {newOptions.length < 2 && (
+                    <p className="text-sm text-red-600 mt-1">Cần ít nhất 2 đáp án</p>
+                  )}
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    onClick={handleAddQuestion}
+                    disabled={addLoading || newOptions.length < 2 || newCorrectAnswers.length === 0 || !newContent.trim()}
+                    className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addLoading ? 'Đang thêm...' : 'Thêm câu hỏi'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddForm(false)
+                      setNewContent('')
+                      setNewOptions(['A. ', 'B. '])
+                      setNewCorrectAnswers([])
+                      setNewType('single')
+                      setNewCategory('')
+                    }}
+                    className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
