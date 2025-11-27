@@ -79,26 +79,26 @@ export async function POST(
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5)
     const selectedQuestions = shuffled.slice(0, exam.questionCount)
 
-    // Xóa các câu hỏi cũ của bài thi (nếu có) và lưu câu hỏi mới
+    // Lấy câu hỏi đã chọn
+    let questions = selectedQuestions
+    
+    // Trộn thứ tự câu hỏi nếu cần (trước khi lưu vào database)
+    if (exam.shuffleQuestions && questions.length > 0) {
+      questions = [...questions].sort(() => Math.random() - 0.5)
+    }
+
+    // Xóa các câu hỏi cũ của bài thi (nếu có) và lưu câu hỏi mới với thứ tự đã trộn
     await prisma.examQuestion.deleteMany({
       where: { examId: params.id },
     })
 
     await prisma.examQuestion.createMany({
-      data: selectedQuestions.map((q, index) => ({
+      data: questions.map((q, index) => ({
         examId: params.id,
         questionId: q.id,
-        order: index + 1,
+        order: index + 1, // Lưu thứ tự sau khi trộn (nếu có)
       })),
     })
-
-    // Lấy câu hỏi đã chọn
-    let questions = selectedQuestions
-    
-    // Trộn thứ tự câu hỏi nếu cần (đã trộn ở trên, nhưng có thể trộn lại)
-    if (exam.shuffleQuestions && questions.length > 0) {
-      questions = [...questions].sort(() => Math.random() - 0.5)
-    }
 
     // Trộn đáp án nếu cần
     if (exam.shuffleAnswers && questions.length > 0) {
