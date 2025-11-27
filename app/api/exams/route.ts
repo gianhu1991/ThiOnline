@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
         timeLimit,
         startDate: parseLocalDateTime(startDate),
         endDate: parseLocalDateTime(endDate),
+        isActive: true, // Mặc định là bật
+        isPublic: false, // Mặc định là không công khai (chỉ user được gán mới làm được)
         shuffleQuestions: shuffleQuestions || false,
         shuffleAnswers: shuffleAnswers || false,
         maxAttempts: maxAttempts || 1,
