@@ -276,6 +276,111 @@ export default function QuestionsPage() {
     }
   }
 
+  const handleAddQuestion = async () => {
+    if (!newContent.trim()) {
+      alert('Vui lòng nhập nội dung câu hỏi')
+      return
+    }
+
+    if (newOptions.length < 2) {
+      alert('Cần ít nhất 2 đáp án')
+      return
+    }
+
+    if (newCorrectAnswers.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 đáp án đúng')
+      return
+    }
+
+    setAddLoading(true)
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newContent,
+          options: newOptions,
+          correctAnswers: newCorrectAnswers,
+          type: newType,
+          category: newCategory || null,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert('Thêm câu hỏi thành công!')
+        setShowAddForm(false)
+        setNewContent('')
+        setNewOptions(['A. ', 'B. '])
+        setNewCorrectAnswers([])
+        setNewType('single')
+        setNewCategory('')
+        fetchQuestions()
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể thêm câu hỏi'))
+      }
+    } catch (error) {
+      alert('Lỗi khi thêm câu hỏi')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  const handleAddNewOption = () => {
+    const label = String.fromCharCode(65 + newOptions.length)
+    setNewOptions([...newOptions, `${label}. `])
+  }
+
+  const handleRemoveNewOption = (index: number) => {
+    const optionLabel = String.fromCharCode(65 + index)
+    const updatedOptions = newOptions.filter((_, i) => i !== index)
+    const updatedWithLabels = updatedOptions.map((opt, i) => {
+      const newLabel = String.fromCharCode(65 + i)
+      const text = opt.substring(opt.indexOf('.') + 1).trim()
+      return `${newLabel}. ${text}`
+    })
+    setNewOptions(updatedWithLabels)
+    setNewCorrectAnswers(newCorrectAnswers.filter(a => a !== optionLabel))
+    const updatedCorrectAnswers = newCorrectAnswers
+      .filter(a => a !== optionLabel)
+      .map(a => {
+        const oldIndex = a.charCodeAt(0) - 65
+        if (oldIndex > index) {
+          return String.fromCharCode(65 + oldIndex - 1)
+        }
+        return a
+      })
+    setNewCorrectAnswers(updatedCorrectAnswers)
+  }
+
+  const handleUpdateNewOption = (index: number, value: string) => {
+    const newOptionsList = [...newOptions]
+    const label = String.fromCharCode(65 + index)
+    if (value.startsWith(label + '.')) {
+      newOptionsList[index] = value
+    } else {
+      if (!value.match(/^[A-Z]\.\s/)) {
+        newOptionsList[index] = `${label}. ${value.replace(/^[A-Z]\.\s*/, '')}`
+      } else {
+        newOptionsList[index] = value
+      }
+    }
+    setNewOptions(newOptionsList)
+  }
+
+  const handleToggleNewCorrectAnswer = (optionLabel: string) => {
+    if (newType === 'single') {
+      setNewCorrectAnswers([optionLabel])
+    } else {
+      if (newCorrectAnswers.includes(optionLabel)) {
+        setNewCorrectAnswers(newCorrectAnswers.filter(a => a !== optionLabel))
+      } else {
+        setNewCorrectAnswers([...newCorrectAnswers, optionLabel])
+      }
+    }
+  }
+
   const handleSaveEdit = async () => {
     if (!editContent.trim()) {
       alert('Vui lòng nhập nội dung câu hỏi')
@@ -503,7 +608,7 @@ export default function QuestionsPage() {
                 <label className="font-semibold text-gray-700">Đáp án *</label>
                 <button
                   type="button"
-                  onClick={handleAddOption}
+                  onClick={handleAddNewOption}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
                   + Thêm đáp án
