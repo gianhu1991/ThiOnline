@@ -100,3 +100,18 @@ model Video {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String   // Tiêu đề tài liệu
+  description String?  // Mô tả tài liệu
+  url         String   // URL file PDF
+  fileName    String   // Tên file gốc
+  fileSize    Int      // Kích thước file (bytes)
+  category    String?  // Danh mục tài liệu
+  isPublic    Boolean  @default(true) // Công khai hay không
+  downloadCount Int    @default(0) // Số lượt tải
+  uploadedBy  String?  // Username người upload
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

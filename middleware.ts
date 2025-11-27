@@ -8,14 +8,12 @@ export async function middleware(request: NextRequest) {
   // Cho phép truy cập công khai:
   // - Trang login, register, init-admin, debug-db
   // - Trang làm bài thi (public link)
-  // - Trang chủ
   // - Tất cả API routes
   if (
     pathname === '/login' || 
     pathname === '/register' ||
     pathname === '/init-admin' || 
     pathname === '/debug-db' || 
-    pathname === '/' ||
     pathname.startsWith('/api/') ||
     pathname.match(/^\/exams\/[^/]+\/take$/) || // /exams/[id]/take
     pathname.match(/^\/exams\/[^/]+\/result$/) // /exams/[id]/result
@@ -23,13 +21,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Kiểm tra authentication cho các trang khác
+  // Kiểm tra authentication cho các trang khác (bao gồm trang chủ)
   const user = await getJWT(request)
 
   if (!user) {
     // Redirect về trang login nếu chưa đăng nhập
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos và documents
+  if (user.role !== 'admin') {
+    // Chỉ cho phép truy cập /videos, /documents và các trang con của chúng
+    if (pathname.startsWith('/videos') || pathname.startsWith('/documents')) {
+      return NextResponse.next()
+    }
+    // Tất cả các trang khác (bao gồm trang chủ) redirect về /videos
+    const url = request.nextUrl.clone()
+    url.pathname = '/videos'
     return NextResponse.redirect(url)
   }
 

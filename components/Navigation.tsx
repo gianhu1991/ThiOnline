@@ -74,27 +74,39 @@ export default function Navigation() {
             </Link>
           {isAuthenticated && (
             <div className="hidden md:flex gap-6 items-center">
-              <Link href="/" className="hover:text-blue-200 transition-colors font-medium">
-                Trang chủ
-              </Link>
-              <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium">
-                Ngân hàng câu hỏi
-              </Link>
-              <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium">
-                Quản lý bài thi
-              </Link>
-              {userRole === 'admin' && (
-                <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium">
-                  Tạo bài thi
-                </Link>
-              )}
-              <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
-                Video thực hành
-              </Link>
-              {userRole === 'admin' && (
-                <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
-                  Cài đặt
-                </Link>
+              {userRole === 'admin' ? (
+                <>
+                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium">
+                    Trang chủ
+                  </Link>
+                  <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium">
+                    Ngân hàng câu hỏi
+                  </Link>
+                  <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium">
+                    Quản lý bài thi
+                  </Link>
+                  <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium">
+                    Tạo bài thi
+                  </Link>
+                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
+                    Video thực hành
+                  </Link>
+                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium">
+                    Tài liệu KT
+                  </Link>
+                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium">
+                    Cài đặt
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium">
+                    Video thực hành
+                  </Link>
+                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium">
+                    Tài liệu KT
+                  </Link>
+                </>
               )}
               <button
                 onClick={async () => {
