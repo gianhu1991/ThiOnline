@@ -75,13 +75,23 @@ export default function TakeExamPage() {
     }
   }
 
-  const handleAnswerChange = (questionId: string, option: string, checked: boolean) => {
+  const handleAnswerChange = (questionId: string, option: string, checked: boolean, isMultiple: boolean) => {
     setAnswers((prev) => {
-      const current = prev[questionId] || []
-      if (checked) {
-        return { ...prev, [questionId]: [...current, option] }
+      if (isMultiple) {
+        // Câu hỏi multiple: thêm/xóa đáp án
+        const current = prev[questionId] || []
+        if (checked) {
+          return { ...prev, [questionId]: [...current, option] }
+        } else {
+          return { ...prev, [questionId]: current.filter((a) => a !== option) }
+        }
       } else {
-        return { ...prev, [questionId]: current.filter((a) => a !== option) }
+        // Câu hỏi single: chỉ cho phép chọn 1 đáp án
+        if (checked) {
+          return { ...prev, [questionId]: [option] }
+        } else {
+          return { ...prev, [questionId]: [] }
+        }
       }
     })
   }
@@ -210,7 +220,7 @@ export default function TakeExamPage() {
                         value={optionLabel}
                         checked={isChecked}
                         onChange={(e) =>
-                          handleAnswerChange(q.id, optionLabel, e.target.checked)
+                          handleAnswerChange(q.id, optionLabel, e.target.checked, isMultiple)
                         }
                         className="mt-1 mr-3"
                       />
