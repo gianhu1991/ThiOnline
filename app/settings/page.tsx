@@ -33,10 +33,10 @@ export default function SettingsPage() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-3xl font-bold mb-8">Cài đặt</h1>
 
-      <div className="flex flex-col md:flex-row gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Menu bên trái */}
         <div className="w-full md:w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-8">
             <div className="bg-blue-600 text-white px-4 py-3 font-semibold">
               Chức năng
             </div>

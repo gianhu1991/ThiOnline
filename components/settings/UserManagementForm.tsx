@@ -95,7 +95,26 @@ export default function UserManagementForm() {
     }
   }
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = async (user: User) => {
+    // Clear errors trước
+    setUserError('')
+    setUserSuccess('')
+    
+    // Kiểm tra lại super admin status
+    if (currentUserId) {
+      try {
+        const superAdminRes = await fetch('/api/users/check-super-admin', {
+          credentials: 'include',
+        })
+        if (superAdminRes.ok) {
+          const superAdminData = await superAdminRes.json()
+          setIsSuperAdmin(superAdminData.isSuperAdmin || false)
+        }
+      } catch (error) {
+        console.error('Error checking super admin:', error)
+      }
+    }
+    
     setEditingUser(user)
     setEditFormData({
       username: user.username,
@@ -104,8 +123,6 @@ export default function UserManagementForm() {
       password: '',
       role: user.role,
     })
-    setUserError('')
-    setUserSuccess('')
   }
 
   const handleUpdateUser = async (e: React.FormEvent) => {
@@ -163,7 +180,7 @@ export default function UserManagementForm() {
   }
 
   return (
-    <div className="card mt-6">
+    <div className="card">
       <h2 className="text-2xl font-bold mb-6">Quản lý người dùng</h2>
 
       {userError && (
@@ -253,7 +270,10 @@ export default function UserManagementForm() {
             <label className="block mb-2 font-semibold text-gray-700 text-sm">Vai trò</label>
             <select
               value={editFormData.role}
-              onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+              onChange={(e) => {
+                setEditFormData({ ...editFormData, role: e.target.value })
+                setUserError('') // Clear error when changing role
+              }}
               className="input-field"
               disabled={userLoading || (!isSuperAdmin && editingUser && editingUser.id === currentUserId)}
             >
