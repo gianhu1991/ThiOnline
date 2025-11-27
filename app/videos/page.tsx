@@ -22,6 +22,8 @@ export default function VideosPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -115,6 +117,22 @@ export default function VideosPage() {
     return null
   }
 
+  const handleEdit = (video: Video) => {
+    setEditingVideo(video)
+    setFormData({
+      title: video.title,
+      description: video.description || '',
+      url: video.url,
+      thumbnail: video.thumbnail || '',
+      category: video.category || '',
+      isPublic: true, // Default, will be updated from video data if needed
+    })
+    setUploadType('url') // Default to URL when editing
+    setVideoFile(null)
+    setError('')
+    setShowEditModal(true)
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Bạn có chắc muốn xóa video này?')) return
 
@@ -133,6 +151,48 @@ export default function VideosPage() {
       }
     } catch (error) {
       alert('Lỗi khi xóa video')
+    }
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingVideo) return
+
+    setError('')
+    setSubmitting(true)
+
+    try {
+      const res = await fetch(`/api/videos/${editingVideo.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert('Cập nhật video thành công!')
+        setShowEditModal(false)
+        setEditingVideo(null)
+        setFormData({
+          title: '',
+          description: '',
+          url: '',
+          thumbnail: '',
+          category: '',
+          isPublic: true,
+        })
+        fetchVideos()
+      } else {
+        setError(data.error || 'Lỗi khi cập nhật video')
+      }
+    } catch (error) {
+      setError('Lỗi khi cập nhật video')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -342,9 +402,23 @@ export default function VideosPage() {
                   </div>
                 </Link>
 
-                {/* Delete Button - Only for admin */}
+                {/* Edit and Delete Buttons - Only for admin */}
                 {userRole === 'admin' && (
-                  <div className="mt-2 px-1">
+                  <div className="mt-2 px-1 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleEdit(video)
+                      }}
+                      className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Sửa
+                    </button>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -352,7 +426,7 @@ export default function VideosPage() {
                         e.stopPropagation()
                         handleDelete(video.id)
                       }}
-                      className="w-full bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -364,6 +438,118 @@ export default function VideosPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Edit Video Modal */}
+      {showEditModal && userRole === 'admin' && editingVideo && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Sửa video</h2>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Tiêu đề *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">URL Video *</label>
+                <input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  className="input-field"
+                  placeholder="https://www.youtube.com/watch?v=... hoặc link video trực tiếp"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-1">Hỗ trợ YouTube, Vimeo hoặc link video trực tiếp</p>
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Thumbnail URL (tùy chọn)</label>
+                <input
+                  type="url"
+                  value={formData.thumbnail}
+                  onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
+                  className="input-field"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Mô tả</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="input-field"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Danh mục</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="input-field"
+                  placeholder="Ví dụ: Hướng dẫn, Thực hành, Lý thuyết..."
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="editIsPublic"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor="editIsPublic" className="font-medium">Công khai (mọi người có thể xem)</label>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingVideo(null)
+                    setFormData({
+                      title: '',
+                      description: '',
+                      url: '',
+                      thumbnail: '',
+                      category: '',
+                      isPublic: true,
+                    })
+                    setError('')
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Đang lưu...' : 'Cập nhật video'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
