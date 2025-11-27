@@ -90,17 +90,20 @@ export default function VideoDetailPage() {
         {/* Video Player - Main Content */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            {/* Video Player */}
-            <div className="bg-black">
+            {/* Video Player - Giới hạn kích thước tối đa */}
+            <div className="bg-black max-w-full" style={{ maxHeight: '70vh' }}>
               {isYouTube ? (
-                <div className="relative pb-[56.25%] h-0 overflow-hidden">
-                  <iframe
-                    className="absolute top-0 left-0 w-full h-full"
-                    src={embedUrl}
-                    title={video.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  ></iframe>
+                <div className="relative" style={{ paddingBottom: '56.25%', maxHeight: '70vh' }}>
+                  <div className="absolute inset-0">
+                    <iframe
+                      className="w-full h-full"
+                      src={embedUrl}
+                      title={video.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ maxHeight: '70vh' }}
+                    ></iframe>
+                  </div>
                 </div>
               ) : (
                 <video
@@ -108,6 +111,7 @@ export default function VideoDetailPage() {
                   className="w-full"
                   src={video.url}
                   poster={video.thumbnail || undefined}
+                  style={{ maxHeight: '70vh', objectFit: 'contain' }}
                 >
                   Trình duyệt của bạn không hỗ trợ video.
                 </video>
