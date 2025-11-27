@@ -12,7 +12,13 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(questions)
+    return NextResponse.json(questions, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error: any) {
     console.error('Error fetching questions:', error)
     // Nếu bảng chưa tồn tại, trả về mảng rỗng

@@ -42,12 +42,21 @@ export default function Home() {
     // Fetch stats với error handling tốt hơn
     const fetchStats = async () => {
       try {
-        // Thêm timestamp để tránh cache hoàn toàn
+        // Thêm timestamp và random để tránh cache hoàn toàn
         const timestamp = Date.now()
+        const random = Math.random()
+        const fetchOptions: RequestInit = {
+          cache: 'no-store',
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        }
         const [questionsRes, examsRes, resultsRes] = await Promise.allSettled([
-          fetch(`/api/questions?t=${timestamp}`, { cache: 'no-store' }),
-          fetch(`/api/exams?t=${timestamp}`, { cache: 'no-store' }),
-          fetch(`/api/results/count?t=${timestamp}`, { cache: 'no-store' }),
+          fetch(`/api/questions?t=${timestamp}&r=${random}`, fetchOptions),
+          fetch(`/api/exams?t=${timestamp}&r=${random}`, fetchOptions),
+          fetch(`/api/results/count?t=${timestamp}&r=${random}`, fetchOptions),
         ])
 
         let questions = 0
@@ -81,6 +90,7 @@ export default function Home() {
         }
 
         setStats({ questions, exams, results })
+        console.log('Stats updated:', { questions, exams, results, timestamp: new Date().toISOString() })
       } catch (error) {
         // Ignore errors, keep default stats
         console.error('Error fetching stats:', error)
@@ -90,8 +100,8 @@ export default function Home() {
 
     fetchStats()
     
-    // Auto-refresh stats mỗi 30 giây để cập nhật real-time
-    const interval = setInterval(fetchStats, 30000)
+    // Auto-refresh stats mỗi 10 giây để cập nhật real-time (giảm từ 30s xuống 10s)
+    const interval = setInterval(fetchStats, 10000)
     
     return () => clearInterval(interval)
   }, [checkingAuth])
