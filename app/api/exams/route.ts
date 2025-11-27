@@ -7,6 +7,12 @@ export const revalidate = 0
 
 export async function GET() {
   try {
+    console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
+    
+    // Kiểm tra kết nối database
+    const examCount = await prisma.exam.count()
+    console.log('[GET /api/exams] Tổng số bài thi trong database:', examCount)
+    
     const exams = await prisma.exam.findMany({
       include: {
         _count: {
@@ -15,6 +21,10 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' },
     })
+    
+    console.log('[GET /api/exams] Số bài thi trả về:', exams.length)
+    console.log('[GET /api/exams] Danh sách bài thi:', exams.map(e => ({ id: e.id, title: e.title })))
+    
     return NextResponse.json(exams, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -23,12 +33,17 @@ export async function GET() {
       },
     })
   } catch (error: any) {
-    console.error('Error fetching exams:', error)
+    console.error('[GET /api/exams] Lỗi khi lấy danh sách bài thi:', error)
+    console.error('[GET /api/exams] Error message:', error.message)
+    console.error('[GET /api/exams] Error code:', error.code)
+    console.error('[GET /api/exams] Error stack:', error.stack)
+    
     // Nếu bảng chưa tồn tại, trả về mảng rỗng
     if (error.message?.includes('does not exist') || error.code === 'P2021') {
+      console.log('[GET /api/exams] Bảng Exam chưa tồn tại, trả về mảng rỗng')
       return NextResponse.json([])
     }
-    return NextResponse.json({ error: 'Lỗi khi lấy danh sách bài thi' }, { status: 500 })
+    return NextResponse.json({ error: 'Lỗi khi lấy danh sách bài thi: ' + error.message }, { status: 500 })
   }
 }
 
