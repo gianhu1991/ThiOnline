@@ -21,10 +21,36 @@ interface Exam {
   }
 }
 
+interface User {
+  id: string
+  username: string
+  fullName: string | null
+  email: string | null
+  role: string
+}
+
+interface Assignment {
+  id: string
+  userId: string
+  username: string
+  fullName: string | null
+  email: string | null
+  assignedAt: string
+}
+
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // State cho modal gán bài thi
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
     fetchExams()
@@ -135,6 +161,130 @@ export default function ExamsPage() {
     })
   }
 
+  // Mở modal gán bài thi
+  const handleOpenAssignModal = async (examId: string) => {
+    setSelectedExamId(examId)
+    setShowAssignModal(true)
+    setSelectedUserIds([])
+    setLoadingUsers(true)
+    
+    try {
+      // Lấy danh sách tất cả users
+      const usersRes = await fetch('/api/users', {
+        credentials: 'include',
+      })
+      const usersData = await usersRes.json()
+      if (usersData.success && usersData.users) {
+        setUsers(usersData.users)
+      }
+      
+      // Lấy danh sách users đã được gán
+      const assignRes = await fetch(`/api/exams/${examId}/assign`, {
+        credentials: 'include',
+      })
+      const assignData = await assignRes.json()
+      if (assignData.success && assignData.assignments) {
+        setAssignments(assignData.assignments)
+      }
+    } catch (error) {
+      console.error('Error loading users/assignments:', error)
+      alert('Lỗi khi tải danh sách người dùng')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  // Đóng modal
+  const handleCloseAssignModal = () => {
+    setShowAssignModal(false)
+    setSelectedExamId(null)
+    setSelectedUserIds([])
+    setAssignments([])
+  }
+
+  // Toggle chọn user
+  const handleToggleUser = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    )
+  }
+
+  // Gán bài thi cho users đã chọn
+  const handleAssign = async () => {
+    if (!selectedExamId || selectedUserIds.length === 0) {
+      alert('Vui lòng chọn ít nhất một người dùng')
+      return
+    }
+
+    setAssigning(true)
+    try {
+      const res = await fetch(`/api/exams/${selectedExamId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userIds: selectedUserIds }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert(data.message)
+        // Reload danh sách assignments
+        const assignRes = await fetch(`/api/exams/${selectedExamId}/assign`, {
+          credentials: 'include',
+        })
+        const assignData = await assignRes.json()
+        if (assignData.success && assignData.assignments) {
+          setAssignments(assignData.assignments)
+        }
+        setSelectedUserIds([])
+      } else {
+        alert(data.error || 'Lỗi khi gán bài thi')
+      }
+    } catch (error) {
+      console.error('Error assigning exam:', error)
+      alert('Lỗi khi gán bài thi')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // Hủy gán bài thi
+  const handleUnassign = async (userId: string) => {
+    if (!selectedExamId) return
+    if (!confirm('Bạn có chắc muốn hủy gán bài thi cho người dùng này?')) return
+
+    try {
+      const res = await fetch(`/api/exams/${selectedExamId}/assign?userId=${userId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert(data.message)
+        // Reload danh sách assignments
+        const assignRes = await fetch(`/api/exams/${selectedExamId}/assign`, {
+          credentials: 'include',
+        })
+        const assignData = await assignRes.json()
+        if (assignData.success && assignData.assignments) {
+          setAssignments(assignData.assignments)
+        }
+      } else {
+        alert(data.error || 'Lỗi khi hủy gán bài thi')
+      }
+    } catch (error) {
+      console.error('Error unassigning exam:', error)
+      alert('Lỗi khi hủy gán bài thi')
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -235,6 +385,16 @@ export default function ExamsPage() {
                       </svg>
                       {exam.isActive ? 'Tắt' : 'Mở'}
                     </button>
+                    <button
+                      onClick={() => handleOpenAssignModal(exam.id)}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-center flex items-center justify-center gap-2"
+                      title="Gán bài thi cho người dùng"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      Gán BT
+                    </button>
                     <Link
                       href={`/exams/${exam.id}/edit`}
                       className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-center flex items-center justify-center gap-2"
@@ -292,6 +452,135 @@ export default function ExamsPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal Gán Bài Thi */}
+      {showAssignModal && selectedExamId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Gán bài thi cho người dùng</h2>
+                <button
+                  onClick={handleCloseAssignModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {loadingUsers ? (
+                <div className="text-center py-8">Đang tải...</div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Danh sách người dùng đã được gán */}
+                  {assignments.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Người dùng đã được gán:</h3>
+                      <div className="space-y-2">
+                        {assignments.map((assignment) => (
+                          <div
+                            key={assignment.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded border"
+                          >
+                            <div>
+                              <div className="font-medium">
+                                {assignment.fullName || assignment.username}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {assignment.username} {assignment.email && `• ${assignment.email}`}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                Gán lúc: {new Date(assignment.assignedAt).toLocaleString('vi-VN')}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleUnassign(assignment.userId)}
+                              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
+                            >
+                              Hủy gán
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danh sách tất cả người dùng để chọn */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Chọn người dùng để gán:</h3>
+                    <div className="max-h-64 overflow-y-auto border rounded p-3">
+                      {users.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">Không có người dùng nào</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {users.map((user) => {
+                            const isAssigned = assignments.some(a => a.userId === user.id)
+                            const isSelected = selectedUserIds.includes(user.id)
+                            
+                            return (
+                              <label
+                                key={user.id}
+                                className={`flex items-center p-2 rounded cursor-pointer ${
+                                  isAssigned 
+                                    ? 'bg-gray-100 opacity-60 cursor-not-allowed' 
+                                    : isSelected 
+                                    ? 'bg-blue-50' 
+                                    : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleUser(user.id)}
+                                  disabled={isAssigned}
+                                  className="mr-3"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {user.fullName || user.username}
+                                    {isAssigned && <span className="text-green-600 ml-2">(Đã gán)</span>}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {user.username} {user.email && `• ${user.email}`}
+                                    {user.role === 'admin' && <span className="ml-2 text-blue-600">(Admin)</span>}
+                                  </div>
+                                </div>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Nút hành động */}
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <button
+                      onClick={handleCloseAssignModal}
+                      className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    >
+                      Đóng
+                    </button>
+                    <button
+                      onClick={handleAssign}
+                      disabled={selectedUserIds.length === 0 || assigning}
+                      className={`px-4 py-2 rounded text-white ${
+                        selectedUserIds.length === 0 || assigning
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-indigo-600 hover:bg-indigo-700'
+                      }`}
+                    >
+                      {assigning ? 'Đang gán...' : `Gán cho ${selectedUserIds.length} người dùng`}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
