@@ -37,6 +37,13 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/videos') || pathname.startsWith('/documents') || pathname === '/' || pathname === '/settings') {
       return NextResponse.next()
     }
+    // Tất cả các trang khác redirect về /videos (trừ /exams - chỉ admin mới được)
+    if (pathname.startsWith('/exams')) {
+      // Nếu user thường cố truy cập /exams, redirect về /videos
+      const url = request.nextUrl.clone()
+      url.pathname = '/videos'
+      return NextResponse.redirect(url)
+    }
     // Tất cả các trang khác redirect về /videos
     const url = request.nextUrl.clone()
     url.pathname = '/videos'

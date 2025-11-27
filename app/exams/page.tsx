@@ -30,7 +30,16 @@ export default function ExamsPage() {
 
   const fetchExams = async () => {
     try {
-      const res = await fetch('/api/exams')
+      const timestamp = Date.now()
+      const random = Math.random()
+      const res = await fetch(`/api/exams?t=${timestamp}&r=${random}`, {
+        cache: 'no-store',
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      })
       const data = await res.json()
       // Đảm bảo data là array
       setExams(Array.isArray(data) ? data : [])

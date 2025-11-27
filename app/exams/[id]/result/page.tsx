@@ -132,7 +132,14 @@ export default function ExamResultPage() {
     return (
       <div className="max-w-2xl mx-auto text-center py-8">
         <p className="text-red-600">Không tìm thấy kết quả</p>
-        <Link href="/exams" className="text-blue-600 hover:underline mt-4 inline-block">
+        <Link 
+          href="/exams" 
+          className="text-blue-600 hover:underline mt-4 inline-block"
+          onClick={(e) => {
+            e.preventDefault()
+            window.location.href = '/exams'
+          }}
+        >
           Về danh sách bài thi
         </Link>
       </div>
@@ -301,6 +308,11 @@ export default function ExamResultPage() {
           <Link
             href="/exams"
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+            onClick={(e) => {
+              // Đảm bảo navigation đúng bằng cách force reload nếu cần
+              e.preventDefault()
+              window.location.href = '/exams'
+            }}
           >
             Về danh sách bài thi
           </Link>
