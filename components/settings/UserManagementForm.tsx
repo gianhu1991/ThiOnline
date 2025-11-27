@@ -26,6 +26,7 @@ export default function UserManagementForm() {
   })
   const [showEditPassword, setShowEditPassword] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     fetchUsers()
@@ -40,6 +41,17 @@ export default function UserManagementForm() {
       if (res.ok) {
         const data = await res.json()
         setCurrentUserId(data.user?.id || null)
+        
+        // Kiểm tra xem có phải super admin không
+        if (data.user?.id) {
+          const superAdminRes = await fetch('/api/users/check-super-admin', {
+            credentials: 'include',
+          })
+          if (superAdminRes.ok) {
+            const superAdminData = await superAdminRes.json()
+            setIsSuperAdmin(superAdminData.isSuperAdmin || false)
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching current user:', error)
@@ -243,11 +255,17 @@ export default function UserManagementForm() {
               value={editFormData.role}
               onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
               className="input-field"
-              disabled={userLoading || (editingUser && editingUser.id === currentUserId)}
+              disabled={userLoading || (!isSuperAdmin && editingUser && editingUser.id === currentUserId)}
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
+            {!isSuperAdmin && editingUser && editingUser.id === currentUserId && (
+              <p className="text-xs text-gray-500 mt-1">Bạn không thể tự hạ cấp mình</p>
+            )}
+            {isSuperAdmin && (
+              <p className="text-xs text-blue-600 mt-1">Super Admin: Bạn có thể thay đổi role của tất cả người dùng</p>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -325,9 +343,9 @@ export default function UserManagementForm() {
                   </button>
                   <button
                     onClick={() => handleDeleteUser(user.id, user.username)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                    title="Xóa user"
-                    disabled={user.role === 'admin'}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={user.role === 'admin' && !isSuperAdmin ? 'Không thể xóa admin khác' : 'Xóa user'}
+                    disabled={user.role === 'admin' && !isSuperAdmin}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

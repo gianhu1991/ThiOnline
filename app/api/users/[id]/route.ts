@@ -3,6 +3,20 @@ import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import { hashPassword } from '@/lib/auth'
 
+// Kiểm tra xem user có phải là super admin không (user đầu tiên được tạo)
+async function isSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    const firstUser = await prisma.user.findFirst({
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    })
+    return firstUser?.id === userId
+  } catch (error) {
+    console.error('Error checking super admin:', error)
+    return false
+  }
+}
+
 // Xóa user
 export async function DELETE(
   request: NextRequest,
@@ -15,7 +29,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Chỉ admin mới được xóa user' }, { status: 403 })
     }
 
-    // Không cho phép xóa chính mình
+    // Kiểm tra xem có phải super admin không
+    const isUserSuperAdmin = await isSuperAdmin(user.userId)
+    
+    // Không cho phép xóa chính mình (kể cả super admin)
     if (user.userId === params.id) {
       return NextResponse.json({ error: 'Bạn không thể xóa chính mình' }, { status: 400 })
     }
@@ -29,8 +46,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Không tìm thấy user' }, { status: 404 })
     }
 
-    // Không cho phép xóa admin khác
-    if (userToDelete.role === 'admin') {
+    // Kiểm tra xem có phải super admin không
+    const isUserSuperAdmin = await isSuperAdmin(user.userId)
+    
+    // Chỉ super admin mới có thể xóa admin khác
+    if (userToDelete.role === 'admin' && !isUserSuperAdmin) {
       return NextResponse.json({ error: 'Không thể xóa tài khoản admin khác' }, { status: 400 })
     }
 
@@ -69,13 +89,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Không tìm thấy user' }, { status: 404 })
     }
 
-    // Không cho phép thay đổi role của admin khác
-    if (userToUpdate.role === 'admin' && role !== 'admin' && user.userId !== params.id) {
+    // Kiểm tra xem có phải super admin không
+    const isUserSuperAdmin = await isSuperAdmin(user.userId)
+    
+    // Chỉ super admin mới có thể thay đổi role của admin khác
+    if (userToUpdate.role === 'admin' && role !== 'admin' && user.userId !== params.id && !isUserSuperAdmin) {
       return NextResponse.json({ error: 'Không thể thay đổi role của admin khác' }, { status: 400 })
     }
 
-    // Không cho phép tự hạ cấp mình
-    if (user.userId === params.id && role !== 'admin') {
+    // Chỉ super admin mới có thể tự hạ cấp mình (hoặc không cho phép tự hạ cấp)
+    if (user.userId === params.id && role !== 'admin' && !isUserSuperAdmin) {
       return NextResponse.json({ error: 'Bạn không thể tự hạ cấp mình' }, { status: 400 })
     }
 
@@ -100,9 +123,12 @@ export async function PUT(
       }
       updateData.password = await hashPassword(password)
     }
-    if (role && user.userId !== params.id) {
-      // Chỉ cho phép thay đổi role của user khác
-      updateData.role = role
+    if (role) {
+      // Super admin có thể thay đổi role của bất kỳ ai, kể cả chính mình
+      // Admin thường chỉ có thể thay đổi role của user khác
+      if (isUserSuperAdmin || user.userId !== params.id) {
+        updateData.role = role
+      }
     }
 
     const updatedUser = await prisma.user.update({
