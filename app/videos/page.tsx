@@ -50,13 +50,19 @@ export default function VideosPage() {
     try {
       const res = await fetch('/api/auth/me', {
         credentials: 'include',
+        cache: 'no-store',
       })
       if (res.ok) {
         const data = await res.json()
-        setUserRole(data.user?.role || null)
+        const role = data.user?.role || null
+        setUserRole(role)
+        console.log('User role:', role) // Debug
+      } else {
+        setUserRole(null)
       }
     } catch (error) {
       console.error('Error checking user role:', error)
+      setUserRole(null)
     }
   }
 
@@ -325,8 +331,8 @@ export default function VideosPage() {
                     </div>
                   </div>
                 </Link>
-                {userRole === 'admin' && (
-                  <div className="px-4 pb-4 pt-2 border-t border-gray-200">
+                <div className="px-4 pb-4 pt-2 border-t border-gray-200">
+                  {userRole === 'admin' ? (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -341,8 +347,12 @@ export default function VideosPage() {
                       </svg>
                       Xóa video
                     </button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-xs text-gray-400 text-center py-2">
+                      Chỉ admin mới có thể xóa video
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}
