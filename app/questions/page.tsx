@@ -510,159 +510,33 @@ export default function QuestionsPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={uploading || !file}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Đang import...
-              </span>
-            ) : (
-              'Import câu hỏi'
-            )}
-          </button>
-        </form>
-      </div>
-
-      {/* Form thêm câu hỏi thủ công */}
-      <div className="card mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold">Thêm câu hỏi thủ công</h2>
-          </div>
-          <button
-            onClick={() => {
-              setShowAddForm(!showAddForm)
-              if (showAddForm) {
-                setNewContent('')
-                setNewOptions(['A. ', 'B. '])
-                setNewCorrectAnswers([])
-                setNewType('single')
-                setNewCategory('')
-              }
-            }}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            {showAddForm ? 'Ẩn form' : 'Hiển thị form'}
-          </button>
-        </div>
-
-        {showAddForm && (
-          <div className="space-y-6">
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">Nội dung câu hỏi *</label>
-              <textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                className="input-field"
-                rows={3}
-                placeholder="Nhập nội dung câu hỏi..."
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">Loại câu hỏi *</label>
-              <select
-                value={newType}
-                onChange={(e) => {
-                  setNewType(e.target.value as 'single' | 'multiple')
-                  if (e.target.value === 'single' && newCorrectAnswers.length > 1) {
-                    setNewCorrectAnswers([newCorrectAnswers[0]])
-                  }
-                }}
-                className="input-field"
-              >
-                <option value="single">Chọn 1 đáp án</option>
-                <option value="multiple">Chọn nhiều đáp án</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">Lĩnh vực</label>
-              <select
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                className="input-field"
-              >
-                <option value="">-- Chọn lĩnh vực --</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="font-semibold text-gray-700">Đáp án *</label>
-                <button
-                  type="button"
-                  onClick={handleAddNewOption}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  + Thêm đáp án
-                </button>
-              </div>
-              <div className="space-y-2">
-                {newOptions.map((opt, idx) => {
-                  const optionLabel = opt.charAt(0)
-                  const isCorrect = newCorrectAnswers.includes(optionLabel)
-                  return (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input
-                        type={newType === 'single' ? 'radio' : 'checkbox'}
-                        checked={isCorrect}
-                        onChange={() => handleToggleNewCorrectAnswer(optionLabel)}
-                        className="mt-1"
-                        name={newType === 'single' ? 'newCorrectAnswer' : undefined}
-                      />
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={(e) => handleUpdateNewOption(idx, e.target.value)}
-                        className="input-field flex-1"
-                        placeholder={`Đáp án ${optionLabel}`}
-                      />
-                      {newOptions.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewOption(idx)}
-                          className="text-red-600 hover:text-red-700 p-2"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              {newOptions.length < 2 && (
-                <p className="text-sm text-red-600 mt-1">Cần ít nhất 2 đáp án</p>
-              )}
-            </div>
-
+          <div className="flex gap-4">
             <button
-              onClick={handleAddQuestion}
-              disabled={addLoading || newOptions.length < 2 || newCorrectAnswers.length === 0 || !newContent.trim()}
+              type="submit"
+              disabled={uploading || !file}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {addLoading ? 'Đang thêm...' : 'Thêm câu hỏi'}
+              {uploading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang import...
+                </span>
+              ) : (
+                'Import câu hỏi'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="border-2 border-red-600 text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors"
+            >
+              Thêm câu hỏi
             </button>
           </div>
-        )}
+        </form>
       </div>
 
       {/* Danh sách câu hỏi */}
