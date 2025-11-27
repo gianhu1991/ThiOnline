@@ -67,6 +67,40 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { content, options, correctAnswers, type, category } = body
+
+    if (!content || !options || !correctAnswers || !type) {
+      return NextResponse.json({ error: 'Thiếu thông tin cần thiết' }, { status: 400 })
+    }
+
+    if (!Array.isArray(options) || options.length < 2) {
+      return NextResponse.json({ error: 'Cần ít nhất 2 đáp án' }, { status: 400 })
+    }
+
+    if (!Array.isArray(correctAnswers) || correctAnswers.length === 0) {
+      return NextResponse.json({ error: 'Cần ít nhất 1 đáp án đúng' }, { status: 400 })
+    }
+
+    const question = await prisma.question.create({
+      data: {
+        content,
+        options: JSON.stringify(options),
+        correctAnswers: JSON.stringify(correctAnswers),
+        type,
+        category: category || null,
+      },
+    })
+
+    return NextResponse.json({ success: true, question })
+  } catch (error: any) {
+    console.error('Error creating question:', error)
+    return NextResponse.json({ error: 'Lỗi khi tạo câu hỏi: ' + (error.message || 'Unknown error') }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
