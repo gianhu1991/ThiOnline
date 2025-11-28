@@ -99,6 +99,12 @@ export default function Navigation() {
                 </>
               ) : (
                 <>
+                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                    Trang chủ
+                  </Link>
+                  <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                    Bài thi của tôi
+                  </Link>
                   <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Video thực hành
                   </Link>

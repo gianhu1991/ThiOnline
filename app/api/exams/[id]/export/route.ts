@@ -79,15 +79,14 @@ export async function GET(
     // Tạo buffer từ workbook
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
 
-    // Tạo tên file với tên bài thi và ngày xuất
-    const fileName = `${exam.title}_${format(new Date(), 'dd-MM-yyyy_HH-mm', { locale: vi })}.xlsx`
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+    // Tạo tên file đơn giản: ketqua_ngày xuất
+    const fileName = `ketqua_${format(new Date(), 'dd-MM-yyyy', { locale: vi })}.xlsx`
 
     // Trả về file Excel
     return new NextResponse(excelBuffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(safeFileName)}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
       },
     })
   } catch (error: any) {

@@ -31,17 +31,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents, trang chủ và settings
+  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents, trang chủ, settings và my-exams
   if (user.role !== 'admin') {
-    // Cho phép truy cập /videos, /documents, trang chủ (/) và settings
-    if (pathname.startsWith('/videos') || pathname.startsWith('/documents') || pathname === '/' || pathname === '/settings') {
+    // Cho phép truy cập /videos, /documents, trang chủ (/), settings và my-exams
+    if (
+      pathname.startsWith('/videos') || 
+      pathname.startsWith('/documents') || 
+      pathname === '/' || 
+      pathname === '/settings' ||
+      pathname === '/my-exams' ||
+      pathname.match(/^\/exams\/[^/]+\/take$/) || // Cho phép làm bài thi
+      pathname.match(/^\/exams\/[^/]+\/result$/) || // Cho phép xem kết quả
+      pathname.match(/^\/exams\/[^/]+\/results$/) // Cho phép xem danh sách kết quả
+    ) {
       return NextResponse.next()
     }
     // Tất cả các trang khác redirect về /videos (trừ /exams - chỉ admin mới được)
     if (pathname.startsWith('/exams')) {
-      // Nếu user thường cố truy cập /exams, redirect về /videos
+      // Nếu user thường cố truy cập /exams (quản lý), redirect về /my-exams
       const url = request.nextUrl.clone()
-      url.pathname = '/videos'
+      url.pathname = '/my-exams'
       return NextResponse.redirect(url)
     }
     // Tất cả các trang khác redirect về /videos

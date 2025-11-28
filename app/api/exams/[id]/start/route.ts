@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getJWT } from '@/lib/jwt'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getJWT(request)
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+
     const exam = await prisma.exam.findUnique({
       where: { id: params.id },
       include: {
@@ -26,6 +33,29 @@ export async function POST(
       return NextResponse.json({ 
         error: 'Bài thi đã bị tắt. Vui lòng liên hệ quản trị viên để mở lại.',
       }, { status: 400 })
+    }
+
+    // Kiểm tra quyền truy cập bài thi
+    // Nếu là admin, cho phép làm tất cả bài thi
+    // Nếu là user thường, chỉ cho phép làm bài thi public hoặc bài thi được gán
+    if (user.role !== 'admin') {
+      if (!exam.isPublic) {
+        // Kiểm tra xem user có được gán bài thi này không
+        const assignment = await prisma.examAssignment.findUnique({
+          where: {
+            examId_userId: {
+              examId: params.id,
+              userId: user.userId,
+            },
+          },
+        })
+
+        if (!assignment) {
+          return NextResponse.json({ 
+            error: 'Bạn chưa được gán bài thi này. Vui lòng liên hệ quản trị viên.',
+          }, { status: 403 })
+        }
+      }
     }
 
     // Kiểm tra thời gian mở bài thi
@@ -62,9 +92,23 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Đếm số lần đã làm
+    // Đếm số lần đã làm của user hiện tại
+    // Lấy studentId từ user (có thể là username hoặc id)
+    const userInfo = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { username: true, fullName: true },
+    })
+
     const attemptCount = await prisma.examResult.count({
-      where: { examId: params.id },
+      where: { 
+        examId: params.id,
+        // Đếm theo studentId hoặc studentName
+        OR: [
+          { studentId: user.userId },
+          { studentId: userInfo?.username || '' },
+          { studentName: userInfo?.fullName || '' },
+        ],
+      },
     })
 
     if (attemptCount >= exam.maxAttempts) {
