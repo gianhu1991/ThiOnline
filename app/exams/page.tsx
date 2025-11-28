@@ -602,7 +602,37 @@ export default function ExamsPage() {
 
                   {/* Danh sách tất cả người dùng để chọn */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Chọn người dùng để gán:</h3>
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-lg font-semibold">Chọn người dùng để gán:</h3>
+                      {selectedUsers.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                            Số lần làm bài cho tất cả:
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={selectedUsers.length > 0 && selectedUsers.every(u => u.maxAttempts === selectedUsers[0].maxAttempts) ? (selectedUsers[0].maxAttempts || examMaxAttempts) : ''}
+                            onChange={(e) => {
+                              const value = e.target.value ? parseInt(e.target.value) : null
+                              // Áp dụng cho tất cả user đã chọn
+                              setSelectedUsers(prev => prev.map(u => ({ ...u, maxAttempts: value || examMaxAttempts })))
+                            }}
+                            className="border rounded px-3 py-1 w-24 text-sm"
+                            placeholder={`Mặc định: ${examMaxAttempts}`}
+                          />
+                          <button
+                            onClick={() => {
+                              // Áp dụng số lần làm bài mặc định cho tất cả
+                              setSelectedUsers(prev => prev.map(u => ({ ...u, maxAttempts: examMaxAttempts })))
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Dùng mặc định
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <div className="max-h-64 overflow-y-auto border rounded p-3">
                       {users.length === 0 ? (
                         <p className="text-gray-500 text-center py-4">Không có người dùng nào</p>
