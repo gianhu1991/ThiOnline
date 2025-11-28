@@ -206,3 +206,14 @@ BEGIN
     END IF;
 END $$;
 
+-- Thêm cột questionIds vào bảng ExamResult (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'ExamResult' AND column_name = 'questionIds'
+    ) THEN
+        ALTER TABLE "ExamResult" ADD COLUMN "questionIds" TEXT;
+    END IF;
+END $$;
+

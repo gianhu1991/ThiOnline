@@ -166,7 +166,7 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Mỗi lần làm bài thi, lấy câu hỏi ngẫu nhiên mới từ ngân hàng
+    // Lấy tất cả câu hỏi từ ngân hàng (có thể lọc theo category nếu exam có categories)
     const allQuestions = await prisma.question.findMany()
     
     if (allQuestions.length < exam.questionCount) {
@@ -175,9 +175,84 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Trộn và chọn ngẫu nhiên câu hỏi mới
-    const shuffled = [...allQuestions].sort(() => Math.random() - 0.5)
-    const selectedQuestions = shuffled.slice(0, exam.questionCount)
+    // Lấy danh sách câu hỏi đã làm trong các lần thi trước
+    let previousQuestionIds: string[] = []
+    let questionUsageCount: { [questionId: string]: number } = {}
+    
+    // Xác định studentId để lấy lịch sử câu hỏi (chỉ khi user đã đăng nhập)
+    // Nếu không đăng nhập, không thể lấy lịch sử, nhưng vẫn chọn câu hỏi ngẫu nhiên
+    if (user) {
+      // Lấy userInfo để tìm thêm username/fullName
+      const userInfo = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { username: true, fullName: true },
+      })
+
+      // Lấy tất cả kết quả thi trước đó của user này
+      const previousResults = await prisma.examResult.findMany({
+        where: {
+          examId: params.id,
+          OR: [
+            { studentId: user.userId },
+            { studentId: userInfo?.username || '' },
+            { studentName: userInfo?.fullName || '' },
+          ],
+        },
+        select: {
+          questionIds: true,
+        },
+      })
+
+      // Thu thập tất cả questionIds đã làm và đếm số lần mỗi câu hỏi đã được làm
+      previousResults.forEach(result => {
+        if (result.questionIds) {
+          try {
+            const questionIds = JSON.parse(result.questionIds) as string[]
+            questionIds.forEach(qId => {
+              previousQuestionIds.push(qId)
+              questionUsageCount[qId] = (questionUsageCount[qId] || 0) + 1
+            })
+          } catch (e) {
+            // Nếu không parse được, bỏ qua
+          }
+        }
+      })
+    }
+
+    // Phân loại câu hỏi: chưa làm và đã làm
+    const unusedQuestions = allQuestions.filter(q => !previousQuestionIds.includes(q.id))
+    const usedQuestions = allQuestions.filter(q => previousQuestionIds.includes(q.id))
+
+    // Sắp xếp câu hỏi đã làm theo số lần đã làm (ít nhất trước)
+    usedQuestions.sort((a, b) => {
+      const countA = questionUsageCount[a.id] || 0
+      const countB = questionUsageCount[b.id] || 0
+      return countA - countB
+    })
+
+    // Chọn câu hỏi: ưu tiên chưa làm, sau đó là đã làm ít nhất
+    let selectedQuestions: typeof allQuestions = []
+    
+    // Ưu tiên chọn câu hỏi chưa làm
+    const unusedShuffled = [...unusedQuestions].sort(() => Math.random() - 0.5)
+    selectedQuestions = unusedShuffled.slice(0, exam.questionCount)
+    
+    // Nếu không đủ, bổ sung từ câu hỏi đã làm ít nhất
+    if (selectedQuestions.length < exam.questionCount) {
+      const needed = exam.questionCount - selectedQuestions.length
+      const additionalQuestions = usedQuestions.slice(0, needed)
+      selectedQuestions = [...selectedQuestions, ...additionalQuestions]
+    }
+    
+    // Nếu vẫn không đủ (trường hợp hiếm), trộn lại và chọn ngẫu nhiên
+    if (selectedQuestions.length < exam.questionCount) {
+      const remaining = exam.questionCount - selectedQuestions.length
+      const allShuffled = [...allQuestions].sort(() => Math.random() - 0.5)
+      const additional = allShuffled
+        .filter(q => !selectedQuestions.some(sq => sq.id === q.id))
+        .slice(0, remaining)
+      selectedQuestions = [...selectedQuestions, ...additional]
+    }
 
     // Lấy câu hỏi đã chọn
     let questions = selectedQuestions

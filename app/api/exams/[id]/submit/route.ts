@@ -73,9 +73,11 @@ export async function POST(
     // Tính điểm
     let correctCount = 0
     const totalQuestions = exam.examQuestions.length
+    const questionIds: string[] = [] // Lưu danh sách câu hỏi đã làm
 
     for (const eq of exam.examQuestions) {
       const question = eq.question
+      questionIds.push(question.id) // Lưu ID câu hỏi
       const userAnswers = answers[question.id] || []
       const correctAnswers = JSON.parse(question.correctAnswers)
 
@@ -100,6 +102,7 @@ export async function POST(
         totalQuestions,
         correctAnswers: correctCount,
         answers: JSON.stringify(answers),
+        questionIds: JSON.stringify(questionIds), // Lưu danh sách câu hỏi đã làm
         timeSpent,
         attemptNumber: attemptCount + 1,
       },
