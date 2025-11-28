@@ -14,6 +14,7 @@ interface Exam {
   startDate: string
   endDate: string
   isActive: boolean
+  isPublic: boolean
   maxAttempts: number
   createdAt: string
   _count: {

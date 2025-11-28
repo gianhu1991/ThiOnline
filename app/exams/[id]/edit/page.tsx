@@ -14,6 +14,7 @@ interface Exam {
   endDate: string
   shuffleQuestions: boolean
   shuffleAnswers: boolean
+  isPublic: boolean
   maxAttempts: number
 }
 
