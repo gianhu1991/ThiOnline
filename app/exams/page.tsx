@@ -35,7 +35,13 @@ interface Assignment {
   username: string
   fullName: string | null
   email: string | null
+  maxAttempts: number | null
   assignedAt: string
+}
+
+interface SelectedUser {
+  userId: string
+  maxAttempts: number | null
 }
 
 export default function ExamsPage() {
@@ -48,9 +54,10 @@ export default function ExamsPage() {
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [examMaxAttempts, setExamMaxAttempts] = useState<number>(1)
 
   useEffect(() => {
     fetchExams()
@@ -165,10 +172,19 @@ export default function ExamsPage() {
   const handleOpenAssignModal = async (examId: string) => {
     setSelectedExamId(examId)
     setShowAssignModal(true)
-    setSelectedUserIds([])
+    setSelectedUsers([])
     setLoadingUsers(true)
     
     try {
+      // Lấy thông tin bài thi để lấy maxAttempts mặc định
+      const examRes = await fetch(`/api/exams/${examId}`, {
+        credentials: 'include',
+      })
+      const examData = await examRes.json()
+      if (examData && examData.maxAttempts) {
+        setExamMaxAttempts(examData.maxAttempts)
+      }
+      
       // Lấy danh sách tất cả users
       const usersRes = await fetch('/api/users', {
         credentials: 'include',
@@ -198,22 +214,34 @@ export default function ExamsPage() {
   const handleCloseAssignModal = () => {
     setShowAssignModal(false)
     setSelectedExamId(null)
-    setSelectedUserIds([])
+    setSelectedUsers([])
     setAssignments([])
   }
 
   // Toggle chọn user
   const handleToggleUser = (userId: string) => {
-    setSelectedUserIds(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
+    setSelectedUsers(prev => {
+      const exists = prev.find(u => u.userId === userId)
+      if (exists) {
+        return prev.filter(u => u.userId !== userId)
+      } else {
+        return [...prev, { userId, maxAttempts: examMaxAttempts }]
+      }
+    })
+  }
+
+  // Cập nhật maxAttempts cho user đã chọn
+  const handleUpdateMaxAttempts = (userId: string, maxAttempts: number | null) => {
+    setSelectedUsers(prev =>
+      prev.map(u =>
+        u.userId === userId ? { ...u, maxAttempts: maxAttempts ? parseInt(String(maxAttempts)) : null } : u
+      )
     )
   }
 
   // Gán bài thi cho users đã chọn
   const handleAssign = async () => {
-    if (!selectedExamId || selectedUserIds.length === 0) {
+    if (!selectedExamId || selectedUsers.length === 0) {
       alert('Vui lòng chọn ít nhất một người dùng')
       return
     }
@@ -226,7 +254,12 @@ export default function ExamsPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ userIds: selectedUserIds }),
+        body: JSON.stringify({ 
+          assignments: selectedUsers.map(u => ({
+            userId: u.userId,
+            maxAttempts: u.maxAttempts,
+          }))
+        }),
       })
 
       const data = await res.json()
@@ -241,7 +274,7 @@ export default function ExamsPage() {
         if (assignData.success && assignData.assignments) {
           setAssignments(assignData.assignments)
         }
-        setSelectedUserIds([])
+        setSelectedUsers([])
       } else {
         // Hiển thị lỗi chi tiết hơn
         const errorMsg = data.error || data.message || 'Lỗi khi gán bài thi'
@@ -549,6 +582,9 @@ export default function ExamsPage() {
                                 {assignment.username} {assignment.email && `• ${assignment.email}`}
                               </div>
                               <div className="text-xs text-gray-400">
+                                Số lần làm bài: {assignment.maxAttempts || examMaxAttempts} (mặc định: {examMaxAttempts})
+                              </div>
+                              <div className="text-xs text-gray-400">
                                 Gán lúc: {new Date(assignment.assignedAt).toLocaleString('vi-VN')}
                               </div>
                             </div>
@@ -574,37 +610,61 @@ export default function ExamsPage() {
                         <div className="space-y-2">
                           {users.map((user) => {
                             const isAssigned = assignments.some(a => a.userId === user.id)
-                            const isSelected = selectedUserIds.includes(user.id)
+                            const selectedUser = selectedUsers.find(u => u.userId === user.id)
+                            const isSelected = !!selectedUser
                             
                             return (
-                              <label
+                              <div
                                 key={user.id}
-                                className={`flex items-center p-2 rounded cursor-pointer ${
+                                className={`p-3 rounded border ${
                                   isAssigned 
-                                    ? 'bg-gray-100 opacity-60 cursor-not-allowed' 
+                                    ? 'bg-gray-100 opacity-60' 
                                     : isSelected 
-                                    ? 'bg-blue-50' 
-                                    : 'hover:bg-gray-50'
+                                    ? 'bg-blue-50 border-blue-300' 
+                                    : 'hover:bg-gray-50 border-gray-200'
                                 }`}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => handleToggleUser(user.id)}
-                                  disabled={isAssigned}
-                                  className="mr-3"
-                                />
-                                <div className="flex-1">
-                                  <div className="font-medium">
-                                    {user.fullName || user.username}
-                                    {isAssigned && <span className="text-green-600 ml-2">(Đã gán)</span>}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {user.username} {user.email && `• ${user.email}`}
-                                    {user.role === 'admin' && <span className="ml-2 text-blue-600">(Admin)</span>}
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleToggleUser(user.id)}
+                                    disabled={isAssigned}
+                                    className="mr-3"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium">
+                                      {user.fullName || user.username}
+                                      {isAssigned && <span className="text-green-600 ml-2">(Đã gán)</span>}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {user.username} {user.email && `• ${user.email}`}
+                                      {user.role === 'admin' && <span className="ml-2 text-blue-600">(Admin)</span>}
+                                    </div>
                                   </div>
                                 </div>
-                              </label>
+                                {isSelected && !isAssigned && (
+                                  <div className="mt-3 ml-6 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                      Số lần làm bài:
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={selectedUser?.maxAttempts || examMaxAttempts}
+                                      onChange={(e) => {
+                                        const value = e.target.value
+                                        handleUpdateMaxAttempts(user.id, value ? parseInt(value) : null)
+                                      }}
+                                      className="border rounded px-3 py-1 w-24 text-sm"
+                                      placeholder={`Mặc định: ${examMaxAttempts}`}
+                                    />
+                                    <span className="text-xs text-gray-500">
+                                      (Để trống = dùng mặc định: {examMaxAttempts})
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             )
                           })}
                         </div>
@@ -622,14 +682,14 @@ export default function ExamsPage() {
                     </button>
                     <button
                       onClick={handleAssign}
-                      disabled={selectedUserIds.length === 0 || assigning}
+                      disabled={selectedUsers.length === 0 || assigning}
                       className={`px-4 py-2 rounded text-white ${
-                        selectedUserIds.length === 0 || assigning
+                        selectedUsers.length === 0 || assigning
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-indigo-600 hover:bg-indigo-700'
                       }`}
                     >
-                      {assigning ? 'Đang gán...' : `Gán cho ${selectedUserIds.length} người dùng`}
+                      {assigning ? 'Đang gán...' : `Gán cho ${selectedUsers.length} người dùng`}
                     </button>
                   </div>
                 </div>

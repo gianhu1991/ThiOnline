@@ -35,13 +35,16 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Kiểm tra quyền truy cập bài thi
+    // Kiểm tra quyền truy cập bài thi và lấy maxAttempts từ assignment
+    let maxAttempts = exam.maxAttempts // Mặc định dùng maxAttempts của exam
+    let assignment = null
+    
     // Nếu là admin, cho phép làm tất cả bài thi
     // Nếu là user thường, chỉ cho phép làm bài thi public hoặc bài thi được gán
     if (user.role !== 'admin') {
       if (!exam.isPublic) {
         // Kiểm tra xem user có được gán bài thi này không
-        const assignment = await prisma.examAssignment.findUnique({
+        assignment = await prisma.examAssignment.findUnique({
           where: {
             examId_userId: {
               examId: params.id,
@@ -55,6 +58,39 @@ export async function POST(
             error: 'Bạn chưa được gán bài thi này. Vui lòng liên hệ quản trị viên.',
           }, { status: 403 })
         }
+        
+        // Nếu assignment có maxAttempts riêng, dùng nó
+        if (assignment.maxAttempts !== null) {
+          maxAttempts = assignment.maxAttempts
+        }
+      } else {
+        // Nếu bài thi là public, vẫn kiểm tra xem có assignment không để lấy maxAttempts
+        assignment = await prisma.examAssignment.findUnique({
+          where: {
+            examId_userId: {
+              examId: params.id,
+              userId: user.userId,
+            },
+          },
+        })
+        
+        if (assignment && assignment.maxAttempts !== null) {
+          maxAttempts = assignment.maxAttempts
+        }
+      }
+    } else {
+      // Admin cũng có thể có assignment với maxAttempts riêng
+      assignment = await prisma.examAssignment.findUnique({
+        where: {
+          examId_userId: {
+            examId: params.id,
+            userId: user.userId,
+          },
+        },
+      })
+      
+      if (assignment && assignment.maxAttempts !== null) {
+        maxAttempts = assignment.maxAttempts
       }
     }
 
@@ -111,9 +147,9 @@ export async function POST(
       },
     })
 
-    if (attemptCount >= exam.maxAttempts) {
+    if (attemptCount >= maxAttempts) {
       return NextResponse.json({ 
-        error: `Bạn đã làm bài thi này ${attemptCount} lần (tối đa ${exam.maxAttempts} lần)` 
+        error: `Bạn đã làm bài thi này ${attemptCount} lần (tối đa ${maxAttempts} lần)` 
       }, { status: 400 })
     }
 

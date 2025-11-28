@@ -22,12 +22,15 @@ export async function POST(
       return NextResponse.json({ error: 'Lỗi khi đọc dữ liệu yêu cầu' }, { status: 400 })
     }
 
-    const { userIds } = body // Array of user IDs
-    console.log('Received userIds:', userIds)
+    // Nhận array các object { userId, maxAttempts }
+    const { assignments: assignmentData } = body // Array of { userId, maxAttempts? }
+    console.log('Received assignments:', assignmentData)
 
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+    if (!assignmentData || !Array.isArray(assignmentData) || assignmentData.length === 0) {
       return NextResponse.json({ error: 'Vui lòng chọn ít nhất một người dùng' }, { status: 400 })
     }
+
+    const userIds = assignmentData.map((a: any) => a.userId)
 
     console.log('Exam ID:', params.id)
     const exam = await prisma.exam.findUnique({
@@ -61,9 +64,10 @@ export async function POST(
     // Gán bài thi cho các user (sử dụng createMany với skipDuplicates)
     try {
       const assignments = await prisma.examAssignment.createMany({
-        data: userIds.map((userId: string) => ({
+        data: assignmentData.map((a: any) => ({
           examId: params.id,
-          userId,
+          userId: a.userId,
+          maxAttempts: a.maxAttempts ? parseInt(a.maxAttempts) : null, // null = dùng maxAttempts của exam
         })),
         skipDuplicates: true, // Bỏ qua nếu đã được gán rồi
       })
@@ -78,18 +82,37 @@ export async function POST(
       if (dbError.code === 'P2002' || dbError.message?.includes('Unique constraint')) {
         // Thử gán từng user một để xem có bao nhiêu user đã được gán
         let successCount = 0
-        for (const userId of userIds) {
+        for (const assignment of assignmentData) {
           try {
             await prisma.examAssignment.create({
               data: {
                 examId: params.id,
-                userId,
+                userId: assignment.userId,
+                maxAttempts: assignment.maxAttempts ? parseInt(assignment.maxAttempts) : null,
               },
             })
             successCount++
           } catch (e: any) {
-            // Bỏ qua nếu đã tồn tại
-            if (e.code !== 'P2002' && !e.message?.includes('Unique constraint')) {
+            // Bỏ qua nếu đã tồn tại, nhưng cập nhật maxAttempts nếu có
+            if (e.code === 'P2002' || e.message?.includes('Unique constraint')) {
+              // Cập nhật maxAttempts cho assignment đã tồn tại
+              try {
+                await prisma.examAssignment.update({
+                  where: {
+                    examId_userId: {
+                      examId: params.id,
+                      userId: assignment.userId,
+                    },
+                  },
+                  data: {
+                    maxAttempts: assignment.maxAttempts ? parseInt(assignment.maxAttempts) : null,
+                  },
+                })
+                successCount++
+              } catch (updateError) {
+                // Bỏ qua lỗi update
+              }
+            } else {
               throw e
             }
           }
@@ -184,6 +207,7 @@ export async function GET(
         username: a.user.username,
         fullName: a.user.fullName,
         email: a.user.email,
+        maxAttempts: a.maxAttempts,
         assignedAt: a.assignedAt,
       }))
     })

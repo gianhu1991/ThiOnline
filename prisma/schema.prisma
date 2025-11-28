@@ -121,12 +121,13 @@ model Document {
 }
 
 model ExamAssignment {
-  id        String   @id @default(cuid())
-  examId    String
-  userId    String
-  assignedAt DateTime @default(now())
-  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  examId      String
+  userId      String
+  maxAttempts Int?     // Số lần làm bài tối đa cho user này (null = dùng maxAttempts của exam)
+  assignedAt  DateTime @default(now())
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([examId, userId])
   @@index([examId])

@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS "ExamAssignment" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "examId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "maxAttempts" INTEGER,
     "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("examId") REFERENCES "Exam"("id") ON DELETE CASCADE,
     FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
@@ -193,4 +194,15 @@ CREATE TABLE IF NOT EXISTS "ExamAssignment" (
 
 CREATE INDEX IF NOT EXISTS "ExamAssignment_examId_idx" ON "ExamAssignment"("examId");
 CREATE INDEX IF NOT EXISTS "ExamAssignment_userId_idx" ON "ExamAssignment"("userId");
+
+-- Thêm cột maxAttempts vào bảng ExamAssignment (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'ExamAssignment' AND column_name = 'maxAttempts'
+    ) THEN
+        ALTER TABLE "ExamAssignment" ADD COLUMN "maxAttempts" INTEGER;
+    END IF;
+END $$;
 
