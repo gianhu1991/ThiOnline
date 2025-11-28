@@ -24,14 +24,49 @@ export async function POST(
       return NextResponse.json({ error: 'Không tìm thấy bài thi' }, { status: 404 })
     }
 
-    // Đếm số lần đã làm
+    // Đếm số lần đã làm của user này (dựa trên studentId hoặc studentName)
     const attemptCount = await prisma.examResult.count({
-      where: { examId: params.id },
+      where: { 
+        examId: params.id,
+        OR: [
+          { studentId: studentId || '' },
+          { studentName: studentName || '' },
+        ],
+      },
     })
 
-    if (attemptCount >= exam.maxAttempts) {
+    // Lấy maxAttempts từ assignment nếu có (cho user đã đăng nhập)
+    let maxAttempts = exam.maxAttempts
+    if (studentId) {
+      // Tìm user theo studentId
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: studentId },
+            { username: studentId },
+          ],
+        },
+      })
+      
+      if (user) {
+        const assignment = await prisma.examAssignment.findUnique({
+          where: {
+            examId_userId: {
+              examId: params.id,
+              userId: user.id,
+            },
+          },
+        })
+        
+        if (assignment && assignment.maxAttempts !== null) {
+          maxAttempts = assignment.maxAttempts
+        }
+      }
+    }
+
+    if (attemptCount >= maxAttempts) {
       return NextResponse.json({ 
-        error: `Bạn đã làm bài thi này ${exam.maxAttempts} lần` 
+        error: `Bạn đã làm bài thi này ${attemptCount} lần (tối đa ${maxAttempts} lần)` 
       }, { status: 400 })
     }
 

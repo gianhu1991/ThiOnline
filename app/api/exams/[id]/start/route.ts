@@ -7,12 +7,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Cho phép làm bài thi công khai (không cần đăng nhập) nếu bài thi là public
     const user = await getJWT(request)
     
-    if (!user) {
-      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
-    }
-
     const exam = await prisma.exam.findUnique({
       where: { id: params.id },
       include: {
@@ -39,10 +36,34 @@ export async function POST(
     let maxAttempts = exam.maxAttempts // Mặc định dùng maxAttempts của exam
     let assignment = null
     
-    // Nếu là admin, cho phép làm tất cả bài thi
-    // Nếu là user thường, chỉ cho phép làm bài thi public hoặc bài thi được gán
-    if (user.role !== 'admin') {
-      if (!exam.isPublic) {
+    // Nếu bài thi là public, cho phép làm không cần đăng nhập
+    if (exam.isPublic) {
+      // Nếu có user đăng nhập, kiểm tra xem có assignment không để lấy maxAttempts
+      if (user) {
+        assignment = await prisma.examAssignment.findUnique({
+          where: {
+            examId_userId: {
+              examId: params.id,
+              userId: user.userId,
+            },
+          },
+        })
+        
+        if (assignment && assignment.maxAttempts !== null) {
+          maxAttempts = assignment.maxAttempts
+        }
+      }
+    } else {
+      // Nếu bài thi không public, cần đăng nhập
+      if (!user) {
+        return NextResponse.json({ 
+          error: 'Bài thi này chỉ dành cho người dùng được gán. Vui lòng đăng nhập.',
+        }, { status: 401 })
+      }
+      
+      // Nếu là admin, cho phép làm tất cả bài thi
+      // Nếu là user thường, chỉ cho phép làm bài thi được gán
+      if (user.role !== 'admin') {
         // Kiểm tra xem user có được gán bài thi này không
         assignment = await prisma.examAssignment.findUnique({
           where: {
@@ -64,7 +85,7 @@ export async function POST(
           maxAttempts = assignment.maxAttempts
         }
       } else {
-        // Nếu bài thi là public, vẫn kiểm tra xem có assignment không để lấy maxAttempts
+        // Admin cũng có thể có assignment với maxAttempts riêng
         assignment = await prisma.examAssignment.findUnique({
           where: {
             examId_userId: {
@@ -77,20 +98,6 @@ export async function POST(
         if (assignment && assignment.maxAttempts !== null) {
           maxAttempts = assignment.maxAttempts
         }
-      }
-    } else {
-      // Admin cũng có thể có assignment với maxAttempts riêng
-      assignment = await prisma.examAssignment.findUnique({
-        where: {
-          examId_userId: {
-            examId: params.id,
-            userId: user.userId,
-          },
-        },
-      })
-      
-      if (assignment && assignment.maxAttempts !== null) {
-        maxAttempts = assignment.maxAttempts
       }
     }
 
@@ -128,24 +135,30 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Đếm số lần đã làm của user hiện tại
-    // Lấy studentId từ user (có thể là username hoặc id)
-    const userInfo = await prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { username: true, fullName: true },
-    })
+    // Đếm số lần đã làm của user hiện tại (nếu có đăng nhập)
+    // Nếu không đăng nhập (public exam), sẽ đếm theo studentId/studentName khi submit
+    let attemptCount = 0
+    
+    if (user) {
+      // Lấy studentId từ user (có thể là username hoặc id)
+      const userInfo = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { username: true, fullName: true },
+      })
 
-    const attemptCount = await prisma.examResult.count({
-      where: { 
-        examId: params.id,
-        // Đếm theo studentId hoặc studentName
-        OR: [
-          { studentId: user.userId },
-          { studentId: userInfo?.username || '' },
-          { studentName: userInfo?.fullName || '' },
-        ],
-      },
-    })
+      attemptCount = await prisma.examResult.count({
+        where: { 
+          examId: params.id,
+          // Đếm theo studentId hoặc studentName
+          OR: [
+            { studentId: user.userId },
+            { studentId: userInfo?.username || '' },
+            { studentName: userInfo?.fullName || '' },
+          ],
+        },
+      })
+    }
+    // Nếu không đăng nhập, attemptCount = 0 (sẽ đếm khi submit dựa trên studentId/studentName)
 
     if (attemptCount >= maxAttempts) {
       return NextResponse.json({ 
