@@ -11,6 +11,9 @@ interface Question {
 export default function CreateExamPage() {
   const router = useRouter()
   const [questions, setQuestions] = useState<Question[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [availableQuestionCount, setAvailableQuestionCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -29,14 +32,37 @@ export default function CreateExamPage() {
       const res = await fetch('/api/questions')
       const data = await res.json()
       // Đảm bảo data là array
-      setQuestions(Array.isArray(data) ? data : [])
+      const questionsData = Array.isArray(data) ? data : []
+      setQuestions(questionsData)
+      
+      // Lấy danh sách các category duy nhất
+      const uniqueCategories = Array.from(
+        new Set(questionsData.map((q: any) => q.category).filter((cat: string | null) => cat))
+      ) as string[]
+      setCategories(uniqueCategories.sort())
+      
+      // Đếm số câu hỏi có category
+      setAvailableQuestionCount(questionsData.length)
     } catch (error) {
       console.error('Error fetching questions:', error)
       setQuestions([])
+      setCategories([])
     } finally {
       setLoading(false)
     }
   }
+
+  // Cập nhật số câu hỏi khả dụng khi chọn category
+  useEffect(() => {
+    if (selectedCategories.length === 0) {
+      setAvailableQuestionCount(questions.length)
+    } else {
+      const filtered = questions.filter((q: any) => 
+        q.category && selectedCategories.includes(q.category)
+      )
+      setAvailableQuestionCount(filtered.length)
+    }
+  }, [selectedCategories, questions])
 
   const onSubmit = async (data: any) => {
     setSubmitting(true)
@@ -67,6 +93,7 @@ export default function CreateExamPage() {
           shuffleQuestions: data.shuffleQuestions === 'true',
           shuffleAnswers: data.shuffleAnswers === 'true',
           maxAttempts: parseInt(data.maxAttempts) || 1,
+          categories: selectedCategories.length > 0 ? selectedCategories : null, // null = lấy từ tất cả category
         }),
       })
 
@@ -129,20 +156,73 @@ export default function CreateExamPage() {
           />
         </div>
 
+        {categories.length > 0 && (
+          <div>
+            <label className="block mb-2 font-medium">Lĩnh vực câu hỏi</label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="selectAllCategories"
+                  checked={selectedCategories.length === categories.length && categories.length > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedCategories(categories)
+                    } else {
+                      setSelectedCategories([])
+                    }
+                  }}
+                  className="mr-2"
+                />
+                <label htmlFor="selectAllCategories" className="text-sm font-medium cursor-pointer">
+                  Chọn tất cả ({categories.length} lĩnh vực)
+                </label>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border rounded p-3">
+                {categories.map((category) => (
+                  <div key={category} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`category-${category}`}
+                      checked={selectedCategories.includes(category)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCategories([...selectedCategories, category])
+                        } else {
+                          setSelectedCategories(selectedCategories.filter(c => c !== category))
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    <label htmlFor={`category-${category}`} className="text-sm cursor-pointer">
+                      {category}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                {selectedCategories.length === 0 
+                  ? `Tất cả lĩnh vực (${availableQuestionCount} câu hỏi)`
+                  : `Đã chọn ${selectedCategories.length} lĩnh vực (${availableQuestionCount} câu hỏi)`}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div>
           <label className="block mb-2 font-medium">
-            Số lượng câu hỏi * (Tối đa: {questions.length})
+            Số lượng câu hỏi * (Tối đa: {availableQuestionCount})
           </label>
           <input
             type="number"
             {...register('questionCount', {
               required: 'Vui lòng nhập số lượng câu hỏi',
               min: { value: 1, message: 'Tối thiểu 1 câu hỏi' },
-              max: { value: questions.length, message: `Tối đa ${questions.length} câu hỏi` },
+              max: { value: availableQuestionCount, message: `Tối đa ${availableQuestionCount} câu hỏi` },
             })}
             className="border rounded px-4 py-2 w-full"
             min="1"
-            max={questions.length}
+            max={availableQuestionCount}
           />
           {errors.questionCount && (
             <p className="text-red-500 text-sm mt-1">{errors.questionCount.message as string}</p>

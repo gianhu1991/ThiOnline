@@ -60,14 +60,31 @@ export async function POST(request: NextRequest) {
       shuffleQuestions,
       shuffleAnswers,
       maxAttempts,
+      categories, // Array of category names hoặc null
     } = body
 
-    // Lấy ngẫu nhiên câu hỏi từ ngân hàng
-    const allQuestions = await prisma.question.findMany()
+    // Lấy câu hỏi từ ngân hàng, lọc theo category nếu có
+    let allQuestions
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      // Lọc theo các category đã chọn
+      allQuestions = await prisma.question.findMany({
+        where: {
+          category: {
+            in: categories,
+          },
+        },
+      })
+    } else {
+      // Lấy tất cả câu hỏi nếu không chọn category
+      allQuestions = await prisma.question.findMany()
+    }
     
     if (allQuestions.length < questionCount) {
+      const categoryInfo = categories && categories.length > 0 
+        ? ` trong ${categories.length} lĩnh vực đã chọn`
+        : ''
       return NextResponse.json({ 
-        error: `Ngân hàng câu hỏi chỉ có ${allQuestions.length} câu, không đủ ${questionCount} câu` 
+        error: `Ngân hàng câu hỏi${categoryInfo} chỉ có ${allQuestions.length} câu, không đủ ${questionCount} câu` 
       }, { status: 400 })
     }
 
