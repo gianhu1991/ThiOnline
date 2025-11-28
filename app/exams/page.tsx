@@ -243,11 +243,14 @@ export default function ExamsPage() {
         }
         setSelectedUserIds([])
       } else {
-        alert(data.error || 'Lỗi khi gán bài thi')
+        // Hiển thị lỗi chi tiết hơn
+        const errorMsg = data.error || data.message || 'Lỗi khi gán bài thi'
+        console.error('Error response:', data)
+        alert(`Lỗi: ${errorMsg}${data.details ? '\n\nChi tiết: ' + data.details : ''}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning exam:', error)
-      alert('Lỗi khi gán bài thi')
+      alert(`Lỗi khi gán bài thi: ${error.message || 'Lỗi không xác định'}`)
     } finally {
       setAssigning(false)
     }
@@ -282,6 +285,48 @@ export default function ExamsPage() {
     } catch (error) {
       console.error('Error unassigning exam:', error)
       alert('Lỗi khi hủy gán bài thi')
+    }
+  }
+
+  // Xuất kết quả ra Excel
+  const handleExportResults = async (examId: string) => {
+    try {
+      const res = await fetch(`/api/exams/${examId}/export`, {
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định' }))
+        alert(errorData.error || 'Lỗi khi xuất kết quả')
+        return
+      }
+
+      // Lấy blob từ response
+      const blob = await res.blob()
+      
+      // Tạo URL tạm thời và tải file
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      
+      // Lấy tên file từ header Content-Disposition
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let fileName = 'ket_qua_bai_thi.xlsx'
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = decodeURIComponent(fileNameMatch[1].replace(/['"]/g, ''))
+        }
+      }
+      
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting results:', error)
+      alert('Lỗi khi xuất kết quả')
     }
   }
 
@@ -441,6 +486,16 @@ export default function ExamsPage() {
                     >
                       Xem kết quả
                     </Link>
+                    <button
+                      onClick={() => handleExportResults(exam.id)}
+                      className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 text-center flex items-center justify-center gap-2"
+                      title="Xuất kết quả ra file Excel"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Xuất KQ
+                    </button>
                     <button
                       onClick={() => handleDelete(exam.id)}
                       className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
