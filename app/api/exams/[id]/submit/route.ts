@@ -70,14 +70,14 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Tính điểm
+    // Tính điểm dựa trên câu hỏi thực tế đã làm (từ exam.examQuestions đã được cập nhật bởi API start)
     let correctCount = 0
-    const totalQuestions = exam.examQuestions.length
-    const questionIds: string[] = [] // Lưu danh sách câu hỏi đã làm
+    const questionIds: string[] = exam.examQuestions.map(eq => eq.questionId) // Lấy danh sách câu hỏi từ exam.examQuestions
+    const totalQuestions = questionIds.length
 
+    // Tính điểm cho từng câu hỏi đã làm
     for (const eq of exam.examQuestions) {
       const question = eq.question
-      questionIds.push(question.id) // Lưu ID câu hỏi
       const userAnswers = answers[question.id] || []
       const correctAnswers = JSON.parse(question.correctAnswers)
 
