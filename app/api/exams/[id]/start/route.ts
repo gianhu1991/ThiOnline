@@ -257,23 +257,13 @@ export async function POST(
     // Lấy câu hỏi đã chọn
     let questions = selectedQuestions
     
-    // Trộn thứ tự câu hỏi nếu cần (trước khi lưu vào database)
+    // Trộn thứ tự câu hỏi nếu cần
     if (exam.shuffleQuestions && questions.length > 0) {
       questions = [...questions].sort(() => Math.random() - 0.5)
     }
 
-    // Xóa các câu hỏi cũ của bài thi (nếu có) và lưu câu hỏi mới với thứ tự đã trộn
-    await prisma.examQuestion.deleteMany({
-      where: { examId: params.id },
-    })
-
-    await prisma.examQuestion.createMany({
-      data: questions.map((q, index) => ({
-        examId: params.id,
-        questionId: q.id,
-        order: index + 1, // Lưu thứ tự sau khi trộn (nếu có)
-      })),
-    })
+    // KHÔNG lưu examQuestions vào DB để tránh xung đột khi nhiều người cùng thi
+    // Mỗi người sẽ có câu hỏi riêng, được lưu vào ExamResult.questionIds khi submit
 
     // Trộn đáp án nếu cần
     if (exam.shuffleAnswers && questions.length > 0) {
