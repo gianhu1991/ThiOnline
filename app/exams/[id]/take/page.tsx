@@ -18,6 +18,7 @@ interface ExamData {
     description: string | null
     timeLimit: number
     questionCount: number
+    requireAllQuestions: boolean
   }
   questions: Question[]
   attemptNumber: number
@@ -100,6 +101,21 @@ export default function TakeExamPage() {
     if (!studentName.trim()) {
       alert('Vui lòng nhập tên của bạn')
       return
+    }
+
+    // Kiểm tra nếu bắt buộc làm hết câu hỏi
+    if (examData?.exam.requireAllQuestions) {
+      const totalQuestions = examData.questions.length
+      const answeredQuestions = Object.keys(answers).length
+      const allAnswered = examData.questions.every(q => {
+        const answer = answers[q.id]
+        return answer && answer.length > 0
+      })
+
+      if (!allAnswered) {
+        alert(`Bạn cần trả lời hết tất cả ${totalQuestions} câu hỏi mới được nộp bài. Bạn đã trả lời ${answeredQuestions}/${totalQuestions} câu.`)
+        return
+      }
     }
 
     setSubmitting(true)
@@ -234,10 +250,28 @@ export default function TakeExamPage() {
         })}
       </div>
 
-      <div className="mt-6 flex justify-center gap-4">
+      <div className="mt-6 flex flex-col items-center gap-4">
+        {examData.exam.requireAllQuestions && (
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Lưu ý:</span> Bạn cần trả lời hết tất cả {examData.questions.length} câu hỏi mới được nộp bài.
+            <span className="ml-2">
+              Đã trả lời: {Object.keys(answers).filter(qId => {
+                const answer = answers[qId]
+                return answer && answer.length > 0
+              }).length}/{examData.questions.length}
+            </span>
+          </div>
+        )}
         <button
           onClick={handleSubmit}
-          disabled={submitting || !studentName.trim()}
+          disabled={
+            submitting || 
+            !studentName.trim() || 
+            (examData.exam.requireAllQuestions && !examData.questions.every(q => {
+              const answer = answers[q.id]
+              return answer && answer.length > 0
+            }))
+          }
           className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-lg font-semibold"
         >
           {submitting ? 'Đang nộp bài...' : 'Nộp bài'}

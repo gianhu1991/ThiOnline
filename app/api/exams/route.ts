@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         isPublic: false, // Mặc định là không công khai (chỉ user được gán mới làm được)
         shuffleQuestions: shuffleQuestions || false,
         shuffleAnswers: shuffleAnswers || false,
+        requireAllQuestions: body.requireAllQuestions || false,
         maxAttempts: maxAttempts || 1,
         examQuestions: {
           create: selectedQuestions.map((q, index) => ({

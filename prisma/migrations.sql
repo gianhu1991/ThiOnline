@@ -217,3 +217,14 @@ BEGIN
     END IF;
 END $$;
 
+-- Thêm cột requireAllQuestions vào bảng Exam (nếu chưa có)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'Exam' AND column_name = 'requireAllQuestions'
+    ) THEN
+        ALTER TABLE "Exam" ADD COLUMN "requireAllQuestions" BOOLEAN DEFAULT false;
+    END IF;
+END $$;
+

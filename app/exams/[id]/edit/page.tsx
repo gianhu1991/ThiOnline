@@ -14,6 +14,7 @@ interface Exam {
   endDate: string
   shuffleQuestions: boolean
   shuffleAnswers: boolean
+  requireAllQuestions: boolean
   isPublic: boolean
   maxAttempts: number
 }
@@ -69,6 +70,7 @@ export default function EditExamPage() {
         setValue('maxAttempts', data.maxAttempts)
         setValue('shuffleQuestions', data.shuffleQuestions ? 'true' : '')
         setValue('shuffleAnswers', data.shuffleAnswers ? 'true' : '')
+        setValue('requireAllQuestions', data.requireAllQuestions ? 'true' : '')
       } else {
         alert('Không tìm thấy bài thi')
         router.push('/exams')
@@ -140,6 +142,7 @@ export default function EditExamPage() {
           endDate: endDateISO,
           shuffleQuestions: data.shuffleQuestions === 'true',
           shuffleAnswers: data.shuffleAnswers === 'true',
+          requireAllQuestions: data.requireAllQuestions === 'true',
           maxAttempts: parseInt(data.maxAttempts) || 1,
         }),
       })
@@ -298,6 +301,19 @@ export default function EditExamPage() {
             />
             <label htmlFor="shuffleAnswers" className="font-medium">
               Trộn đáp án (Mỗi lần làm bài sẽ có thứ tự đáp án khác nhau)
+            </label>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="requireAllQuestions"
+              {...register('requireAllQuestions')}
+              value="true"
+              className="mr-2"
+            />
+            <label htmlFor="requireAllQuestions" className="font-medium">
+              Bắt buộc làm hết câu hỏi mới được nộp bài
             </label>
           </div>
         </div>

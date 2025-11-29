@@ -43,6 +43,7 @@ export async function PUT(
       endDate,
       shuffleQuestions,
       shuffleAnswers,
+      requireAllQuestions,
       maxAttempts,
     } = body
 
@@ -73,6 +74,7 @@ export async function PUT(
         endDate: parseLocalDateTime(endDate),
         shuffleQuestions: shuffleQuestions === true || shuffleQuestions === 'true',
         shuffleAnswers: shuffleAnswers === true || shuffleAnswers === 'true',
+        requireAllQuestions: requireAllQuestions === true || requireAllQuestions === 'true',
         maxAttempts: parseInt(maxAttempts),
       },
     })

@@ -287,6 +287,7 @@ export async function POST(
         description: exam.description,
         timeLimit: exam.timeLimit,
         questionCount: exam.questionCount,
+        requireAllQuestions: exam.requireAllQuestions || false,
       },
       questions: Array.isArray(questions) ? questions : [],
       attemptNumber: attemptCount + 1,

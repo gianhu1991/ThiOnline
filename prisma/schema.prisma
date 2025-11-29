@@ -35,6 +35,7 @@ model Exam {
   isPublic        Boolean  @default(false) // Công khai (tất cả user có thể làm) hoặc chỉ user được gán
   shuffleQuestions Boolean @default(false) // Trộn câu hỏi
   shuffleAnswers  Boolean @default(false)  // Trộn đáp án
+  requireAllQuestions Boolean @default(false) // Bắt buộc làm hết câu hỏi mới được nộp bài
   maxAttempts     Int      // Số lần làm bài tối đa
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
