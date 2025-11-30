@@ -10,6 +10,7 @@ interface Document {
   fileName: string | null
   fileSize: number
   category: string | null
+  isPublic: boolean
   downloadCount: number
   uploadedBy: string | null
   createdAt: string
@@ -22,6 +23,8 @@ export default function DocumentsPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -152,19 +155,72 @@ export default function DocumentsPage() {
     }
   }
 
+  const handleEdit = (doc: Document) => {
+    setEditingDocument(doc)
+    setFormData({
+      title: doc.title,
+      description: doc.description || '',
+      category: doc.category || '',
+      isPublic: doc.isPublic !== undefined ? doc.isPublic : true,
+    })
+    setPdfFile(null)
+    setError('')
+    setShowEditModal(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingDocument) return
+
+    setError('')
+    setSubmitting(true)
+
+    try {
+      const res = await fetch(`/api/documents/${editingDocument.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert('Cập nhật tài liệu thành công!')
+        setShowEditModal(false)
+        setEditingDocument(null)
+        setFormData({
+          title: '',
+          description: '',
+          category: '',
+          isPublic: true,
+        })
+        fetchDocuments()
+      } else {
+        setError(data.error || 'Lỗi khi cập nhật tài liệu')
+      }
+    } catch (error) {
+      setError('Lỗi khi cập nhật tài liệu')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Bạn có chắc muốn xóa tài liệu này?')) return
 
     try {
       const res = await fetch(`/api/documents/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (res.ok) {
         alert('Xóa tài liệu thành công!')
         fetchDocuments()
       } else {
-        alert('Lỗi khi xóa tài liệu')
+        const data = await res.json()
+        alert(data.error || 'Lỗi khi xóa tài liệu')
       }
     } catch (error) {
       alert('Lỗi khi xóa tài liệu')
@@ -263,17 +319,111 @@ export default function DocumentsPage() {
                     Tải xuống
                   </a>
                   {userRole === 'admin' && (
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
-                    >
-                      Xóa
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleEdit(doc)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc.id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
+                      >
+                        Xóa
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit Document Modal */}
+      {showEditModal && userRole === 'admin' && editingDocument && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Sửa tài liệu</h2>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Tiêu đề *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Mô tả</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="input-field"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700">Danh mục</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="input-field"
+                  placeholder="Ví dụ: Hướng dẫn, Thực hành, Lý thuyết..."
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isPublicEdit"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor="isPublicEdit" className="font-medium">Công khai (mọi người có thể xem)</label>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingDocument(null)
+                    setFormData({
+                      title: '',
+                      description: '',
+                      category: '',
+                      isPublic: true,
+                    })
+                    setError('')
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Đang lưu...' : 'Cập nhật'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

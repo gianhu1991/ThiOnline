@@ -61,6 +61,40 @@ export async function GET(
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getJWT(request)
+
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Chỉ admin mới được sửa tài liệu' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { title, description, category, isPublic } = body
+
+    const document = await prisma.document.update({
+      where: { id: params.id },
+      data: {
+        title: title || undefined,
+        description: description !== undefined ? description : undefined,
+        category: category !== undefined ? category : undefined,
+        isPublic: isPublic !== undefined ? isPublic : undefined,
+      },
+    })
+
+    return NextResponse.json({ success: true, document })
+  } catch (error: any) {
+    console.error('Error updating document:', error)
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: 'Không tìm thấy tài liệu' }, { status: 404 })
+    }
+    return NextResponse.json({ error: 'Lỗi khi cập nhật tài liệu' }, { status: 500 })
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
