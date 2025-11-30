@@ -200,18 +200,17 @@ export default function CategoryManagementForm() {
         </form>
       )}
 
-        {categoryError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {categoryError}
-          </div>
-        )}
+      {categoryError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+          {categoryError}
+        </div>
+      )}
 
-        {categorySuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-            {categorySuccess}
-          </div>
-        )}
-      </form>
+      {categorySuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
+          {categorySuccess}
+        </div>
+      )}
 
       <div>
         <h3 className="font-semibold text-gray-700 mb-3">Danh sách lĩnh vực ({categories.length})</h3>
