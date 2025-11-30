@@ -16,11 +16,36 @@ export async function GET(
       return NextResponse.json({ error: 'Không tìm thấy tài liệu' }, { status: 404 })
     }
 
-    // Kiểm tra quyền xem (nếu không phải admin và không public)
-    if (!user || user.role !== 'admin') {
-      if (!document.isPublic) {
-        return NextResponse.json({ error: 'Tài liệu này không công khai' }, { status: 403 })
+    // Kiểm tra quyền truy cập
+    let hasAccess = false
+
+    if (user && user.role === 'admin') {
+      // Admin xem tất cả
+      hasAccess = true
+    } else if (document.isPublic) {
+      // Tài liệu public: tất cả đều xem được
+      hasAccess = true
+    } else if (user) {
+      // Tài liệu không public: kiểm tra user có thuộc nhóm được gán không
+      const userGroups = await prisma.userGroupMember.findMany({
+        where: { userId: user.userId },
+        select: { groupId: true },
+      })
+      const groupIds = userGroups.map(ug => ug.groupId)
+
+      if (groupIds.length > 0) {
+        const documentGroup = await prisma.documentGroup.findFirst({
+          where: {
+            documentId: params.id,
+            groupId: { in: groupIds },
+          },
+        })
+        hasAccess = !!documentGroup
       }
+    }
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Bạn không có quyền xem tài liệu này' }, { status: 403 })
     }
 
     // Tăng số lượt tải

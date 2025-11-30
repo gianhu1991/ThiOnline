@@ -61,12 +61,46 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getJWT(request)
+    
     const video = await prisma.video.findUnique({
       where: { id: params.id },
     })
 
     if (!video) {
       return NextResponse.json({ error: 'Không tìm thấy video' }, { status: 404 })
+    }
+
+    // Kiểm tra quyền truy cập
+    let hasAccess = false
+
+    if (user && user.role === 'admin') {
+      // Admin xem tất cả
+      hasAccess = true
+    } else if (video.isPublic) {
+      // Video public: tất cả đều xem được
+      hasAccess = true
+    } else if (user) {
+      // Video không public: kiểm tra user có thuộc nhóm được gán không
+      const userGroups = await prisma.userGroupMember.findMany({
+        where: { userId: user.userId },
+        select: { groupId: true },
+      })
+      const groupIds = userGroups.map(ug => ug.groupId)
+
+      if (groupIds.length > 0) {
+        const videoGroup = await prisma.videoGroup.findFirst({
+          where: {
+            videoId: params.id,
+            groupId: { in: groupIds },
+          },
+        })
+        hasAccess = !!videoGroup
+      }
+    }
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Bạn không có quyền xem video này' }, { status: 403 })
     }
 
     // Tăng view count

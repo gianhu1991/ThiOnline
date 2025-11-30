@@ -8,11 +8,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
 
-    // Nếu là user thường, chỉ lấy video public
-    // Nếu là admin, lấy tất cả
     const where: any = {}
     
-    if (!user || user.role !== 'admin') {
+    // Nếu là admin, lấy tất cả video
+    if (user && user.role === 'admin') {
+      // Admin xem tất cả
+    } else if (user) {
+      // User thường: lấy video public HOẶC video được gán cho nhóm của user
+      const userGroups = await prisma.userGroupMember.findMany({
+        where: { userId: user.userId },
+        select: { groupId: true },
+      })
+      const groupIds = userGroups.map(ug => ug.groupId)
+
+      const videoGroups = await prisma.videoGroup.findMany({
+        where: { groupId: { in: groupIds } },
+        select: { videoId: true },
+      })
+      const allowedVideoIds = videoGroups.map(vg => vg.videoId)
+
+      where.OR = [
+        { isPublic: true },
+        { id: { in: allowedVideoIds } },
+      ]
+    } else {
+      // Chưa đăng nhập: chỉ xem video public
       where.isPublic = true
     }
     

@@ -8,11 +8,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
 
-    // Nếu là user thường, chỉ lấy document public
-    // Nếu là admin, lấy tất cả
     const where: any = {}
     
-    if (!user || user.role !== 'admin') {
+    // Nếu là admin, lấy tất cả tài liệu
+    if (user && user.role === 'admin') {
+      // Admin xem tất cả
+    } else if (user) {
+      // User thường: lấy tài liệu public HOẶC tài liệu được gán cho nhóm của user
+      const userGroups = await prisma.userGroupMember.findMany({
+        where: { userId: user.userId },
+        select: { groupId: true },
+      })
+      const groupIds = userGroups.map(ug => ug.groupId)
+
+      const documentGroups = await prisma.documentGroup.findMany({
+        where: { groupId: { in: groupIds } },
+        select: { documentId: true },
+      })
+      const allowedDocumentIds = documentGroups.map(dg => dg.documentId)
+
+      where.OR = [
+        { isPublic: true },
+        { id: { in: allowedDocumentIds } },
+      ]
+    } else {
+      // Chưa đăng nhập: chỉ xem tài liệu public
       where.isPublic = true
     }
     
