@@ -48,6 +48,45 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, name } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ error: 'Thiếu ID lĩnh vực' }, { status: 400 })
+    }
+
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: 'Tên lĩnh vực không được để trống' }, { status: 400 })
+    }
+
+    // Kiểm tra xem tên mới đã tồn tại chưa (trừ chính nó)
+    const existing = await prisma.category.findFirst({
+      where: { 
+        name: name.trim(),
+        NOT: { id }
+      },
+    })
+
+    if (existing) {
+      return NextResponse.json({ error: 'Lĩnh vực này đã tồn tại' }, { status: 400 })
+    }
+
+    const category = await prisma.category.update({
+      where: { id },
+      data: { name: name.trim() },
+    })
+
+    return NextResponse.json({ success: true, category })
+  } catch (error: any) {
+    console.error('Error updating category:', error)
+    if (error.code === 'P2002') {
+      return NextResponse.json({ error: 'Lĩnh vực này đã tồn tại' }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Lỗi khi cập nhật lĩnh vực' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
