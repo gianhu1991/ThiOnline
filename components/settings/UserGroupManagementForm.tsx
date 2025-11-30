@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import CheckboxDropdown from './CheckboxDropdown'
 
 interface UserGroup {
@@ -60,9 +60,24 @@ export default function UserGroupManagementForm() {
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([])
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([])
   const [selectedExamIds, setSelectedExamIds] = useState<string[]>([])
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false)
+  const groupDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchGroups()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (groupDropdownRef.current && !groupDropdownRef.current.contains(event.target as Node)) {
+        setIsGroupDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [])
 
   useEffect(() => {
@@ -520,73 +535,134 @@ export default function UserGroupManagementForm() {
 
       {/* Layout: Danh sách nhóm bên trái, Chi tiết bên phải */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
-        {/* Danh sách nhóm - Chiếm 4 cột */}
-        <div className="lg:col-span-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+        {/* Danh sách nhóm - Dropdown checkbox - Chiếm 5 cột (mở rộng) */}
+        <div className="lg:col-span-5 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
           <h3 className="font-semibold text-gray-800 mb-3 text-sm">Danh sách nhóm ({groups.length})</h3>
-          {groups.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">
-              <p>Chưa có nhóm nào</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {groups.map((group) => (
-                <div
-                  key={group.id}
-                  className={`p-3 rounded-lg transition-all cursor-pointer border ${
-                    selectedGroup?.id === group.id
-                      ? 'bg-blue-50 border-blue-500 shadow-sm'
-                      : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                  }`}
-                  onClick={() => setSelectedGroup(group)}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="font-semibold text-gray-900 text-sm break-words">{group.name}</div>
-                      {group.description && (
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2 break-words">{group.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-1.5 mt-2 text-xs">
-                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">{group._count.members} TV</span>
-                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">{group._count.videoGroups} V</span>
-                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">{group._count.documentGroups} TL</span>
-                        <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">{group._count.examGroups || 0} BT</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEditGroup(group)
-                          setShowCreateForm(false)
-                        }}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded transition-colors"
-                        title="Sửa nhóm"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteGroup(group.id, group.name)
-                        }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors"
-                        title="Xóa nhóm"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+          
+          <div className="relative" ref={groupDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+              className={`w-full px-4 py-3 text-left flex items-center justify-between bg-white border-2 rounded-lg transition-all ${
+                isGroupDropdownOpen 
+                  ? 'border-blue-500 shadow-md' 
+                  : selectedGroup
+                  ? 'border-blue-300 shadow-sm'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="flex-1 min-w-0">
+                {selectedGroup ? (
+                  <div>
+                    <div className="font-semibold text-gray-900 text-sm truncate">{selectedGroup.name}</div>
+                    {selectedGroup.description && (
+                      <div className="text-xs text-gray-500 mt-1 truncate">{selectedGroup.description}</div>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{selectedGroup._count.members} TV</span>
+                      <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">{selectedGroup._count.videoGroups} V</span>
+                      <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">{selectedGroup._count.documentGroups} TL</span>
+                      <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">{selectedGroup._count.examGroups || 0} BT</span>
                     </div>
                   </div>
+                ) : (
+                  <span className="text-sm text-gray-400">Chọn nhóm để quản lý...</span>
+                )}
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ml-2 ${isGroupDropdownOpen ? 'transform rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isGroupDropdownOpen && (
+              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-[500px] overflow-y-auto">
+                <div className="p-2">
+                  {groups.length === 0 ? (
+                    <div className="text-sm text-gray-500 p-3 text-center">Chưa có nhóm nào</div>
+                  ) : (
+                    groups.map((group) => {
+                      const isSelected = selectedGroup?.id === group.id
+                      return (
+                        <label
+                          key={group.id}
+                          className={`flex items-start p-3 cursor-pointer rounded-lg transition-all border ${
+                            isSelected 
+                              ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                              : 'hover:bg-gray-50 border-transparent hover:border-gray-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedGroup(isSelected ? null : group)
+                              setIsGroupDropdownOpen(false)
+                            }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-1 flex-shrink-0"
+                          />
+                          <div className="ml-3 flex-1 min-w-0">
+                            <div className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-gray-900'} break-words`}>
+                              {group.name}
+                            </div>
+                            {group.description && (
+                              <p className={`text-xs mt-1 line-clamp-2 break-words ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                                {group.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{group._count.members} TV</span>
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">{group._count.videoGroups} V</span>
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">{group._count.documentGroups} TL</span>
+                              <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">{group._count.examGroups || 0} BT</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                handleEditGroup(group)
+                                setShowCreateForm(false)
+                                setIsGroupDropdownOpen(false)
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 p-1.5 rounded transition-colors"
+                              title="Sửa nhóm"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                handleDeleteGroup(group.id, group.name)
+                                setIsGroupDropdownOpen(false)
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-100 p-1.5 rounded transition-colors"
+                              title="Xóa nhóm"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </label>
+                      )
+                    })
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Chi tiết nhóm - Chiếm 8 cột, bên trong chia thành 2 cột để tránh chồng chéo */}
+        {/* Chi tiết nhóm - Chiếm 7 cột, bên trong chia thành 2 cột để tránh chồng chéo */}
         {selectedGroup ? (
           loadingDetail ? (
             <div className="lg:col-span-8 bg-white border border-gray-200 rounded-lg shadow-sm p-8">
@@ -599,7 +675,7 @@ export default function UserGroupManagementForm() {
               </div>
             </div>
           ) : (
-            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Thành viên */}
               <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -718,7 +794,7 @@ export default function UserGroupManagementForm() {
             </div>
           )
         ) : (
-          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Placeholder cards với màu sắc đẹp hơn */}
             <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
               <div className="text-center py-6">
