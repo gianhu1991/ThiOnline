@@ -518,51 +518,51 @@ export default function UserGroupManagementForm() {
         </form>
       )}
 
-      {/* Menu trên 1 dòng: Danh sách nhóm, Thành viên, Video, Tài liệu */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      {/* Menu trên 1 dòng: Danh sách nhóm, Thành viên, Video, Tài liệu, Bài thi */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
         {/* Danh sách nhóm */}
-        <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
-          <h3 className="font-semibold text-gray-700 mb-3">Danh sách nhóm ({groups.length})</h3>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+          <h3 className="font-semibold text-gray-800 mb-3 text-sm">Danh sách nhóm ({groups.length})</h3>
           {groups.length === 0 ? (
-            <div className="text-center py-4 text-gray-500 text-sm">
+            <div className="text-center py-8 text-gray-400 text-sm">
               <p>Chưa có nhóm nào</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {groups.map((group) => (
                 <div
                   key={group.id}
-                  className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-3 rounded-lg transition-all cursor-pointer border ${
                     selectedGroup?.id === group.id
-                      ? 'bg-blue-100 border-2 border-blue-500'
-                      : 'bg-white hover:bg-gray-100 border border-gray-200'
+                      ? 'bg-blue-50 border-blue-500 shadow-sm'
+                      : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
                   }`}
                   onClick={() => setSelectedGroup(group)}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 text-sm truncate">{group.name}</div>
+                      <div className="font-semibold text-gray-900 text-sm truncate">{group.name}</div>
                       {group.description && (
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-1">{group.description}</p>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{group.description}</p>
                       )}
-                      <div className="flex gap-2 mt-1 text-xs text-gray-500">
-                        <span>{group._count.members} TV</span>
-                        <span>{group._count.videoGroups} V</span>
-                        <span>{group._count.documentGroups} TL</span>
-                        <span>{group._count.examGroups || 0} BT</span>
+                      <div className="flex flex-wrap gap-1.5 mt-2 text-xs">
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">{group._count.members} TV</span>
+                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">{group._count.videoGroups} V</span>
+                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">{group._count.documentGroups} TL</span>
+                        <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">{group._count.examGroups || 0} BT</span>
                       </div>
                     </div>
-                    <div className="flex gap-1 ml-2 flex-shrink-0">
+                    <div className="flex gap-1 flex-shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           handleEditGroup(group)
                           setShowCreateForm(false)
                         }}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-colors"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded transition-colors"
                         title="Sửa nhóm"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
@@ -571,10 +571,10 @@ export default function UserGroupManagementForm() {
                           e.stopPropagation()
                           handleDeleteGroup(group.id, group.name)
                         }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors"
                         title="Xóa nhóm"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
@@ -586,101 +586,114 @@ export default function UserGroupManagementForm() {
           )}
         </div>
 
-        {/* Chi tiết nhóm - Thành viên, Video, Tài liệu */}
-        {selectedGroup && (
-          <>
-            {loadingDetail ? (
-              <div className="flex-1 min-w-[250px] bg-gray-50 p-4 rounded-lg">
-                <div className="text-center py-8 text-gray-500">Đang tải...</div>
+        {/* Chi tiết nhóm - Thành viên, Video, Tài liệu, Bài thi */}
+        {selectedGroup ? (
+          loadingDetail ? (
+            <div className="lg:col-span-4 bg-white border border-gray-200 rounded-lg shadow-sm p-8">
+              <div className="text-center py-8 text-gray-500">
+                <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p>Đang tải...</p>
               </div>
-            ) : (
-              <>
-                {/* Thành viên */}
-                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
-                  <CheckboxDropdown
-                    label="Thành viên"
-                    items={allUsers.map(user => ({
-                      id: user.id,
-                      label: `${user.username}${user.fullName ? ` (${user.fullName})` : ''}`,
-                    }))}
-                    selectedIds={selectedUserIds}
-                    onSelectionChange={setSelectedUserIds}
-                    placeholder="Chọn thành viên..."
-                  />
-                  <button
-                    onClick={handleSaveMembers}
-                    disabled={loading}
-                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
-                  >
-                    Lưu thành viên
-                  </button>
-                </div>
+            </div>
+          ) : (
+            <>
+              {/* Thành viên */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <CheckboxDropdown
+                  label="Thành viên"
+                  items={allUsers.map(user => ({
+                    id: user.id,
+                    label: `${user.username}${user.fullName ? ` (${user.fullName})` : ''}`,
+                  }))}
+                  selectedIds={selectedUserIds}
+                  onSelectionChange={setSelectedUserIds}
+                  placeholder="Chọn thành viên..."
+                />
+                <button
+                  onClick={handleSaveMembers}
+                  disabled={loading}
+                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                >
+                  Lưu thành viên
+                </button>
+              </div>
 
-                {/* Video */}
-                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
-                  <CheckboxDropdown
-                    label="Video"
-                    items={allVideos.map(video => ({
-                      id: video.id,
-                      label: video.title,
-                    }))}
-                    selectedIds={selectedVideoIds}
-                    onSelectionChange={setSelectedVideoIds}
-                    placeholder="Chọn video..."
-                  />
-                  <button
-                    onClick={handleSaveVideos}
-                    disabled={loading}
-                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
-                  >
-                    Lưu video
-                  </button>
-                </div>
+              {/* Video */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <CheckboxDropdown
+                  label="Video"
+                  items={allVideos.map(video => ({
+                    id: video.id,
+                    label: video.title,
+                  }))}
+                  selectedIds={selectedVideoIds}
+                  onSelectionChange={setSelectedVideoIds}
+                  placeholder="Chọn video..."
+                />
+                <button
+                  onClick={handleSaveVideos}
+                  disabled={loading}
+                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                >
+                  Lưu video
+                </button>
+              </div>
 
-                {/* Tài liệu */}
-                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
-                  <CheckboxDropdown
-                    label="Tài liệu"
-                    items={allDocuments.map(doc => ({
-                      id: doc.id,
-                      label: doc.title,
-                    }))}
-                    selectedIds={selectedDocumentIds}
-                    onSelectionChange={setSelectedDocumentIds}
-                    placeholder="Chọn tài liệu..."
-                  />
-                  <button
-                    onClick={handleSaveDocuments}
-                    disabled={loading}
-                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
-                  >
-                    Lưu tài liệu
-                  </button>
-                </div>
+              {/* Tài liệu */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <CheckboxDropdown
+                  label="Tài liệu"
+                  items={allDocuments.map(doc => ({
+                    id: doc.id,
+                    label: doc.title,
+                  }))}
+                  selectedIds={selectedDocumentIds}
+                  onSelectionChange={setSelectedDocumentIds}
+                  placeholder="Chọn tài liệu..."
+                />
+                <button
+                  onClick={handleSaveDocuments}
+                  disabled={loading}
+                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                >
+                  Lưu tài liệu
+                </button>
+              </div>
 
-                {/* Bài thi */}
-                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
-                  <CheckboxDropdown
-                    label="Bài thi"
-                    items={allExams.map(exam => ({
-                      id: exam.id,
-                      label: exam.title,
-                    }))}
-                    selectedIds={selectedExamIds}
-                    onSelectionChange={setSelectedExamIds}
-                    placeholder="Chọn bài thi..."
-                  />
-                  <button
-                    onClick={handleSaveExams}
-                    disabled={loading}
-                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
-                  >
-                    Lưu bài thi
-                  </button>
-                </div>
-              </>
-            )}
-          </>
+              {/* Bài thi */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <CheckboxDropdown
+                  label="Bài thi"
+                  items={allExams.map(exam => ({
+                    id: exam.id,
+                    label: exam.title,
+                  }))}
+                  selectedIds={selectedExamIds}
+                  onSelectionChange={setSelectedExamIds}
+                  placeholder="Chọn bài thi..."
+                />
+                <button
+                  onClick={handleSaveExams}
+                  disabled={loading}
+                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                >
+                  Lưu bài thi
+                </button>
+              </div>
+            </>
+          )
+        ) : (
+          <div className="lg:col-span-4 bg-white border border-gray-200 rounded-lg shadow-sm p-8">
+            <div className="text-center py-12 text-gray-400">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p className="text-lg font-medium">Chọn một nhóm để xem chi tiết</p>
+            </div>
+          </div>
         )}
       </div>
     </div>
