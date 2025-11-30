@@ -526,104 +526,102 @@ export default function UserGroupManagementForm() {
       {selectedGroup && (
         <div>
           <h3 className="font-semibold text-gray-700 mb-3">Chi tiết nhóm: {selectedGroup.name}</h3>
-              {loadingDetail ? (
-                <div className="text-center py-8 text-gray-500">Đang tải...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Thành viên */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700 mb-2">Thành viên</h4>
-                    <select
-                      multiple
-                      value={selectedUserIds}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value)
-                        setSelectedUserIds(selected)
-                      }}
-                      className="w-full input-field min-h-[120px] mb-3"
-                      size={5}
-                    >
-                      {allUsers.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.username} {user.fullName && `(${user.fullName})`}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                    </p>
-                    <button
-                      onClick={handleSaveMembers}
-                      disabled={loading}
-                      className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                    >
-                      Lưu thành viên
-                    </button>
-                  </div>
+          {loadingDetail ? (
+            <div className="text-center py-8 text-gray-500">Đang tải...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Thành viên */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Thành viên</h4>
+                <select
+                  multiple
+                  value={selectedUserIds}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value)
+                    setSelectedUserIds(selected)
+                  }}
+                  className="w-full input-field min-h-[120px] mb-3"
+                  size={5}
+                >
+                  {allUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.username} {user.fullName && `(${user.fullName})`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mb-3">
+                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
+                </p>
+                <button
+                  onClick={handleSaveMembers}
+                  disabled={loading}
+                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
+                >
+                  Lưu thành viên
+                </button>
+              </div>
 
-                  {/* Video */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700 mb-2">Video</h4>
-                    <select
-                      multiple
-                      value={selectedVideoIds}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value)
-                        setSelectedVideoIds(selected)
-                      }}
-                      className="w-full input-field min-h-[120px] mb-3"
-                      size={5}
-                    >
-                      {allVideos.map((video) => (
-                        <option key={video.id} value={video.id}>
-                          {video.title}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                    </p>
-                    <button
-                      onClick={handleSaveVideos}
-                      disabled={loading}
-                      className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                    >
-                      Lưu video
-                    </button>
-                  </div>
+              {/* Video */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Video</h4>
+                <select
+                  multiple
+                  value={selectedVideoIds}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value)
+                    setSelectedVideoIds(selected)
+                  }}
+                  className="w-full input-field min-h-[120px] mb-3"
+                  size={5}
+                >
+                  {allVideos.map((video) => (
+                    <option key={video.id} value={video.id}>
+                      {video.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mb-3">
+                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
+                </p>
+                <button
+                  onClick={handleSaveVideos}
+                  disabled={loading}
+                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
+                >
+                  Lưu video
+                </button>
+              </div>
 
-                  {/* Tài liệu */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700 mb-2">Tài liệu</h4>
-                    <select
-                      multiple
-                      value={selectedDocumentIds}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value)
-                        setSelectedDocumentIds(selected)
-                      }}
-                      className="w-full input-field min-h-[120px] mb-3"
-                      size={5}
-                    >
-                      {allDocuments.map((doc) => (
-                        <option key={doc.id} value={doc.id}>
-                          {doc.title}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                    </p>
-                    <button
-                      onClick={handleSaveDocuments}
-                      disabled={loading}
-                      className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                    >
-                      Lưu tài liệu
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Tài liệu */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Tài liệu</h4>
+                <select
+                  multiple
+                  value={selectedDocumentIds}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value)
+                    setSelectedDocumentIds(selected)
+                  }}
+                  className="w-full input-field min-h-[120px] mb-3"
+                  size={5}
+                >
+                  {allDocuments.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mb-3">
+                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
+                </p>
+                <button
+                  onClick={handleSaveDocuments}
+                  disabled={loading}
+                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
+                >
+                  Lưu tài liệu
+                </button>
+              </div>
             </div>
           )}
         </div>
