@@ -61,6 +61,7 @@ export default function UserGroupManagementForm() {
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([])
   const [selectedExamIds, setSelectedExamIds] = useState<string[]>([])
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false)
+  const [groupSearchTerm, setGroupSearchTerm] = useState('')
   const groupDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -580,12 +581,37 @@ export default function UserGroupManagementForm() {
             </button>
 
             {isGroupDropdownOpen && (
-              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-[500px] overflow-y-auto">
-                <div className="p-2">
-                  {groups.length === 0 ? (
-                    <div className="text-sm text-gray-500 p-3 text-center">Chưa có nhóm nào</div>
-                  ) : (
-                    groups.map((group) => {
+              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-[500px] flex flex-col">
+                {/* Search box */}
+                <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm nhóm..."
+                    value={groupSearchTerm}
+                    onChange={(e) => setGroupSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                
+                {/* Group list with scroll */}
+                <div className="overflow-y-auto flex-1">
+                  <div className="p-2">
+                    {(() => {
+                      const filteredGroups = groups.filter(group => 
+                        group.name.toLowerCase().includes(groupSearchTerm.toLowerCase()) ||
+                        (group.description && group.description.toLowerCase().includes(groupSearchTerm.toLowerCase()))
+                      )
+                      
+                      if (filteredGroups.length === 0) {
+                        return (
+                          <div className="text-sm text-gray-500 p-3 text-center">
+                            {groupSearchTerm ? 'Không tìm thấy nhóm nào' : 'Chưa có nhóm nào'}
+                          </div>
+                        )
+                      }
+                      
+                      return filteredGroups.map((group) => {
                       const isSelected = selectedGroup?.id === group.id
                       return (
                         <label
@@ -655,7 +681,8 @@ export default function UserGroupManagementForm() {
                         </label>
                       )
                     })
-                  )}
+                    })()}
+                  </div>
                 </div>
               </div>
             )}
