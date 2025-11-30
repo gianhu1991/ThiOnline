@@ -31,7 +31,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-6 py-8 max-w-full">
       <h1 className="text-3xl font-bold mb-8">Cài đặt</h1>
 
       <div className="flex flex-col md:flex-row gap-6">

@@ -534,9 +534,9 @@ export default function UserGroupManagementForm() {
       )}
 
       {/* Layout: Danh sách nhóm bên trái, Chi tiết bên phải */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
         {/* Danh sách nhóm - Dropdown checkbox - Chiếm 5 cột (mở rộng) */}
-        <div className="lg:col-span-5 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+        <div className="lg:col-span-5 bg-white border border-gray-200 rounded-lg shadow-sm p-5">
           <h3 className="font-semibold text-gray-800 mb-3 text-sm">Danh sách nhóm ({groups.length})</h3>
           
           <div className="relative" ref={groupDropdownRef}>
