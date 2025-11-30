@@ -518,9 +518,9 @@ export default function UserGroupManagementForm() {
         </form>
       )}
 
-      {/* Menu trên 1 dòng: Danh sách nhóm, Thành viên, Video, Tài liệu, Bài thi */}
+      {/* Layout: Danh sách nhóm bên trái, Chi tiết bên phải */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
-        {/* Danh sách nhóm */}
+        {/* Danh sách nhóm - Chiếm 4 cột */}
         <div className="lg:col-span-4 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
           <h3 className="font-semibold text-gray-800 mb-3 text-sm">Danh sách nhóm ({groups.length})</h3>
           {groups.length === 0 ? (
@@ -540,10 +540,10 @@ export default function UserGroupManagementForm() {
                   onClick={() => setSelectedGroup(group)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm truncate">{group.name}</div>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="font-semibold text-gray-900 text-sm break-words">{group.name}</div>
                       {group.description && (
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{group.description}</p>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2 break-words">{group.description}</p>
                       )}
                       <div className="flex flex-wrap gap-1.5 mt-2 text-xs">
                         <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">{group._count.members} TV</span>
@@ -586,7 +586,7 @@ export default function UserGroupManagementForm() {
           )}
         </div>
 
-        {/* Chi tiết nhóm - Thành viên, Video, Tài liệu, Bài thi */}
+        {/* Chi tiết nhóm - Chiếm 8 cột, bên trong chia thành 2 cột để tránh chồng chéo */}
         {selectedGroup ? (
           loadingDetail ? (
             <div className="lg:col-span-8 bg-white border border-gray-200 rounded-lg shadow-sm p-8">
@@ -599,7 +599,7 @@ export default function UserGroupManagementForm() {
               </div>
             </div>
           ) : (
-            <>
+            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Thành viên */}
               <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -608,7 +608,7 @@ export default function UserGroupManagementForm() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
-                  <h4 className="font-bold text-gray-800">Thành viên</h4>
+                  <h4 className="font-bold text-gray-800 text-sm">Thành viên</h4>
                 </div>
                 <CheckboxDropdown
                   label=""
@@ -637,7 +637,7 @@ export default function UserGroupManagementForm() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h4 className="font-bold text-gray-800">Video</h4>
+                  <h4 className="font-bold text-gray-800 text-sm">Video</h4>
                 </div>
                 <CheckboxDropdown
                   label=""
@@ -666,7 +666,7 @@ export default function UserGroupManagementForm() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h4 className="font-bold text-gray-800">Tài liệu</h4>
+                  <h4 className="font-bold text-gray-800 text-sm">Tài liệu</h4>
                 </div>
                 <CheckboxDropdown
                   label=""
@@ -695,7 +695,7 @@ export default function UserGroupManagementForm() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h4 className="font-bold text-gray-800">Bài thi</h4>
+                  <h4 className="font-bold text-gray-800 text-sm">Bài thi</h4>
                 </div>
                 <CheckboxDropdown
                   label=""
@@ -715,10 +715,10 @@ export default function UserGroupManagementForm() {
                   Lưu bài thi
                 </button>
               </div>
-            </>
+            </div>
           )
         ) : (
-          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Placeholder cards với màu sắc đẹp hơn */}
             <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
               <div className="text-center py-6">
