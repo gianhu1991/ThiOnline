@@ -601,9 +601,17 @@ export default function UserGroupManagementForm() {
           ) : (
             <>
               {/* Thành viên */}
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+              <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-800">Thành viên</h4>
+                </div>
                 <CheckboxDropdown
-                  label="Thành viên"
+                  label=""
                   items={allUsers.map(user => ({
                     id: user.id,
                     label: `${user.username}${user.fullName ? ` (${user.fullName})` : ''}`,
@@ -615,16 +623,24 @@ export default function UserGroupManagementForm() {
                 <button
                   onClick={handleSaveMembers}
                   disabled={loading}
-                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2.5 px-4 disabled:opacity-50 w-full mt-3 rounded-lg font-medium transition-colors shadow-sm"
                 >
                   Lưu thành viên
                 </button>
               </div>
 
               {/* Video */}
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+              <div className="bg-gradient-to-br from-green-50 to-white border-l-4 border-green-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-800">Video</h4>
+                </div>
                 <CheckboxDropdown
-                  label="Video"
+                  label=""
                   items={allVideos.map(video => ({
                     id: video.id,
                     label: video.title,
@@ -636,16 +652,24 @@ export default function UserGroupManagementForm() {
                 <button
                   onClick={handleSaveVideos}
                   disabled={loading}
-                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  className="bg-green-600 hover:bg-green-700 text-white text-sm py-2.5 px-4 disabled:opacity-50 w-full mt-3 rounded-lg font-medium transition-colors shadow-sm"
                 >
                   Lưu video
                 </button>
               </div>
 
               {/* Tài liệu */}
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+              <div className="bg-gradient-to-br from-purple-50 to-white border-l-4 border-purple-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-800">Tài liệu</h4>
+                </div>
                 <CheckboxDropdown
-                  label="Tài liệu"
+                  label=""
                   items={allDocuments.map(doc => ({
                     id: doc.id,
                     label: doc.title,
@@ -657,16 +681,24 @@ export default function UserGroupManagementForm() {
                 <button
                   onClick={handleSaveDocuments}
                   disabled={loading}
-                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm py-2.5 px-4 disabled:opacity-50 w-full mt-3 rounded-lg font-medium transition-colors shadow-sm"
                 >
                   Lưu tài liệu
                 </button>
               </div>
 
               {/* Bài thi */}
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+              <div className="bg-gradient-to-br from-orange-50 to-white border-l-4 border-orange-500 rounded-lg shadow-md hover:shadow-lg transition-shadow p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-800">Bài thi</h4>
+                </div>
                 <CheckboxDropdown
-                  label="Bài thi"
+                  label=""
                   items={allExams.map(exam => ({
                     id: exam.id,
                     label: exam.title,
@@ -678,7 +710,7 @@ export default function UserGroupManagementForm() {
                 <button
                   onClick={handleSaveExams}
                   disabled={loading}
-                  className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-sm py-2.5 px-4 disabled:opacity-50 w-full mt-3 rounded-lg font-medium transition-colors shadow-sm"
                 >
                   Lưu bài thi
                 </button>
@@ -687,17 +719,51 @@ export default function UserGroupManagementForm() {
           )
         ) : (
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Placeholder cards */}
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <div className="text-center py-8 text-gray-400">
-                  <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            {/* Placeholder cards với màu sắc đẹp hơn */}
+            <div className="bg-gradient-to-br from-blue-50 to-white border-l-4 border-blue-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <p className="text-sm font-medium text-gray-500">Chọn nhóm để quản lý</p>
                 </div>
+                <p className="text-sm font-semibold text-gray-600">Thành viên</p>
+                <p className="text-xs text-gray-400 mt-1">Chọn nhóm để quản lý</p>
               </div>
-            ))}
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-white border-l-4 border-green-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-gray-600">Video</p>
+                <p className="text-xs text-gray-400 mt-1">Chọn nhóm để quản lý</p>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-white border-l-4 border-purple-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-gray-600">Tài liệu</p>
+                <p className="text-xs text-gray-400 mt-1">Chọn nhóm để quản lý</p>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-white border-l-4 border-orange-300 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-gray-600">Bài thi</p>
+                <p className="text-xs text-gray-400 mt-1">Chọn nhóm để quản lý</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

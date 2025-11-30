@@ -50,15 +50,23 @@ export default function CheckboxDropdown({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="block mb-2 font-semibold text-gray-700 text-sm">{label}</label>
+      {label && <label className="block mb-2 font-semibold text-gray-700 text-sm">{label}</label>}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full input-field text-left flex items-center justify-between"
+        className={`w-full px-4 py-2.5 text-left flex items-center justify-between bg-white border-2 rounded-lg transition-all ${
+          isOpen 
+            ? 'border-blue-500 shadow-md' 
+            : selectedCount > 0
+            ? 'border-blue-300 shadow-sm'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
       >
-        <span className={selectedCount === 0 ? 'text-gray-400' : ''}>{displayText}</span>
+        <span className={`text-sm flex-1 truncate ${selectedCount === 0 ? 'text-gray-400' : 'text-gray-700 font-medium'}`}>
+          {displayText}
+        </span>
         <svg
-          className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+          className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'transform rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -68,25 +76,29 @@ export default function CheckboxDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          <div className="p-2 space-y-1">
+        <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          <div className="p-2">
             {items.length === 0 ? (
-              <div className="text-sm text-gray-500 p-2">Không có mục nào</div>
+              <div className="text-sm text-gray-500 p-3 text-center">Không có mục nào</div>
             ) : (
               items.map((item) => {
                 const isChecked = selectedIds.includes(item.id)
                 return (
                   <label
                     key={item.id}
-                    className="flex items-center p-2 hover:bg-gray-50 cursor-pointer rounded"
+                    className={`flex items-center p-2.5 cursor-pointer rounded transition-colors ${
+                      isChecked ? 'bg-blue-50' : 'hover:bg-gray-50'
+                    }`}
                   >
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => toggleItem(item.id)}
-                      className="mr-3 rounded"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
-                    <span className="text-sm text-gray-700 flex-1">{item.label}</span>
+                    <span className={`text-sm ml-3 flex-1 ${isChecked ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                      {item.label}
+                    </span>
                   </label>
                 )
               })
