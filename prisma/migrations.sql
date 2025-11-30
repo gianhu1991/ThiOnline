@@ -279,3 +279,17 @@ CREATE TABLE IF NOT EXISTS "DocumentGroup" (
 CREATE INDEX IF NOT EXISTS "DocumentGroup_documentId_idx" ON "DocumentGroup"("documentId");
 CREATE INDEX IF NOT EXISTS "DocumentGroup_groupId_idx" ON "DocumentGroup"("groupId");
 
+-- Tạo bảng ExamGroup (Gán bài thi cho nhóm)
+CREATE TABLE IF NOT EXISTS "ExamGroup" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "examId" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("examId") REFERENCES "Exam"("id") ON DELETE CASCADE,
+    FOREIGN KEY ("groupId") REFERENCES "UserGroup"("id") ON DELETE CASCADE,
+    UNIQUE("examId", "groupId")
+);
+
+CREATE INDEX IF NOT EXISTS "ExamGroup_examId_idx" ON "ExamGroup"("examId");
+CREATE INDEX IF NOT EXISTS "ExamGroup_groupId_idx" ON "ExamGroup"("groupId");
+

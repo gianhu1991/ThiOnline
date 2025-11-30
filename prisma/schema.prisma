@@ -42,6 +42,7 @@ model Exam {
   examQuestions   ExamQuestion[]
   examResults     ExamResult[]
   examAssignments ExamAssignment[]
+  examGroups      ExamGroup[]
 }
 
 model ExamQuestion {
@@ -148,6 +149,7 @@ model UserGroup {
   members     UserGroupMember[]
   videoGroups VideoGroup[]
   documentGroups DocumentGroup[]
+  examGroups  ExamGroup[]
 }
 
 model UserGroupMember {
@@ -186,5 +188,18 @@ model DocumentGroup {
 
   @@unique([documentId, groupId])
   @@index([documentId])
+  @@index([groupId])
+}
+
+model ExamGroup {
+  id        String   @id @default(cuid())
+  examId    String
+  groupId   String
+  assignedAt DateTime @default(now())
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  group     UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, groupId])
+  @@index([examId])
   @@index([groupId])
 }

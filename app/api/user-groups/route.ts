@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
             members: true,
             videoGroups: true,
             documentGroups: true,
+            examGroups: true,
           },
         },
       },

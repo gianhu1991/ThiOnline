@@ -49,6 +49,16 @@ export async function GET(
             },
           },
         },
+        examGroups: {
+          include: {
+            exam: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
       },
     })
 

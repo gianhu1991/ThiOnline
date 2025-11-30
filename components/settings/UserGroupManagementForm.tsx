@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import CheckboxDropdown from './CheckboxDropdown'
 
 interface UserGroup {
   id: string
@@ -11,6 +12,7 @@ interface UserGroup {
     members: number
     videoGroups: number
     documentGroups: number
+    examGroups: number
   }
 }
 
@@ -27,6 +29,11 @@ interface Video {
 }
 
 interface Document {
+  id: string
+  title: string
+}
+
+interface Exam {
   id: string
   title: string
 }
@@ -48,9 +55,11 @@ export default function UserGroupManagementForm() {
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [allVideos, setAllVideos] = useState<Video[]>([])
   const [allDocuments, setAllDocuments] = useState<Document[]>([])
+  const [allExams, setAllExams] = useState<Exam[]>([])
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([])
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([])
+  const [selectedExamIds, setSelectedExamIds] = useState<string[]>([])
 
   useEffect(() => {
     fetchGroups()
@@ -62,6 +71,7 @@ export default function UserGroupManagementForm() {
       fetchAllUsers()
       fetchAllVideos()
       fetchAllDocuments()
+      fetchAllExams()
     }
   }, [selectedGroup])
 
@@ -92,6 +102,7 @@ export default function UserGroupManagementForm() {
         setSelectedUserIds(data.group.members.map((m: any) => m.user.id))
         setSelectedVideoIds(data.group.videoGroups.map((vg: any) => vg.video.id))
         setSelectedDocumentIds(data.group.documentGroups.map((dg: any) => dg.document.id))
+        setSelectedExamIds(data.group.examGroups?.map((eg: any) => eg.exam.id) || [])
       }
     } catch (error) {
       console.error('Error fetching group detail:', error)
@@ -139,6 +150,20 @@ export default function UserGroupManagementForm() {
       }
     } catch (error) {
       console.error('Error fetching documents:', error)
+    }
+  }
+
+  const fetchAllExams = async () => {
+    try {
+      const res = await fetch('/api/exams', {
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (res.ok && Array.isArray(data)) {
+        setAllExams(data)
+      }
+    } catch (error) {
+      console.error('Error fetching exams:', error)
     }
   }
 
@@ -368,6 +393,42 @@ export default function UserGroupManagementForm() {
     }
   }
 
+  const handleSaveExams = async () => {
+    if (!selectedGroup) return
+
+    setLoading(true)
+    try {
+      const currentExamIds = groupDetail?.examGroups?.map((eg: any) => eg.exam.id) || []
+      const toAdd = selectedExamIds.filter(id => !currentExamIds.includes(id))
+      const toRemove = currentExamIds.filter((id: string) => !selectedExamIds.includes(id))
+
+      if (toAdd.length > 0) {
+        await fetch(`/api/user-groups/${selectedGroup.id}/exams`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ examIds: toAdd, action: 'add' }),
+        })
+      }
+
+      if (toRemove.length > 0) {
+        await fetch(`/api/user-groups/${selectedGroup.id}/exams`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ examIds: toRemove, action: 'remove' }),
+        })
+      }
+
+      setSuccess('Cập nhật bài thi thành công!')
+      fetchGroupDetail(selectedGroup.id)
+    } catch (error) {
+      setError('Lỗi khi cập nhật bài thi')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="card">
       <div className="flex justify-between items-center mb-6">
@@ -457,175 +518,171 @@ export default function UserGroupManagementForm() {
         </form>
       )}
 
-      {/* Danh sách nhóm - Hiển thị ngang */}
-      <div className="mb-6">
-        <h3 className="font-semibold text-gray-700 mb-3">Danh sách nhóm ({groups.length})</h3>
-        {groups.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>Chưa có nhóm nào</p>
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {groups.map((group) => (
-              <div
-                key={group.id}
-                className={`flex-shrink-0 w-64 p-3 rounded-lg transition-colors cursor-pointer ${
-                  selectedGroup?.id === group.id
-                    ? 'bg-blue-100 border-2 border-blue-500'
-                    : 'bg-gray-50 hover:bg-gray-100'
-                }`}
-                onClick={() => setSelectedGroup(group)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{group.name}</div>
-                    {group.description && (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{group.description}</p>
-                    )}
-                    <div className="flex gap-2 mt-2 text-xs text-gray-500 flex-wrap">
-                      <span>{group._count.members} thành viên</span>
-                      <span>{group._count.videoGroups} video</span>
-                      <span>{group._count.documentGroups} tài liệu</span>
+      {/* Menu trên 1 dòng: Danh sách nhóm, Thành viên, Video, Tài liệu */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        {/* Danh sách nhóm */}
+        <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
+          <h3 className="font-semibold text-gray-700 mb-3">Danh sách nhóm ({groups.length})</h3>
+          {groups.length === 0 ? (
+            <div className="text-center py-4 text-gray-500 text-sm">
+              <p>Chưa có nhóm nào</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {groups.map((group) => (
+                <div
+                  key={group.id}
+                  className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                    selectedGroup?.id === group.id
+                      ? 'bg-blue-100 border-2 border-blue-500'
+                      : 'bg-white hover:bg-gray-100 border border-gray-200'
+                  }`}
+                  onClick={() => setSelectedGroup(group)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 text-sm truncate">{group.name}</div>
+                      {group.description && (
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-1">{group.description}</p>
+                      )}
+                      <div className="flex gap-2 mt-1 text-xs text-gray-500">
+                        <span>{group._count.members} TV</span>
+                        <span>{group._count.videoGroups} V</span>
+                        <span>{group._count.documentGroups} TL</span>
+                        <span>{group._count.examGroups || 0} BT</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 ml-2 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditGroup(group)
+                          setShowCreateForm(false)
+                        }}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-colors"
+                        title="Sửa nhóm"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteGroup(group.id, group.name)
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                        title="Xóa nhóm"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1 ml-2 flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditGroup(group)
-                        setShowCreateForm(false)
-                      }}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded transition-colors"
-                      title="Sửa nhóm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteGroup(group.id, group.name)
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors"
-                      title="Xóa nhóm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Chi tiết nhóm */}
-      {selectedGroup && (
-        <div>
-          <h3 className="font-semibold text-gray-700 mb-3">Chi tiết nhóm: {selectedGroup.name}</h3>
-          {loadingDetail ? (
-            <div className="text-center py-8 text-gray-500">Đang tải...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Thành viên */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Thành viên</h4>
-                <select
-                  multiple
-                  value={selectedUserIds}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value)
-                    setSelectedUserIds(selected)
-                  }}
-                  className="w-full input-field min-h-[120px] mb-3"
-                  size={5}
-                >
-                  {allUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.username} {user.fullName && `(${user.fullName})`}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mb-3">
-                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                </p>
-                <button
-                  onClick={handleSaveMembers}
-                  disabled={loading}
-                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                >
-                  Lưu thành viên
-                </button>
-              </div>
-
-              {/* Video */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Video</h4>
-                <select
-                  multiple
-                  value={selectedVideoIds}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value)
-                    setSelectedVideoIds(selected)
-                  }}
-                  className="w-full input-field min-h-[120px] mb-3"
-                  size={5}
-                >
-                  {allVideos.map((video) => (
-                    <option key={video.id} value={video.id}>
-                      {video.title}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mb-3">
-                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                </p>
-                <button
-                  onClick={handleSaveVideos}
-                  disabled={loading}
-                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                >
-                  Lưu video
-                </button>
-              </div>
-
-              {/* Tài liệu */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Tài liệu</h4>
-                <select
-                  multiple
-                  value={selectedDocumentIds}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value)
-                    setSelectedDocumentIds(selected)
-                  }}
-                  className="w-full input-field min-h-[120px] mb-3"
-                  size={5}
-                >
-                  {allDocuments.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.title}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mb-3">
-                  Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều
-                </p>
-                <button
-                  onClick={handleSaveDocuments}
-                  disabled={loading}
-                  className="btn-primary text-sm py-1 px-3 disabled:opacity-50 w-full"
-                >
-                  Lưu tài liệu
-                </button>
-              </div>
+              ))}
             </div>
           )}
         </div>
-      )}
+
+        {/* Chi tiết nhóm - Thành viên, Video, Tài liệu */}
+        {selectedGroup && (
+          <>
+            {loadingDetail ? (
+              <div className="flex-1 min-w-[250px] bg-gray-50 p-4 rounded-lg">
+                <div className="text-center py-8 text-gray-500">Đang tải...</div>
+              </div>
+            ) : (
+              <>
+                {/* Thành viên */}
+                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
+                  <CheckboxDropdown
+                    label="Thành viên"
+                    items={allUsers.map(user => ({
+                      id: user.id,
+                      label: `${user.username}${user.fullName ? ` (${user.fullName})` : ''}`,
+                    }))}
+                    selectedIds={selectedUserIds}
+                    onSelectionChange={setSelectedUserIds}
+                    placeholder="Chọn thành viên..."
+                  />
+                  <button
+                    onClick={handleSaveMembers}
+                    disabled={loading}
+                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  >
+                    Lưu thành viên
+                  </button>
+                </div>
+
+                {/* Video */}
+                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
+                  <CheckboxDropdown
+                    label="Video"
+                    items={allVideos.map(video => ({
+                      id: video.id,
+                      label: video.title,
+                    }))}
+                    selectedIds={selectedVideoIds}
+                    onSelectionChange={setSelectedVideoIds}
+                    placeholder="Chọn video..."
+                  />
+                  <button
+                    onClick={handleSaveVideos}
+                    disabled={loading}
+                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  >
+                    Lưu video
+                  </button>
+                </div>
+
+                {/* Tài liệu */}
+                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
+                  <CheckboxDropdown
+                    label="Tài liệu"
+                    items={allDocuments.map(doc => ({
+                      id: doc.id,
+                      label: doc.title,
+                    }))}
+                    selectedIds={selectedDocumentIds}
+                    onSelectionChange={setSelectedDocumentIds}
+                    placeholder="Chọn tài liệu..."
+                  />
+                  <button
+                    onClick={handleSaveDocuments}
+                    disabled={loading}
+                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  >
+                    Lưu tài liệu
+                  </button>
+                </div>
+
+                {/* Bài thi */}
+                <div className="bg-gray-50 p-4 rounded-lg flex-1 min-w-[250px]">
+                  <CheckboxDropdown
+                    label="Bài thi"
+                    items={allExams.map(exam => ({
+                      id: exam.id,
+                      label: exam.title,
+                    }))}
+                    selectedIds={selectedExamIds}
+                    onSelectionChange={setSelectedExamIds}
+                    placeholder="Chọn bài thi..."
+                  />
+                  <button
+                    onClick={handleSaveExams}
+                    disabled={loading}
+                    className="btn-primary text-sm py-2 px-4 disabled:opacity-50 w-full mt-3"
+                  >
+                    Lưu bài thi
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
