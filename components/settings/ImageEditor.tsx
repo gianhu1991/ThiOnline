@@ -572,16 +572,22 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
           {/* Controls */}
           <div className="space-y-4 mb-6">
             {/* Toggle crop mode */}
-            <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${cropMode ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50'}`}>
               <input
                 type="checkbox"
                 id="crop-mode"
                 checked={cropMode}
-                onChange={(e) => setCropMode(e.target.checked)}
+                onChange={(e) => {
+                  const newCropMode = e.target.checked
+                  setCropMode(newCropMode)
+                  if (newCropMode) {
+                    alert('⚠️ CẢNH BÁO: Bạn đã bật chế độ crop. Ảnh sẽ bị cắt theo vùng crop khi lưu. Nếu muốn upload ảnh gốc đầy đủ, hãy TẮT chế độ này trước khi lưu!')
+                  }
+                }}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
               />
-              <label htmlFor="crop-mode" className="text-sm font-medium text-gray-700 cursor-pointer">
-                Bật chế độ crop (kéo các cạnh để cắt ảnh)
+              <label htmlFor="crop-mode" className={`text-sm font-medium cursor-pointer ${cropMode ? 'text-yellow-800 font-bold' : 'text-gray-700'}`}>
+                {cropMode ? '⚠️ ĐANG BẬT - Ảnh sẽ bị cắt!' : 'Bật chế độ crop (kéo các cạnh để cắt ảnh)'}
               </label>
             </div>
 
