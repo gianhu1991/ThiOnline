@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   const [formPosition, setFormPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+  const [isLoadingBackground, setIsLoadingBackground] = useState(true)
 
   useEffect(() => {
     fetchBackground()
@@ -24,14 +25,28 @@ export default function LoginPage() {
       const data = await res.json()
       if (res.ok && data.success) {
         if (data.backgroundUrl) {
-          setBackgroundUrl(data.backgroundUrl)
+          // Preload ảnh trước khi set state để tránh flash
+          const img = new Image()
+          img.onload = () => {
+            setBackgroundUrl(data.backgroundUrl)
+            setIsLoadingBackground(false)
+          }
+          img.onerror = () => {
+            setIsLoadingBackground(false)
+          }
+          img.src = data.backgroundUrl
+        } else {
+          setIsLoadingBackground(false)
         }
         if (data.formPosition) {
           setFormPosition(data.formPosition)
         }
+      } else {
+        setIsLoadingBackground(false)
       }
     } catch (error) {
       console.error('Error fetching background:', error)
+      setIsLoadingBackground(false)
     }
   }
 
@@ -83,8 +98,8 @@ export default function LoginPage() {
       {backgroundUrl && (
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
       )}
-      {/* Background decorative elements - chỉ hiển thị khi không có ảnh nền */}
-      {!backgroundUrl && (
+      {/* Background decorative elements - chỉ hiển thị khi không có ảnh nền và không đang load */}
+      {!backgroundUrl && !isLoadingBackground && (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Grid pattern on ground */}
         <svg className="absolute bottom-0 left-0 w-full h-1/3 opacity-30" viewBox="0 0 1200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
