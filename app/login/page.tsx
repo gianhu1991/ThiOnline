@@ -65,7 +65,7 @@ export default function LoginPage() {
   const backgroundStyle = backgroundUrl 
     ? { 
         backgroundImage: `url(${backgroundUrl})`,
-        backgroundSize: 'cover',
+        backgroundSize: '100% 100%', // Hiển thị toàn bộ ảnh, không cắt
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }
