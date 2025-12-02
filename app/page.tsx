@@ -9,8 +9,31 @@ export default function Home() {
   const [stats, setStats] = useState({ questions: 0, exams: 0, results: 0 })
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [homepageText, setHomepageText] = useState({
+    title: 'TTVT Nho Quan',
+    subtitle: 'Phần mềm đào tạo kỹ thuật',
+    description: 'Quản lý ngân hàng câu hỏi, tạo bài thi và tổ chức thi trắc nghiệm trực tuyến một cách dễ dàng và hiệu quả',
+  })
 
   useEffect(() => {
+    // Fetch homepage text
+    const fetchHomepageText = async () => {
+      try {
+        const res = await fetch('/api/settings/homepage-text')
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setHomepageText({
+            title: data.title,
+            subtitle: data.subtitle,
+            description: data.description,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching homepage text:', error)
+      }
+    }
+    fetchHomepageText()
+
     // Kiểm tra authentication
     const checkAuth = async () => {
       try {
@@ -126,11 +149,11 @@ export default function Home() {
       {/* Hero Section */}
       <div className="text-center mb-16">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-          TTVT Nho Quan
-          <span className="text-blue-600 block">Phần mềm đào tạo kỹ thuật</span>
+          {homepageText.title}
+          <span className="text-blue-600 block">{homepageText.subtitle}</span>
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Quản lý ngân hàng câu hỏi, tạo bài thi và tổ chức thi trắc nghiệm trực tuyến một cách dễ dàng và hiệu quả
+          {homepageText.description}
         </p>
       </div>
 

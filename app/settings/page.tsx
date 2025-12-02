@@ -5,8 +5,9 @@ import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
 import CategoryManagementForm from '@/components/settings/CategoryManagementForm'
 import UserManagementForm from '@/components/settings/UserManagementForm'
 import UserGroupManagementForm from '@/components/settings/UserGroupManagementForm'
+import LoginBackgroundForm from '@/components/settings/LoginBackgroundForm'
 
-type SettingsTab = 'password' | 'category' | 'user' | 'group'
+type SettingsTab = 'password' | 'category' | 'user' | 'group' | 'background'
 
 export default function SettingsPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -107,6 +108,22 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab('background')}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                      activeTab === 'background' ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className={`font-medium ${activeTab === 'background' ? 'text-blue-600' : 'text-gray-700'}`}>
+                        Ảnh nền đăng nhập
+                      </span>
+                    </div>
+                  </button>
                 </>
               )}
             </div>
@@ -119,6 +136,7 @@ export default function SettingsPage() {
           {activeTab === 'category' && userRole === 'admin' && <CategoryManagementForm />}
           {activeTab === 'user' && userRole === 'admin' && <UserManagementForm />}
           {activeTab === 'group' && userRole === 'admin' && <UserGroupManagementForm />}
+          {activeTab === 'background' && userRole === 'admin' && <LoginBackgroundForm />}
         </div>
       </div>
     </div>

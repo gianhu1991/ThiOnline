@@ -203,3 +203,11 @@ model ExamGroup {
   @@index([examId])
   @@index([groupId])
 }
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique // Key của setting (ví dụ: 'login_background')
+  value     String   // Giá trị (ví dụ: URL ảnh)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
