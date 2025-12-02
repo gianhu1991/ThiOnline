@@ -37,6 +37,7 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
     setScale(1)
     setFormPosition({ x: 50, y: 50 })
     setFormSize({ width: 90, height: 70 })
+    setCropMode(false) // Đảm bảo crop mode luôn TẮT mặc định
     if (containerRef.current) {
       const container = containerRef.current
       setCropArea({ x: 10, y: 10, width: 80, height: 80 })
