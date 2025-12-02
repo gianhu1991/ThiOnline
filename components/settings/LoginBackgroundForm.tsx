@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ImageEditor from './ImageEditor'
 
 interface HomepageTextFormProps {
   title: string
@@ -81,6 +82,8 @@ export default function LoginBackgroundForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [preview, setPreview] = useState<string | null>(null)
+  const [showEditor, setShowEditor] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   
   // Homepage text states
   const [homepageText, setHomepageText] = useState({
@@ -156,10 +159,12 @@ export default function LoginBackgroundForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Tạo preview
+      setSelectedFile(file)
+      // Tạo preview URL để hiển thị trong editor
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreview(reader.result as string)
+        setShowEditor(true) // Mở editor ngay khi chọn file
       }
       reader.readAsDataURL(file)
       setError('')
@@ -167,23 +172,15 @@ export default function LoginBackgroundForm() {
     }
   }
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const fileInput = document.getElementById('background-file') as HTMLInputElement
-    const file = fileInput?.files?.[0]
-
-    if (!file) {
-      setError('Vui lòng chọn file ảnh')
-      return
-    }
-
+  const handleSaveFromEditor = async (croppedImageBlob: Blob, position: { x: number; y: number }, scale: number) => {
     setUploading(true)
     setError('')
     setSuccess('')
+    setShowEditor(false)
 
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', croppedImageBlob, selectedFile?.name || 'background.jpg')
 
       const res = await fetch('/api/settings/login-background', {
         method: 'POST',
@@ -197,7 +194,9 @@ export default function LoginBackgroundForm() {
         setSuccess('Cập nhật ảnh nền thành công!')
         setBackgroundUrl(data.url)
         setPreview(null)
-        fileInput.value = ''
+        setSelectedFile(null)
+        const fileInput = document.getElementById('background-file') as HTMLInputElement
+        if (fileInput) fileInput.value = ''
       } else {
         setError(data.error || 'Upload thất bại')
       }
@@ -206,6 +205,14 @@ export default function LoginBackgroundForm() {
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleCancelEditor = () => {
+    setShowEditor(false)
+    setPreview(null)
+    setSelectedFile(null)
+    const fileInput = document.getElementById('background-file') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
   }
 
   const handleDelete = async () => {
@@ -269,22 +276,8 @@ export default function LoginBackgroundForm() {
         </div>
       )}
 
-      {/* Preview new image */}
-      {preview && (
-        <div className="mb-6">
-          <h3 className="font-semibold text-gray-700 mb-2">Xem trước ảnh mới:</h3>
-          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200">
-            <img 
-              src={preview} 
-              alt="Preview" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Upload form */}
-      <form onSubmit={handleUpload} className="space-y-4">
+      <form className="space-y-4">
         <div>
           <label className="block mb-2 font-semibold text-gray-700">
             Chọn ảnh nền mới
@@ -303,13 +296,6 @@ export default function LoginBackgroundForm() {
         </div>
 
         <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={uploading || !preview}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? 'Đang upload...' : 'Cập nhật ảnh nền'}
-          </button>
           {backgroundUrl && (
             <button
               type="button"
@@ -322,6 +308,15 @@ export default function LoginBackgroundForm() {
           )}
         </div>
       </form>
+
+      {/* Image Editor Modal */}
+      {showEditor && preview && (
+        <ImageEditor
+          imageUrl={preview}
+          onSave={handleSaveFromEditor}
+          onCancel={handleCancelEditor}
+        />
+      )}
 
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <p className="text-sm text-blue-800">

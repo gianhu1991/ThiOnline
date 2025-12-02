@@ -73,9 +73,9 @@ export default function LoginPage() {
       marginTop: 0, 
       paddingTop: 0 
     }}>
-      {/* Overlay để làm mờ ảnh nền nếu cần */}
+      {/* Overlay nhẹ để đảm bảo form dễ đọc */}
       {backgroundUrl && (
-        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-10"></div>
       )}
       {/* Background decorative elements - chỉ hiển thị khi không có ảnh nền */}
       {!backgroundUrl && (
@@ -185,7 +185,7 @@ export default function LoginPage() {
       )}
 
       <div className="max-w-md w-full mx-4 relative z-10">
-        <div className="card shadow-2xl">
+        <div className="card shadow-2xl bg-white/95 backdrop-blur-sm">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
             <p className="text-gray-600">TTVT Nho Quan - Phần mềm đào tạo kỹ thuật</p>
