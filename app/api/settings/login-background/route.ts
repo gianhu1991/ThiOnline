@@ -14,6 +14,10 @@ export async function GET(request: NextRequest) {
       where: { key: 'login_form_position' },
     })
 
+    const subtitleSetting = await prisma.settings.findUnique({
+      where: { key: 'login_subtitle' },
+    })
+
     let formPosition = null
     if (formPositionSetting?.value) {
       try {
@@ -26,14 +30,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       backgroundUrl: backgroundSetting?.value || null,
-      formPosition: formPosition
+      formPosition: formPosition,
+      subtitle: subtitleSetting?.value || 'TTVT Nho Quan - Phần mềm đào tạo kỹ thuật'
     })
   } catch (error: any) {
     console.error('Error fetching login background:', error)
     return NextResponse.json({ 
       success: true, 
       backgroundUrl: null,
-      formPosition: null
+      formPosition: null,
+      subtitle: 'TTVT Nho Quan - Phần mềm đào tạo kỹ thuật'
     })
   }
 }
@@ -124,6 +130,39 @@ export async function POST(request: NextRequest) {
     console.error('Error uploading login background:', error)
     return NextResponse.json({ 
       error: `Lỗi khi upload ảnh nền: ${error.message || 'Unknown error'}` 
+    }, { status: 500 })
+  }
+}
+
+// PUT: Cập nhật subtitle của form đăng nhập
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await getJWT(request)
+
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Chỉ admin mới được thay đổi phụ đề' }, { status: 403 })
+    }
+
+    const { subtitle } = await request.json()
+
+    if (!subtitle || !subtitle.trim()) {
+      return NextResponse.json({ error: 'Phụ đề không được để trống' }, { status: 400 })
+    }
+
+    await prisma.settings.upsert({
+      where: { key: 'login_subtitle' },
+      update: { value: subtitle.trim() },
+      create: { key: 'login_subtitle', value: subtitle.trim() },
+    })
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Cập nhật phụ đề thành công'
+    })
+  } catch (error: any) {
+    console.error('Error updating login subtitle:', error)
+    return NextResponse.json({ 
+      error: `Lỗi khi cập nhật phụ đề: ${error.message || 'Unknown error'}` 
     }, { status: 500 })
   }
 }

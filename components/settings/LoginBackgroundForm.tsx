@@ -85,6 +85,12 @@ export default function LoginBackgroundForm() {
   const [showEditor, setShowEditor] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   
+  // Login subtitle state
+  const [loginSubtitle, setLoginSubtitle] = useState('TTVT Nho Quan - Phần mềm đào tạo kỹ thuật')
+  const [subtitleLoading, setSubtitleLoading] = useState(false)
+  const [subtitleError, setSubtitleError] = useState('')
+  const [subtitleSuccess, setSubtitleSuccess] = useState('')
+  
   // Homepage text states
   const [homepageText, setHomepageText] = useState({
     title: 'TTVT Nho Quan',
@@ -150,9 +156,40 @@ export default function LoginBackgroundForm() {
       const data = await res.json()
       if (res.ok && data.success) {
         setBackgroundUrl(data.backgroundUrl)
+        if (data.subtitle) {
+          setLoginSubtitle(data.subtitle)
+        }
       }
     } catch (error) {
       console.error('Error fetching background:', error)
+    }
+  }
+
+  const handleUpdateSubtitle = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubtitleLoading(true)
+    setSubtitleError('')
+    setSubtitleSuccess('')
+
+    try {
+      const res = await fetch('/api/settings/login-background', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ subtitle: loginSubtitle }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setSubtitleSuccess('Cập nhật phụ đề đăng nhập thành công!')
+      } else {
+        setSubtitleError(data.error || 'Cập nhật thất bại')
+      }
+    } catch (error) {
+      setSubtitleError('Lỗi khi cập nhật phụ đề')
+    } finally {
+      setSubtitleLoading(false)
     }
   }
 
@@ -378,6 +415,51 @@ export default function LoginBackgroundForm() {
           )}
         </div>
       </form>
+
+      {/* Form chỉnh sửa phụ đề đăng nhập */}
+      <div className="mt-8 pt-8 border-t border-gray-200">
+        <h3 className="text-xl font-bold mb-4">Phụ đề form đăng nhập</h3>
+        
+        {subtitleError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+            {subtitleError}
+          </div>
+        )}
+
+        {subtitleSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
+            {subtitleSuccess}
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateSubtitle} className="space-y-4">
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Phụ đề hiển thị dưới tiêu đề "Đăng nhập" *
+            </label>
+            <input
+              type="text"
+              value={loginSubtitle}
+              onChange={(e) => setLoginSubtitle(e.target.value)}
+              className="input-field"
+              placeholder="TTVT Nho Quan - Phần mềm đào tạo kỹ thuật"
+              required
+              disabled={subtitleLoading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Dòng chữ này sẽ hiển thị ngay dưới tiêu đề "Đăng nhập" trên form đăng nhập.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={subtitleLoading}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {subtitleLoading ? 'Đang cập nhật...' : 'Cập nhật phụ đề'}
+          </button>
+        </form>
+      </div>
 
       {/* Image Editor Modal */}
       {showEditor && preview && selectedFile && (

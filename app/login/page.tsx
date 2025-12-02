@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   const [formPosition, setFormPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+  const [loginSubtitle, setLoginSubtitle] = useState('TTVT Nho Quan - Phần mềm đào tạo kỹ thuật')
   const [isLoadingBackground, setIsLoadingBackground] = useState(true)
 
   useEffect(() => {
@@ -40,6 +41,9 @@ export default function LoginPage() {
         }
         if (data.formPosition) {
           setFormPosition(data.formPosition)
+        }
+        if (data.subtitle) {
+          setLoginSubtitle(data.subtitle)
         }
       } else {
         setIsLoadingBackground(false)
@@ -225,7 +229,7 @@ export default function LoginPage() {
         <div className="card shadow-2xl bg-white/95 backdrop-blur-sm h-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
-            <p className="text-gray-600">TTVT Nho Quan - Phần mềm đào tạo kỹ thuật</p>
+            <p className="text-gray-600">{loginSubtitle}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
