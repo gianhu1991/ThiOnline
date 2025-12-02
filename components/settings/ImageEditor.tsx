@@ -281,16 +281,7 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       }
 
       // Đợi ảnh load xong
-      if (!img.complete) {
-        img.onload = () => {
-          processCrop()
-        }
-        return
-      }
-      
-      processCrop()
-      
-      function processCrop() {
+      const processCrop = () => {
         const containerWidth = container.offsetWidth
         const containerHeight = container.offsetHeight
 
@@ -363,6 +354,13 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
           }
         }, 'image/jpeg', 0.92)
       }
+
+      if (!img.complete) {
+        img.onload = processCrop
+        return
+      }
+      
+      processCrop()
     } else {
       // Upload ảnh gốc
       onSave(originalFile, undefined, {
