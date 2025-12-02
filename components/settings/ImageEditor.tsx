@@ -110,13 +110,28 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
     const rect = container.getBoundingClientRect()
 
     if (isDraggingForm) {
-      // Kéo form
+      // Kéo form - đảm bảo form không bị kéo ra ngoài khung
       const deltaX = ((e.clientX - formDragStart.x) / rect.width) * 100
       const deltaY = ((e.clientY - formDragStart.y) / rect.height) * 100
       
+      // Tính toán vị trí mới
+      let newX = formDragStart.form.x + deltaX
+      let newY = formDragStart.form.y + deltaY
+      
+      // Giới hạn để form không bị kéo ra ngoài
+      // Vì form dùng transform translate(-50%, -50%), nên cần tính toán dựa trên kích thước form
+      const halfWidth = formDragStart.form.width / 2
+      const halfHeight = formDragStart.form.height / 2
+      
+      // Giới hạn X: form không được vượt quá biên trái/phải
+      newX = Math.max(halfWidth, Math.min(100 - halfWidth, newX))
+      
+      // Giới hạn Y: form không được vượt quá biên trên/dưới
+      newY = Math.max(halfHeight, Math.min(100 - halfHeight, newY))
+      
       setFormPosition({
-        x: Math.max(5, Math.min(95, formDragStart.form.x + deltaX)),
-        y: Math.max(5, Math.min(95, formDragStart.form.y + deltaY))
+        x: newX,
+        y: newY
       })
     } else if (isResizingForm && resizeHandle) {
       // Resize form
@@ -165,8 +180,15 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       // Đảm bảo kích thước tối thiểu và không vượt quá container
       if (newForm.width < 20) newForm.width = 20
       if (newForm.height < 20) newForm.height = 20
-      if (newForm.x + newForm.width > 95) newForm.x = 95 - newForm.width
-      if (newForm.y + newForm.height > 95) newForm.y = 95 - newForm.height
+      
+      // Giới hạn vị trí để form không bị tràn ra ngoài (tính với transform translate -50%)
+      const halfWidth = newForm.width / 2
+      const halfHeight = newForm.height / 2
+      
+      if (newForm.x - halfWidth < 0) newForm.x = halfWidth
+      if (newForm.x + halfWidth > 100) newForm.x = 100 - halfWidth
+      if (newForm.y - halfHeight < 0) newForm.y = halfHeight
+      if (newForm.y + halfHeight > 100) newForm.y = 100 - halfHeight
 
       setFormPosition({ x: newForm.x, y: newForm.y })
       setFormSize({ width: newForm.width, height: newForm.height })
