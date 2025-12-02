@@ -172,7 +172,7 @@ export default function LoginBackgroundForm() {
     }
   }
 
-  const handleSaveFromEditor = async (croppedImageBlob: Blob, position: { x: number; y: number }, scale: number) => {
+  const handleSaveFromEditor = async (file: File | Blob, cropArea?: { x: number; y: number; width: number; height: number }, formPosition?: { x: number; y: number; width: number; height: number }) => {
     setUploading(true)
     setError('')
     setSuccess('')
@@ -180,7 +180,19 @@ export default function LoginBackgroundForm() {
 
     try {
       const formData = new FormData()
-      formData.append('file', croppedImageBlob, selectedFile?.name || 'background.jpg')
+      // Nếu là Blob (đã crop), tạo File từ Blob. Nếu là File gốc, dùng trực tiếp
+      if (file instanceof Blob && !(file instanceof File)) {
+        const fileName = selectedFile?.name || 'background.jpg'
+        const fileObj = new File([file], fileName, { type: 'image/jpeg' })
+        formData.append('file', fileObj)
+      } else {
+        formData.append('file', file as File)
+      }
+
+      // Thêm formPosition nếu có
+      if (formPosition) {
+        formData.append('formPosition', JSON.stringify(formPosition))
+      }
 
       const res = await fetch('/api/settings/login-background', {
         method: 'POST',
@@ -191,7 +203,7 @@ export default function LoginBackgroundForm() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        setSuccess('Cập nhật ảnh nền thành công!')
+        setSuccess(cropArea ? 'Cập nhật ảnh nền (đã crop) thành công!' : 'Cập nhật ảnh nền thành công!')
         setBackgroundUrl(data.url)
         setPreview(null)
         setSelectedFile(null)
@@ -310,9 +322,10 @@ export default function LoginBackgroundForm() {
       </form>
 
       {/* Image Editor Modal */}
-      {showEditor && preview && (
+      {showEditor && preview && selectedFile && (
         <ImageEditor
           imageUrl={preview}
+          originalFile={selectedFile}
           onSave={handleSaveFromEditor}
           onCancel={handleCancelEditor}
         />

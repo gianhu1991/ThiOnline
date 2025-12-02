@@ -6,19 +6,35 @@ import { put } from '@vercel/blob'
 // GET: Lấy background hiện tại
 export async function GET(request: NextRequest) {
   try {
-    const setting = await prisma.settings.findUnique({
-      where: { key: 'login_background' },
+    const [backgroundSetting, formPositionSetting] = await Promise.all([
+      prisma.settings.findUnique({
+        where: { key: 'login_background' },
+      }),
+      prisma.settings.findUnique({
+        where: { key: 'login_form_position' },
+      }),
     })
+
+    let formPosition = null
+    if (formPositionSetting?.value) {
+      try {
+        formPosition = JSON.parse(formPositionSetting.value)
+      } catch (e) {
+        console.error('Error parsing formPosition:', e)
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
-      backgroundUrl: setting?.value || null 
+      backgroundUrl: backgroundSetting?.value || null,
+      formPosition: formPosition
     })
   } catch (error: any) {
     console.error('Error fetching login background:', error)
     return NextResponse.json({ 
       success: true, 
-      backgroundUrl: null 
+      backgroundUrl: null,
+      formPosition: null
     })
   }
 }
@@ -34,9 +50,20 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const formPositionStr = formData.get('formPosition') as string | null
 
     if (!file) {
       return NextResponse.json({ error: 'Không có file được tải lên' }, { status: 400 })
+    }
+
+    // Parse formPosition nếu có
+    let formPosition = null
+    if (formPositionStr) {
+      try {
+        formPosition = JSON.parse(formPositionStr)
+      } catch (e) {
+        console.error('Error parsing formPosition:', e)
+      }
     }
 
     // Kiểm tra loại file (chỉ hình ảnh)
@@ -73,6 +100,15 @@ export async function POST(request: NextRequest) {
         update: { value: blob.url },
         create: { key: 'login_background', value: blob.url },
       })
+
+      // Lưu formPosition nếu có
+      if (formPosition) {
+        await prisma.settings.upsert({
+          where: { key: 'login_form_position' },
+          update: { value: JSON.stringify(formPosition) },
+          create: { key: 'login_form_position', value: JSON.stringify(formPosition) },
+        })
+      }
 
       return NextResponse.json({ 
         success: true, 

@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  const [formPosition, setFormPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
 
   useEffect(() => {
     fetchBackground()
@@ -21,8 +22,13 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/settings/login-background')
       const data = await res.json()
-      if (res.ok && data.success && data.backgroundUrl) {
-        setBackgroundUrl(data.backgroundUrl)
+      if (res.ok && data.success) {
+        if (data.backgroundUrl) {
+          setBackgroundUrl(data.backgroundUrl)
+        }
+        if (data.formPosition) {
+          setFormPosition(data.formPosition)
+        }
       }
     } catch (error) {
       console.error('Error fetching background:', error)
@@ -184,8 +190,24 @@ export default function LoginPage() {
       </div>
       )}
 
-      <div className="max-w-md w-full mx-4 relative z-10">
-        <div className="card shadow-2xl bg-white/95 backdrop-blur-sm">
+      <div 
+        className="relative z-10"
+        style={formPosition ? {
+          position: 'absolute',
+          left: `${formPosition.x}%`,
+          top: `${formPosition.y}%`,
+          width: `${formPosition.width}%`,
+          height: `${formPosition.height}%`,
+          transform: 'translate(-50%, -50%)',
+          maxWidth: '90%',
+          maxHeight: '90%',
+        } : {
+          maxWidth: '28rem',
+          width: '100%',
+          margin: '0 1rem',
+        }}
+      >
+        <div className="card shadow-2xl bg-white/95 backdrop-blur-sm h-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
             <p className="text-gray-600">TTVT Nho Quan - Phần mềm đào tạo kỹ thuật</p>
