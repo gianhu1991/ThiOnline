@@ -555,6 +555,7 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
                       Đăng nhập
                     </button>
                   </div>
+                  </div>
                 </div>
               </div>
             </div>
