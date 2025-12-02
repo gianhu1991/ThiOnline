@@ -6,13 +6,12 @@ import { put } from '@vercel/blob'
 // GET: Lấy background hiện tại
 export async function GET(request: NextRequest) {
   try {
-    const [backgroundSetting, formPositionSetting] = await Promise.all([
-      prisma.settings.findUnique({
-        where: { key: 'login_background' },
-      }),
-      prisma.settings.findUnique({
-        where: { key: 'login_form_position' },
-      }),
+    const backgroundSetting = await prisma.settings.findUnique({
+      where: { key: 'login_background' },
+    })
+
+    const formPositionSetting = await prisma.settings.findUnique({
+      where: { key: 'login_form_position' },
     })
 
     let formPosition = null
@@ -153,4 +152,3 @@ export async function DELETE(request: NextRequest) {
     }, { status: 500 })
   }
 }
-
