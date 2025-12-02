@@ -262,7 +262,7 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
     setScale(1)
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (cropMode && imageRef.current && canvasRef.current && containerRef.current) {
       // Crop ảnh theo crop area
       const img = imageRef.current
@@ -282,82 +282,87 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
 
       // Đợi ảnh load xong
       if (!img.complete) {
-        await new Promise((resolve) => {
-          img.onload = resolve
-        })
-      }
-
-      const containerWidth = container.offsetWidth
-      const containerHeight = container.offsetHeight
-
-      // Tính toán crop area trong pixel
-      const cropX = (cropArea.x / 100) * containerWidth
-      const cropY = (cropArea.y / 100) * containerHeight
-      const cropWidth = (cropArea.width / 100) * containerWidth
-      const cropHeight = (cropArea.height / 100) * containerHeight
-
-      // Tính toán vị trí ảnh trên container
-      const containerAspect = containerWidth / containerHeight
-      const imgAspect = img.naturalWidth / img.naturalHeight
-      
-      let imgWidth, imgHeight
-      if (imgAspect > containerAspect) {
-        imgHeight = containerHeight * scale
-        imgWidth = imgHeight * imgAspect
-      } else {
-        imgWidth = containerWidth * scale
-        imgHeight = imgWidth / imgAspect
-      }
-
-      const offsetX = ((position.x - 50) / 100) * containerWidth * 2
-      const offsetY = ((position.y - 50) / 100) * containerHeight * 2
-      
-      const imgX = (containerWidth / 2) - (imgWidth / 2) + offsetX
-      const imgY = (containerHeight / 2) - (imgHeight / 2) + offsetY
-
-      // Tính toán phần ảnh cần crop (trong tọa độ ảnh gốc)
-      const scaleX = img.naturalWidth / imgWidth
-      const scaleY = img.naturalHeight / imgHeight
-
-      const sourceX = Math.max(0, (cropX - imgX) * scaleX)
-      const sourceY = Math.max(0, (cropY - imgY) * scaleY)
-      const sourceWidth = Math.min(img.naturalWidth - sourceX, cropWidth * scaleX)
-      const sourceHeight = Math.min(img.naturalHeight - sourceY, cropHeight * scaleY)
-
-      // Tạo canvas với kích thước crop
-      canvas.width = cropWidth
-      canvas.height = cropHeight
-
-      // Vẽ phần ảnh đã crop
-      ctx.drawImage(
-        img,
-        sourceX, sourceY, sourceWidth, sourceHeight, // Source
-        0, 0, cropWidth, cropHeight // Destination
-      )
-
-      // Chuyển canvas thành blob
-      canvas.toBlob((blob) => {
-        if (blob) {
-          onSave(blob, {
-            x: cropX,
-            y: cropY,
-            width: cropWidth,
-            height: cropHeight
-          }, {
-            x: formPosition.x,
-            y: formPosition.y,
-            width: formSize.width,
-            height: formSize.height
-          })
-        } else {
-          onSave(originalFile, undefined, {
-            x: formPosition.x,
-            y: formPosition.y,
-            width: formSize.width,
-            height: formSize.height
-          })
+        img.onload = () => {
+          processCrop()
         }
-      }, 'image/jpeg', 0.92)
+        return
+      }
+      
+      processCrop()
+      
+      function processCrop() {
+        const containerWidth = container.offsetWidth
+        const containerHeight = container.offsetHeight
+
+        // Tính toán crop area trong pixel
+        const cropX = (cropArea.x / 100) * containerWidth
+        const cropY = (cropArea.y / 100) * containerHeight
+        const cropWidth = (cropArea.width / 100) * containerWidth
+        const cropHeight = (cropArea.height / 100) * containerHeight
+
+        // Tính toán vị trí ảnh trên container
+        const containerAspect = containerWidth / containerHeight
+        const imgAspect = img.naturalWidth / img.naturalHeight
+        
+        let imgWidth, imgHeight
+        if (imgAspect > containerAspect) {
+          imgHeight = containerHeight * scale
+          imgWidth = imgHeight * imgAspect
+        } else {
+          imgWidth = containerWidth * scale
+          imgHeight = imgWidth / imgAspect
+        }
+
+        const offsetX = ((position.x - 50) / 100) * containerWidth * 2
+        const offsetY = ((position.y - 50) / 100) * containerHeight * 2
+        
+        const imgX = (containerWidth / 2) - (imgWidth / 2) + offsetX
+        const imgY = (containerHeight / 2) - (imgHeight / 2) + offsetY
+
+        // Tính toán phần ảnh cần crop (trong tọa độ ảnh gốc)
+        const scaleX = img.naturalWidth / imgWidth
+        const scaleY = img.naturalHeight / imgHeight
+
+        const sourceX = Math.max(0, (cropX - imgX) * scaleX)
+        const sourceY = Math.max(0, (cropY - imgY) * scaleY)
+        const sourceWidth = Math.min(img.naturalWidth - sourceX, cropWidth * scaleX)
+        const sourceHeight = Math.min(img.naturalHeight - sourceY, cropHeight * scaleY)
+
+        // Tạo canvas với kích thước crop
+        canvas.width = cropWidth
+        canvas.height = cropHeight
+
+        // Vẽ phần ảnh đã crop
+        ctx.drawImage(
+          img,
+          sourceX, sourceY, sourceWidth, sourceHeight, // Source
+          0, 0, cropWidth, cropHeight // Destination
+        )
+
+        // Chuyển canvas thành blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            onSave(blob, {
+              x: cropX,
+              y: cropY,
+              width: cropWidth,
+              height: cropHeight
+            }, {
+              x: formPosition.x,
+              y: formPosition.y,
+              width: formSize.width,
+              height: formSize.height
+            })
+          } else {
+            onSave(originalFile, undefined, {
+              x: formPosition.x,
+              y: formPosition.y,
+              width: formSize.width,
+              height: formSize.height
+            })
+          }
+        }, 'image/jpeg', 0.92)
+      }
     } else {
       // Upload ảnh gốc
       onSave(originalFile, undefined, {
