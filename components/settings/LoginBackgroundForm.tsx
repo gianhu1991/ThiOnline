@@ -180,13 +180,29 @@ export default function LoginBackgroundForm() {
 
     try {
       const formData = new FormData()
+      
+      // Log để debug
+      console.log('Upload file:', {
+        isBlob: file instanceof Blob,
+        isFile: file instanceof File,
+        hasCropArea: !!cropArea,
+        fileName: file instanceof File ? file.name : 'blob',
+        fileSize: file.size,
+        fileType: file instanceof File ? file.type : 'blob'
+      })
+      
       // Nếu là Blob (đã crop), tạo File từ Blob. Nếu là File gốc, dùng trực tiếp
       if (file instanceof Blob && !(file instanceof File)) {
+        // Đây là ảnh đã crop
         const fileName = selectedFile?.name || 'background.jpg'
         const fileObj = new File([file], fileName, { type: 'image/jpeg' })
+        console.log('Uploading CROPPED image:', fileObj.name, fileObj.size)
         formData.append('file', fileObj)
       } else {
-        formData.append('file', file as File)
+        // Đây là ảnh gốc - upload trực tiếp không chỉnh sửa
+        const originalFile = file as File
+        console.log('Uploading ORIGINAL image (no crop):', originalFile.name, originalFile.size, originalFile.type)
+        formData.append('file', originalFile)
       }
 
       // Thêm formPosition nếu có

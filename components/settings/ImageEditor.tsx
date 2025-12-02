@@ -263,8 +263,10 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
   }
 
   const handleSave = () => {
+    // Đảm bảo chỉ crop khi cropMode = true
     if (cropMode && imageRef.current && canvasRef.current && containerRef.current) {
       // Crop ảnh theo crop area
+      console.log('Crop mode ON - sẽ crop ảnh')
       const img = imageRef.current
       const canvas = canvasRef.current
       const container = containerRef.current
@@ -362,7 +364,12 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       
       processCrop()
     } else {
-      // Upload ảnh gốc
+      // Upload ảnh gốc - KHÔNG CROP, KHÔNG CHỈNH SỬA
+      console.log('Crop mode OFF - upload ảnh gốc nguyên vẹn', {
+        fileName: originalFile.name,
+        fileSize: originalFile.size,
+        fileType: originalFile.type
+      })
       onSave(originalFile, undefined, {
         x: formPosition.x,
         y: formPosition.y,
