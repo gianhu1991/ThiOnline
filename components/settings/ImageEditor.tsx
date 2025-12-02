@@ -120,14 +120,16 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       
       // Giới hạn để form không bị kéo ra ngoài
       // Vì form dùng transform translate(-50%, -50%), nên cần tính toán dựa trên kích thước form
+      // Thêm margin 2% để đảm bảo handles (4px) không bị chờm ra ngoài
+      const margin = 2 // 2% margin để handles không bị chờm ra ngoài
       const halfWidth = formDragStart.form.width / 2
       const halfHeight = formDragStart.form.height / 2
       
-      // Giới hạn X: form không được vượt quá biên trái/phải
-      newX = Math.max(halfWidth, Math.min(100 - halfWidth, newX))
+      // Giới hạn X: form không được vượt quá biên trái/phải (có margin cho handles)
+      newX = Math.max(halfWidth + margin, Math.min(100 - halfWidth - margin, newX))
       
-      // Giới hạn Y: form không được vượt quá biên trên/dưới
-      newY = Math.max(halfHeight, Math.min(100 - halfHeight, newY))
+      // Giới hạn Y: form không được vượt quá biên trên/dưới (có margin cho handles)
+      newY = Math.max(halfHeight + margin, Math.min(100 - halfHeight - margin, newY))
       
       setFormPosition({
         x: newX,
@@ -186,8 +188,10 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       }
 
       // Giới hạn kích thước tối đa để form không vượt quá container
-      const maxWidth = 98 // Để lại 2% margin
-      const maxHeight = 98
+      // Thêm margin 2% để đảm bảo handles không bị chờm ra ngoài
+      const margin = 2
+      const maxWidth = 100 - (margin * 2) // 96% để có margin cho handles
+      const maxHeight = 100 - (margin * 2)
       
       if (newForm.width > maxWidth) {
         newForm.width = maxWidth
@@ -202,18 +206,18 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       const halfWidth = newForm.width / 2
       const halfHeight = newForm.height / 2
       
-      // Điều chỉnh vị trí nếu form bị tràn ra ngoài
-      if (newForm.x - halfWidth < 0) {
-        newForm.x = halfWidth
+      // Điều chỉnh vị trí nếu form bị tràn ra ngoài (có margin cho handles)
+      if (newForm.x - halfWidth < margin) {
+        newForm.x = halfWidth + margin
       }
-      if (newForm.x + halfWidth > 100) {
-        newForm.x = 100 - halfWidth
+      if (newForm.x + halfWidth > 100 - margin) {
+        newForm.x = 100 - halfWidth - margin
       }
-      if (newForm.y - halfHeight < 0) {
-        newForm.y = halfHeight
+      if (newForm.y - halfHeight < margin) {
+        newForm.y = halfHeight + margin
       }
-      if (newForm.y + halfHeight > 100) {
-        newForm.y = 100 - halfHeight
+      if (newForm.y + halfHeight > 100 - margin) {
+        newForm.y = 100 - halfHeight - margin
       }
 
       setFormPosition({ x: newForm.x, y: newForm.y })
