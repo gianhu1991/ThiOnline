@@ -271,7 +271,12 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
       const ctx = canvas.getContext('2d')
 
       if (!ctx) {
-        onSave(originalFile)
+        onSave(originalFile, undefined, {
+          x: formPosition.x,
+          y: formPosition.y,
+          width: formSize.width,
+          height: formSize.height
+        })
         return
       }
 
