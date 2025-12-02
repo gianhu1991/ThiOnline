@@ -243,6 +243,38 @@ export default function LoginBackgroundForm() {
     if (fileInput) fileInput.value = ''
   }
 
+  const handleEditCurrent = async () => {
+    if (!backgroundUrl) return
+
+    try {
+      // Fetch ảnh từ URL và chuyển thành File object
+      const response = await fetch(backgroundUrl)
+      const blob = await response.blob()
+      
+      // Lấy tên file từ URL hoặc dùng tên mặc định
+      const urlParts = backgroundUrl.split('/')
+      const fileName = urlParts[urlParts.length - 1].split('?')[0] || 'background.jpg'
+      
+      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' })
+      
+      setSelectedFile(file)
+      
+      // Tạo preview URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result as string)
+        setShowEditor(true)
+      }
+      reader.readAsDataURL(file)
+      
+      setError('')
+      setSuccess('')
+    } catch (error) {
+      setError('Lỗi khi tải ảnh để chỉnh sửa')
+      console.error('Error loading image for edit:', error)
+    }
+  }
+
   const handleDelete = async () => {
     if (!confirm('Bạn có chắc muốn xóa ảnh nền và trở về mặc định?')) return
 
@@ -325,14 +357,24 @@ export default function LoginBackgroundForm() {
 
         <div className="flex gap-2">
           {backgroundUrl && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={loading}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Đang xóa...' : 'Xóa ảnh nền'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleEditCurrent}
+                disabled={uploading || loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sửa ảnh nền
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={loading}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Đang xóa...' : 'Xóa ảnh nền'}
+              </button>
+            </>
           )}
         </div>
       </form>
