@@ -606,16 +606,22 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
               </div>
             </div>
 
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className={`p-4 rounded-lg ${cropMode ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-blue-50'}`}>
+              <p className={`text-sm ${cropMode ? 'text-yellow-800' : 'text-blue-800'}`}>
                 <strong>Hướng dẫn:</strong>
-                <br />• Kéo ảnh để điều chỉnh vị trí
-                <br />• Cuộn chuột hoặc dùng thanh trượt để phóng to/thu nhỏ
-                <br />• <strong>Chế độ crop:</strong> Bật checkbox để kích hoạt. Kéo các handle ở 4 góc và 4 cạnh để điều chỉnh vùng crop. Kéo vùng crop để di chuyển.
-                <br />• {cropMode ? (
-                  <><strong>Lưu ý:</strong> Ảnh sẽ được crop theo vùng đã chọn khi lưu</>
+                <br />• <strong>Kéo ảnh:</strong> Click và kéo vùng nền để điều chỉnh vị trí ảnh
+                <br />• <strong>Phóng to/thu nhỏ ảnh:</strong> Cuộn chuột hoặc dùng thanh trượt
+                <br />• <strong>Kéo form đăng nhập:</strong> Click và kéo form để di chuyển vị trí
+                <br />• <strong>Điều chỉnh kích thước form:</strong> Kéo các handle màu xanh ở 4 góc và 4 cạnh của form
+                <br />• <strong>Chế độ crop:</strong> {cropMode ? (
+                  <><span className="font-bold text-red-600">⚠️ ĐANG BẬT - Ảnh sẽ bị cắt theo vùng crop khi lưu!</span> Tắt checkbox để upload ảnh gốc đầy đủ.</>
                 ) : (
-                  <><strong>Lưu ý:</strong> Ảnh gốc sẽ được upload đầy đủ, không bị cắt xén</>
+                  <>Bật checkbox để kích hoạt. Kéo các handle ở 4 góc và 4 cạnh để điều chỉnh vùng crop. Kéo vùng crop để di chuyển.</>
+                )}
+                <br />• {cropMode ? (
+                  <><strong className="text-red-600">⚠️ CẢNH BÁO:</strong> Ảnh sẽ được crop theo vùng đã chọn khi lưu. Nếu muốn upload ảnh gốc đầy đủ, hãy TẮT chế độ crop trước khi lưu!</>
+                ) : (
+                  <><strong className="text-green-600">✓ An toàn:</strong> Ảnh gốc sẽ được upload đầy đủ, không bị cắt xén</>
                 )}
               </p>
             </div>
