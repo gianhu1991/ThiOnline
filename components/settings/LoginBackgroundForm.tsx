@@ -91,6 +91,15 @@ export default function LoginBackgroundForm() {
   const [subtitleError, setSubtitleError] = useState('')
   const [subtitleSuccess, setSubtitleSuccess] = useState('')
   
+  // Footer state
+  const [footerText, setFooterText] = useState({
+    copyright: '© 2025 TTVT Nho Quan- Phần mềm đào tạo kỹ thuật',
+    developer: 'Phát triển bởi nhuqg.nbh'
+  })
+  const [footerLoading, setFooterLoading] = useState(false)
+  const [footerError, setFooterError] = useState('')
+  const [footerSuccess, setFooterSuccess] = useState('')
+  
   // Homepage text states
   const [homepageText, setHomepageText] = useState({
     title: 'TTVT Nho Quan',
@@ -104,7 +113,54 @@ export default function LoginBackgroundForm() {
   useEffect(() => {
     fetchBackground()
     fetchHomepageText()
+    fetchFooter()
   }, [])
+
+  const fetchFooter = async () => {
+    try {
+      const res = await fetch('/api/settings/footer')
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setFooterText({
+          copyright: data.copyright,
+          developer: data.developer,
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching footer:', error)
+    }
+  }
+
+  const handleUpdateFooter = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFooterLoading(true)
+    setFooterError('')
+    setFooterSuccess('')
+
+    try {
+      const res = await fetch('/api/settings/footer', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          copyright: footerText.copyright,
+          developer: footerText.developer,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setFooterSuccess('Cập nhật footer thành công!')
+      } else {
+        setFooterError(data.error || 'Cập nhật thất bại')
+      }
+    } catch (error) {
+      setFooterError('Lỗi khi cập nhật footer')
+    } finally {
+      setFooterLoading(false)
+    }
+  }
 
   const fetchHomepageText = async () => {
     try {
@@ -507,6 +563,75 @@ export default function LoginBackgroundForm() {
           <p className="text-sm text-blue-800">
             <strong>Lưu ý:</strong> Các thay đổi sẽ được hiển thị ngay trên trang chủ. 
             Tiêu đề và phụ đề sẽ hiển thị ở phần hero section.
+          </p>
+        </div>
+      </div>
+
+      {/* Quản lý Footer */}
+      <div className="card">
+        <h2 className="text-2xl font-bold mb-6">Quản lý Footer</h2>
+
+        {footerError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+            {footerError}
+          </div>
+        )}
+
+        {footerSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
+            {footerSuccess}
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateFooter} className="space-y-4">
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Copyright (Dòng đầu tiên) *
+            </label>
+            <input
+              type="text"
+              value={footerText.copyright}
+              onChange={(e) => setFooterText({ ...footerText, copyright: e.target.value })}
+              className="input-field"
+              placeholder="© 2025 TTVT Nho Quan- Phần mềm đào tạo kỹ thuật"
+              required
+              disabled={footerLoading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Dòng chữ này sẽ hiển thị ở dòng đầu tiên của footer.
+            </p>
+          </div>
+
+          <div>
+            <label className="block mb-2 font-semibold text-gray-700">
+              Developer (Dòng thứ hai) *
+            </label>
+            <input
+              type="text"
+              value={footerText.developer}
+              onChange={(e) => setFooterText({ ...footerText, developer: e.target.value })}
+              className="input-field"
+              placeholder="Phát triển bởi nhuqg.nbh"
+              required
+              disabled={footerLoading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Dòng chữ này sẽ hiển thị ở dòng thứ hai của footer.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={footerLoading}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {footerLoading ? 'Đang cập nhật...' : 'Cập nhật Footer'}
+          </button>
+        </form>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Lưu ý:</strong> Footer sẽ hiển thị ở cuối mỗi trang (trừ trang đăng nhập và đăng ký).
           </p>
         </div>
       </div>
