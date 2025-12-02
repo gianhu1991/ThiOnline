@@ -134,61 +134,87 @@ export default function ImageEditor({ imageUrl, originalFile, onSave, onCancel, 
         y: newY
       })
     } else if (isResizingForm && resizeHandle) {
-      // Resize form
+      // Resize form - đảm bảo form luôn nằm trong khung
       const deltaX = ((e.clientX - formDragStart.x) / rect.width) * 100
       const deltaY = ((e.clientY - formDragStart.y) / rect.height) * 100
       
       let newForm = { ...formDragStart.form }
+      const minSize = 15 // Kích thước tối thiểu
 
       switch (resizeHandle) {
-        case 'nw':
-          newForm.x = Math.max(5, Math.min(newForm.x + newForm.width - 20, formDragStart.form.x + deltaX))
-          newForm.y = Math.max(5, Math.min(newForm.y + newForm.height - 20, formDragStart.form.y + deltaY))
-          newForm.width = formDragStart.form.width - deltaX
-          newForm.height = formDragStart.form.height - deltaY
+        case 'nw': // Góc trên trái
+          newForm.width = Math.max(minSize, formDragStart.form.width - deltaX)
+          newForm.height = Math.max(minSize, formDragStart.form.height - deltaY)
+          // Điều chỉnh vị trí để form không tràn ra ngoài
+          newForm.x = formDragStart.form.x - (formDragStart.form.width - newForm.width) / 2
+          newForm.y = formDragStart.form.y - (formDragStart.form.height - newForm.height) / 2
           break
-        case 'ne':
-          newForm.y = Math.max(5, Math.min(newForm.y + newForm.height - 20, formDragStart.form.y + deltaY))
-          newForm.width = Math.max(20, Math.min(95 - newForm.x, formDragStart.form.width + deltaX))
-          newForm.height = formDragStart.form.height - deltaY
+        case 'ne': // Góc trên phải
+          newForm.width = Math.max(minSize, formDragStart.form.width + deltaX)
+          newForm.height = Math.max(minSize, formDragStart.form.height - deltaY)
+          newForm.x = formDragStart.form.x + (newForm.width - formDragStart.form.width) / 2
+          newForm.y = formDragStart.form.y - (formDragStart.form.height - newForm.height) / 2
           break
-        case 'sw':
-          newForm.x = Math.max(5, Math.min(newForm.x + newForm.width - 20, formDragStart.form.x + deltaX))
-          newForm.width = formDragStart.form.width - deltaX
-          newForm.height = Math.max(20, Math.min(95 - newForm.y, formDragStart.form.height + deltaY))
+        case 'sw': // Góc dưới trái
+          newForm.width = Math.max(minSize, formDragStart.form.width - deltaX)
+          newForm.height = Math.max(minSize, formDragStart.form.height + deltaY)
+          newForm.x = formDragStart.form.x - (formDragStart.form.width - newForm.width) / 2
+          newForm.y = formDragStart.form.y + (newForm.height - formDragStart.form.height) / 2
           break
-        case 'se':
-          newForm.width = Math.max(20, Math.min(95 - newForm.x, formDragStart.form.width + deltaX))
-          newForm.height = Math.max(20, Math.min(95 - newForm.y, formDragStart.form.height + deltaY))
+        case 'se': // Góc dưới phải
+          newForm.width = Math.max(minSize, formDragStart.form.width + deltaX)
+          newForm.height = Math.max(minSize, formDragStart.form.height + deltaY)
+          newForm.x = formDragStart.form.x + (newForm.width - formDragStart.form.width) / 2
+          newForm.y = formDragStart.form.y + (newForm.height - formDragStart.form.height) / 2
           break
-        case 'n':
-          newForm.y = Math.max(5, Math.min(newForm.y + newForm.height - 20, formDragStart.form.y + deltaY))
-          newForm.height = formDragStart.form.height - deltaY
+        case 'n': // Cạnh trên
+          newForm.height = Math.max(minSize, formDragStart.form.height - deltaY)
+          newForm.y = formDragStart.form.y - (formDragStart.form.height - newForm.height) / 2
           break
-        case 's':
-          newForm.height = Math.max(20, Math.min(95 - newForm.y, formDragStart.form.height + deltaY))
+        case 's': // Cạnh dưới
+          newForm.height = Math.max(minSize, formDragStart.form.height + deltaY)
+          newForm.y = formDragStart.form.y + (newForm.height - formDragStart.form.height) / 2
           break
-        case 'w':
-          newForm.x = Math.max(5, Math.min(newForm.x + newForm.width - 20, formDragStart.form.x + deltaX))
-          newForm.width = formDragStart.form.width - deltaX
+        case 'w': // Cạnh trái
+          newForm.width = Math.max(minSize, formDragStart.form.width - deltaX)
+          newForm.x = formDragStart.form.x - (formDragStart.form.width - newForm.width) / 2
           break
-        case 'e':
-          newForm.width = Math.max(20, Math.min(95 - newForm.x, formDragStart.form.width + deltaX))
+        case 'e': // Cạnh phải
+          newForm.width = Math.max(minSize, formDragStart.form.width + deltaX)
+          newForm.x = formDragStart.form.x + (newForm.width - formDragStart.form.width) / 2
           break
       }
 
-      // Đảm bảo kích thước tối thiểu và không vượt quá container
-      if (newForm.width < 20) newForm.width = 20
-      if (newForm.height < 20) newForm.height = 20
+      // Giới hạn kích thước tối đa để form không vượt quá container
+      const maxWidth = 98 // Để lại 2% margin
+      const maxHeight = 98
       
-      // Giới hạn vị trí để form không bị tràn ra ngoài (tính với transform translate -50%)
+      if (newForm.width > maxWidth) {
+        newForm.width = maxWidth
+        newForm.x = formDragStart.form.x // Giữ nguyên vị trí center
+      }
+      if (newForm.height > maxHeight) {
+        newForm.height = maxHeight
+        newForm.y = formDragStart.form.y // Giữ nguyên vị trí center
+      }
+      
+      // Đảm bảo form không bị tràn ra ngoài (tính với transform translate -50%)
       const halfWidth = newForm.width / 2
       const halfHeight = newForm.height / 2
       
-      if (newForm.x - halfWidth < 0) newForm.x = halfWidth
-      if (newForm.x + halfWidth > 100) newForm.x = 100 - halfWidth
-      if (newForm.y - halfHeight < 0) newForm.y = halfHeight
-      if (newForm.y + halfHeight > 100) newForm.y = 100 - halfHeight
+      // Điều chỉnh vị trí nếu form bị tràn ra ngoài
+      if (newForm.x - halfWidth < 0) {
+        newForm.x = halfWidth
+      }
+      if (newForm.x + halfWidth > 100) {
+        newForm.x = 100 - halfWidth
+      }
+      if (newForm.y - halfHeight < 0) {
+        newForm.y = halfHeight
+      }
+      if (newForm.y + halfHeight > 100) {
+        newForm.y = 100 - halfHeight
+      }
 
       setFormPosition({ x: newForm.x, y: newForm.y })
       setFormSize({ width: newForm.width, height: newForm.height })
