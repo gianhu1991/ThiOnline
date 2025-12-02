@@ -81,7 +81,12 @@ export default function LoginPage() {
     }
   }
 
-  const backgroundStyle = backgroundUrl 
+  // Chỉ set background khi đã load xong để tránh flash
+  const backgroundStyle = isLoadingBackground
+    ? { 
+        background: '#0a1628', // Màu tối trong lúc load để tránh flash
+      }
+    : backgroundUrl 
     ? { 
         backgroundImage: `url(${backgroundUrl})`,
         backgroundSize: '100% 100%', // Hiển thị toàn bộ ảnh, không cắt
