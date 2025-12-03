@@ -18,7 +18,15 @@ body {
   }
   
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg;
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg;
+    padding: 0.625rem 1rem; /* py-2.5 px-4 trên mobile */
+    border-radius: 0.5rem; /* rounded-lg */
+  }
+  
+  @media (min-width: 768px) {
+    .btn-primary {
+      padding: 0.75rem 1.5rem; /* py-3 px-6 trên desktop */
+    }
   }
   
   .btn-secondary {
@@ -26,12 +34,14 @@ body {
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    @apply w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    padding: 0.625rem 0.75rem; /* py-2.5 px-3 trên mobile */
     font-size: 16px; /* Ngăn zoom tự động trên iOS */
   }
   
   @media (min-width: 768px) {
     .input-field {
+      padding: 0.75rem 1rem; /* py-3 px-4 trên desktop */
       font-size: inherit;
     }
   }
