@@ -26,6 +26,17 @@ export default function LoginForm({
   const [formPosition, setFormPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(initialFormPosition)
   const [loginSubtitle, setLoginSubtitle] = useState(initialSubtitle)
   const [isImageLoaded, setIsImageLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(true)
+
+  // Detect mobile/desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Load saved username và password từ localStorage khi component mount
   useEffect(() => {
@@ -120,7 +131,7 @@ export default function LoginForm({
       }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ 
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-8 md:px-0 md:py-0" style={{ 
       ...backgroundStyle,
       marginTop: 0, 
       paddingTop: 0 
@@ -129,9 +140,9 @@ export default function LoginForm({
       {backgroundUrl && (
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
       )}
-      {/* Background decorative elements - chỉ hiển thị khi không có ảnh nền và không đang load */}
+      {/* Background decorative elements - chỉ hiển thị khi không có ảnh nền và không đang load, ẩn trên mobile */}
       {!backgroundUrl && isImageLoaded && (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none">
         {/* Grid pattern on ground */}
         <svg className="absolute bottom-0 left-0 w-full h-1/3 opacity-30" viewBox="0 0 1200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -211,12 +222,12 @@ export default function LoginForm({
       </div>
       )}
 
-      {/* Logo VNPT at top with glow effect - chỉ hiển thị khi không có ảnh nền */}
+      {/* Logo VNPT at top with glow effect - chỉ hiển thị khi không có ảnh nền, responsive cho mobile */}
       {!backgroundUrl && (
-      <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="flex items-center gap-4">
-          {/* VNPT Logo symbol */}
-          <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div className="absolute top-4 md:top-8 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* VNPT Logo symbol - nhỏ hơn trên mobile */}
+          <svg className="w-10 h-10 md:w-16 md:h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <filter id="glow">
                 <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -229,7 +240,7 @@ export default function LoginForm({
             <path d="M30 50 L50 30 L70 50 L50 70 Z" stroke="white" strokeWidth="3" fill="rgba(255,255,255,0.2)" filter="url(#glow)"/>
             <path d="M20 50 L50 20 L80 50 L50 80 Z" stroke="white" strokeWidth="2" fill="none" opacity="0.5" filter="url(#glow)"/>
           </svg>
-          <h1 className="text-5xl font-bold text-white drop-shadow-2xl" style={{ 
+          <h1 className="text-2xl md:text-5xl font-bold text-white drop-shadow-2xl" style={{ 
             textShadow: '0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.3)'
           }}>VNPT</h1>
         </div>
@@ -237,8 +248,8 @@ export default function LoginForm({
       )}
 
       <div 
-        className="relative z-10"
-        style={formPosition ? {
+        className="relative z-10 w-full md:absolute"
+        style={formPosition && !isMobile ? {
           position: 'absolute',
           left: `${formPosition.x}%`,
           top: `${formPosition.y}%`,
@@ -248,42 +259,43 @@ export default function LoginForm({
           maxWidth: '90%',
           maxHeight: '90%',
         } : {
-          maxWidth: '28rem',
+          maxWidth: formPosition ? '100%' : '28rem',
           width: '100%',
-          margin: '0 1rem',
         }}
       >
-        <div className="card shadow-2xl bg-white/95 backdrop-blur-sm h-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
-            <p className="text-gray-600">{loginSubtitle}</p>
+        <div className="card shadow-2xl bg-white/95 backdrop-blur-sm w-full p-4 md:p-6">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
+            <p className="text-sm md:text-base text-gray-600 px-2">{loginSubtitle}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             <div>
-              <label className="block mb-2 font-semibold text-gray-700">Tên đăng nhập</label>
+              <label className="block mb-2 text-sm md:text-base font-semibold text-gray-700">Tên đăng nhập</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="input-field"
+                className="input-field text-base md:text-base"
                 placeholder="Nhập tên đăng nhập"
                 required
                 disabled={loading}
+                autoComplete="username"
               />
             </div>
 
             <div>
-              <label className="block mb-2 font-semibold text-gray-700">Mật khẩu</label>
+              <label className="block mb-2 text-sm md:text-base font-semibold text-gray-700">Mật khẩu</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pr-10"
+                  className="input-field pr-10 text-base md:text-base"
                   placeholder="Nhập mật khẩu"
                   required
                   disabled={loading}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -306,7 +318,7 @@ export default function LoginForm({
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 md:px-4 py-2 md:py-3 rounded-lg text-sm md:text-base">
                 {error}
               </div>
             )}
@@ -317,10 +329,10 @@ export default function LoginForm({
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                className="w-4 h-4 md:w-5 md:h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
                 disabled={loading}
               />
-              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 cursor-pointer">
+              <label htmlFor="rememberMe" className="ml-2 text-sm md:text-base text-gray-700 cursor-pointer">
                 Nhớ thông tin đăng nhập
               </label>
             </div>
@@ -328,7 +340,7 @@ export default function LoginForm({
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-base py-3 md:py-3"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -343,8 +355,8 @@ export default function LoginForm({
               )}
             </button>
 
-            <div className="text-center">
-              <Link href="/register" className="text-blue-600 hover:text-blue-700 text-sm">
+            <div className="text-center pt-2">
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 text-sm md:text-base">
                 Chưa có tài khoản? Đăng ký
               </Link>
             </div>
