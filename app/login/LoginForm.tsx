@@ -27,12 +27,24 @@ export default function LoginForm({
   const [loginSubtitle, setLoginSubtitle] = useState(initialSubtitle)
   const [isImageLoaded, setIsImageLoaded] = useState(false)
 
-  // Load saved username từ localStorage khi component mount
+  // Load saved username và password từ localStorage khi component mount
   useEffect(() => {
     const savedUsername = localStorage.getItem('rememberedUsername')
+    const savedPassword = localStorage.getItem('rememberedPassword')
     if (savedUsername) {
       setUsername(savedUsername)
       setRememberMe(true)
+      // Lưu ý: Lưu mật khẩu trong localStorage không an toàn, chỉ dùng cho môi trường nội bộ
+      if (savedPassword) {
+        // Giải mã password đơn giản (base64)
+        try {
+          const decodedPassword = atob(savedPassword)
+          setPassword(decodedPassword)
+        } catch (e) {
+          // Nếu không decode được, xóa password đã lưu
+          localStorage.removeItem('rememberedPassword')
+        }
+      }
     }
   }, [])
 
@@ -68,11 +80,15 @@ export default function LoginForm({
       const data = await res.json()
 
       if (res.ok && data.success) {
-        // Lưu username vào localStorage nếu người dùng chọn nhớ
+        // Lưu username và password vào localStorage nếu người dùng chọn nhớ
         if (rememberMe) {
           localStorage.setItem('rememberedUsername', username)
+          // Mã hóa password đơn giản bằng base64 (không an toàn 100%, chỉ để tiện lợi)
+          const encodedPassword = btoa(password)
+          localStorage.setItem('rememberedPassword', encodedPassword)
         } else {
           localStorage.removeItem('rememberedUsername')
+          localStorage.removeItem('rememberedPassword')
         }
         
         // Force reload để Navigation component cập nhật
@@ -305,7 +321,7 @@ export default function LoginForm({
                 disabled={loading}
               />
               <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 cursor-pointer">
-                Nhớ tên đăng nhập
+                Nhớ thông tin đăng nhập
               </label>
             </div>
 
