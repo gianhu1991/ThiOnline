@@ -19,12 +19,22 @@ export default function LoginForm({
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   const [formPosition, setFormPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(initialFormPosition)
   const [loginSubtitle, setLoginSubtitle] = useState(initialSubtitle)
   const [isImageLoaded, setIsImageLoaded] = useState(false)
+
+  // Load saved username từ localStorage khi component mount
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('rememberedUsername')
+    if (savedUsername) {
+      setUsername(savedUsername)
+      setRememberMe(true)
+    }
+  }, [])
 
   // Preload ảnh ngay khi component mount
   useEffect(() => {
@@ -58,6 +68,13 @@ export default function LoginForm({
       const data = await res.json()
 
       if (res.ok && data.success) {
+        // Lưu username vào localStorage nếu người dùng chọn nhớ
+        if (rememberMe) {
+          localStorage.setItem('rememberedUsername', username)
+        } else {
+          localStorage.removeItem('rememberedUsername')
+        }
+        
         // Force reload để Navigation component cập nhật
         window.location.href = '/'
       } else {
@@ -277,6 +294,20 @@ export default function LoginForm({
                 {error}
               </div>
             )}
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                disabled={loading}
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                Nhớ tên đăng nhập
+              </label>
+            </div>
 
             <button
               type="submit"
