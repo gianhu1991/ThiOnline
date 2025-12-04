@@ -56,8 +56,10 @@ export async function GET(
     const view = searchParams.get('view') || 'today' // Mặc định là 'today', có thể chuyển sang 'all'
 
     // Xây dựng điều kiện where
+    // QUAN TRỌNG: Phải dùng AND để đảm bảo assignedUserId luôn được filter
     const whereCondition: any = {
       taskId: params.id,
+      assignedUserId: userFromDb.id // Luôn filter theo user hiện tại
     }
 
     // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hoặc hoàn thành hôm nay
@@ -69,6 +71,7 @@ export async function GET(
       
       // Logic: Lấy KH có assignedUserId = user hiện tại VÀ
       // (được phân giao hôm nay HOẶC hoàn thành hôm nay)
+      // Phải dùng AND để đảm bảo assignedUserId không bị override bởi OR
       whereCondition.AND = [
         {
           assignedUserId: userFromDb.id
@@ -93,9 +96,6 @@ export async function GET(
           ]
         }
       ]
-    } else {
-      // Xem toàn bộ: chỉ cần assignedUserId = user hiện tại
-      whereCondition.assignedUserId = userFromDb.id
     }
 
     // Lấy danh sách khách hàng được gán cho user này
