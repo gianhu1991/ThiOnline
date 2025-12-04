@@ -115,6 +115,7 @@ export default function TasksPage() {
   })
   const [updatingCustomer, setUpdatingCustomer] = useState(false)
   const [deletingCustomer, setDeletingCustomer] = useState<string | null>(null)
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTasks()
@@ -568,6 +569,32 @@ export default function TasksPage() {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa nhiệm vụ này không? Tất cả dữ liệu liên quan (khách hàng, phân giao) sẽ bị xóa vĩnh viễn.')) {
+      return
+    }
+
+    setDeletingTaskId(taskId)
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Lỗi khi xóa nhiệm vụ')
+      }
+
+      alert('Đã xóa nhiệm vụ thành công')
+      fetchTasks()
+    } catch (error: any) {
+      alert(error.message || 'Lỗi khi xóa nhiệm vụ')
+    } finally {
+      setDeletingTaskId(null)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -674,6 +701,13 @@ export default function TasksPage() {
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
               >
                 Xuất Excel
+              </button>
+              <button
+                onClick={() => handleDeleteTask(task.id)}
+                disabled={deletingTaskId === task.id}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 text-sm"
+              >
+                {deletingTaskId === task.id ? 'Đang xóa...' : 'Xóa'}
               </button>
             </div>
           </div>
