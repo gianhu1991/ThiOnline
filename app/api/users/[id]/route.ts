@@ -2,20 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import { hashPassword } from '@/lib/auth'
-
-// Kiểm tra xem user có phải là super admin không (user đầu tiên được tạo)
-async function isSuperAdmin(userId: string): Promise<boolean> {
-  try {
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    })
-    return firstUser?.id === userId
-  } catch (error) {
-    console.error('Error checking super admin:', error)
-    return false
-  }
-}
+import { isSuperAdminByUsername } from '@/lib/super-admin'
 
 // Xóa user
 export async function DELETE(
@@ -44,11 +31,16 @@ export async function DELETE(
     }
 
     // Kiểm tra xem có phải super admin không
-    const isUserSuperAdmin = await isSuperAdmin(user.userId)
+    const isUserSuperAdmin = await isSuperAdminByUsername(user.username)
     
     // Chỉ super admin mới có thể xóa admin khác
     if (userToDelete.role === 'admin' && !isUserSuperAdmin) {
-      return NextResponse.json({ error: 'Không thể xóa tài khoản admin khác' }, { status: 400 })
+      return NextResponse.json({ error: 'Chỉ Super Admin mới có thể xóa tài khoản admin khác' }, { status: 403 })
+    }
+    
+    // Không cho phép xóa user "admin" (Super Admin)
+    if (userToDelete.username === 'admin') {
+      return NextResponse.json({ error: 'Không thể xóa tài khoản Super Admin' }, { status: 400 })
     }
 
     await prisma.user.delete({
@@ -87,15 +79,25 @@ export async function PUT(
     }
 
     // Kiểm tra xem có phải super admin không
-    const isUserSuperAdmin = await isSuperAdmin(user.userId)
+    const isUserSuperAdmin = await isSuperAdminByUsername(user.username)
+    
+    // Không cho phép thay đổi thông tin user "admin" (Super Admin) trừ khi chính Super Admin
+    if (userToUpdate.username === 'admin' && !isUserSuperAdmin) {
+      return NextResponse.json({ error: 'Chỉ Super Admin mới có thể thay đổi thông tin tài khoản Super Admin' }, { status: 403 })
+    }
+    
+    // Chỉ super admin mới có thể thay đổi role thành admin hoặc thay đổi role của admin khác
+    if (role === 'admin' && !isUserSuperAdmin) {
+      return NextResponse.json({ error: 'Chỉ Super Admin mới có thể tạo hoặc thay đổi role thành admin' }, { status: 403 })
+    }
     
     // Chỉ super admin mới có thể thay đổi role của admin khác
     if (userToUpdate.role === 'admin' && role !== 'admin' && user.userId !== params.id && !isUserSuperAdmin) {
-      return NextResponse.json({ error: 'Không thể thay đổi role của admin khác' }, { status: 400 })
+      return NextResponse.json({ error: 'Chỉ Super Admin mới có thể thay đổi role của admin khác' }, { status: 403 })
     }
 
-    // Chỉ super admin mới có thể tự hạ cấp mình (hoặc không cho phép tự hạ cấp)
-    if (user.userId === params.id && role !== 'admin' && !isUserSuperAdmin) {
+    // Không cho phép tự hạ cấp (từ admin xuống user)
+    if (user.userId === params.id && userToUpdate.role === 'admin' && role !== 'admin') {
       return NextResponse.json({ error: 'Bạn không thể tự hạ cấp mình' }, { status: 400 })
     }
 

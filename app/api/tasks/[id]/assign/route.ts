@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { isSuperAdminByUsername } from '@/lib/super-admin'
 
 // Gán nhiệm vụ cho người dùng (Super Admin)
 export async function POST(
@@ -15,12 +16,9 @@ export async function POST(
     }
 
     // Kiểm tra super admin
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    })
+    const isSuperAdmin = await isSuperAdminByUsername(user.username)
 
-    if (firstUser?.id !== user.userId) {
+    if (!isSuperAdmin) {
       return NextResponse.json({ error: 'Chỉ Super Admin mới được gán nhiệm vụ' }, { status: 403 })
     }
 
@@ -95,12 +93,9 @@ export async function DELETE(
     }
 
     // Kiểm tra super admin
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    })
+    const isSuperAdmin = await isSuperAdminByUsername(user.username)
 
-    if (firstUser?.id !== user.userId) {
+    if (!isSuperAdmin) {
       return NextResponse.json({ error: 'Chỉ Super Admin mới được xóa gán nhiệm vụ' }, { status: 403 })
     }
 

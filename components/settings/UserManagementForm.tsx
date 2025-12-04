@@ -27,6 +27,14 @@ export default function UserManagementForm() {
   const [showEditPassword, setShowEditPassword] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [createFormData, setCreateFormData] = useState({
+    username: '',
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'user',
+  })
 
   useEffect(() => {
     fetchUsers()
@@ -317,6 +325,158 @@ export default function UserManagementForm() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Form tạo user mới - chỉ hiển thị cho Super Admin */}
+      {isSuperAdmin && (
+        <div className="mb-6">
+          {!showCreateForm ? (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mb-4"
+            >
+              + Tạo user mới
+            </button>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setUserError('')
+                setUserSuccess('')
+
+                if (createFormData.password.length < 6) {
+                  setUserError('Mật khẩu phải có ít nhất 6 ký tự')
+                  return
+                }
+
+                setUserLoading(true)
+                try {
+                  const res = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(createFormData),
+                  })
+
+                  const data = await res.json()
+
+                  if (res.ok && data.success) {
+                    setUserSuccess('Tạo user thành công!')
+                    setCreateFormData({
+                      username: '',
+                      fullName: '',
+                      email: '',
+                      password: '',
+                      role: 'user',
+                    })
+                    setShowCreateForm(false)
+                    fetchUsers()
+                  } else {
+                    setUserError(data.error || 'Tạo user thất bại')
+                  }
+                } catch (error) {
+                  setUserError('Lỗi khi tạo user')
+                } finally {
+                  setUserLoading(false)
+                }
+              }}
+              className="bg-green-50 p-4 rounded-lg mb-4 space-y-4 border border-green-200"
+            >
+              <h3 className="font-semibold text-gray-700 mb-3">Tạo user mới</h3>
+              
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Tên đăng nhập *</label>
+                <input
+                  type="text"
+                  value={createFormData.username}
+                  onChange={(e) => setCreateFormData({ ...createFormData, username: e.target.value })}
+                  className="input-field"
+                  required
+                  disabled={userLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Họ và tên</label>
+                <input
+                  type="text"
+                  value={createFormData.fullName}
+                  onChange={(e) => setCreateFormData({ ...createFormData, fullName: e.target.value })}
+                  className="input-field"
+                  disabled={userLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Email</label>
+                <input
+                  type="email"
+                  value={createFormData.email}
+                  onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}
+                  className="input-field"
+                  disabled={userLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Mật khẩu *</label>
+                <input
+                  type="password"
+                  value={createFormData.password}
+                  onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
+                  className="input-field"
+                  required
+                  disabled={userLoading}
+                  minLength={6}
+                  placeholder="Tối thiểu 6 ký tự"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Vai trò *</label>
+                <select
+                  value={createFormData.role}
+                  onChange={(e) => setCreateFormData({ ...createFormData, role: e.target.value })}
+                  className="input-field"
+                  disabled={userLoading}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <p className="text-xs text-blue-600 mt-1">Super Admin: Bạn có thể tạo user hoặc admin mới</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={userLoading}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {userLoading ? 'Đang tạo...' : 'Tạo user'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm(false)
+                    setCreateFormData({
+                      username: '',
+                      fullName: '',
+                      email: '',
+                      password: '',
+                      role: 'user',
+                    })
+                    setUserError('')
+                    setUserSuccess('')
+                  }}
+                  className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
+                  disabled={userLoading}
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
 
       <div>

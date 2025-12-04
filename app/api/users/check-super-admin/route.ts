@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { isSuperAdminByUsername } from '@/lib/super-admin'
 
-// Kiểm tra xem user hiện tại có phải là super admin không (user đầu tiên được tạo)
+// Kiểm tra xem user hiện tại có phải là super admin không
 export async function GET(request: NextRequest) {
   try {
     const user = await getJWT(request)
@@ -11,13 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isSuperAdmin: false })
     }
 
-    // Lấy user đầu tiên được tạo
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    })
-
-    const isSuperAdmin = firstUser?.id === user.userId
+    const isSuperAdmin = await isSuperAdminByUsername(user.username)
 
     return NextResponse.json({ isSuperAdmin })
   } catch (error: any) {

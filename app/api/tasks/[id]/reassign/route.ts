@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { isSuperAdminByUsername } from '@/lib/super-admin'
 
 // Phân giao lại khách hàng (Super Admin)
 export async function POST(
@@ -15,12 +16,9 @@ export async function POST(
     }
 
     // Kiểm tra super admin
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    })
+    const isSuperAdmin = await isSuperAdminByUsername(user.username)
 
-    if (firstUser?.id !== user.userId) {
+    if (!isSuperAdmin) {
       return NextResponse.json({ error: 'Chỉ Super Admin mới được phân giao lại' }, { status: 403 })
     }
 
