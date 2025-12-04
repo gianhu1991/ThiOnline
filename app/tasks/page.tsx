@@ -25,6 +25,15 @@ interface User {
   fullName: string | null
 }
 
+interface UserGroup {
+  id: string
+  name: string
+  description: string | null
+  _count: {
+    members: number
+  }
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,8 +70,12 @@ export default function TasksPage() {
   // State cho gán nhiệm vụ
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [users, setUsers] = useState<User[]>([])
+  const [userGroups, setUserGroups] = useState<UserGroup[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [groupUsers, setGroupUsers] = useState<User[]>([])
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [assigning, setAssigning] = useState(false)
+  const [loadingGroups, setLoadingGroups] = useState(false)
 
   // State cho phân giao lại
   const [showReassignModal, setShowReassignModal] = useState(false)
@@ -72,6 +85,7 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks()
     fetchUsers()
+    fetchUserGroups()
   }, [])
 
   const fetchTasks = async () => {
@@ -115,6 +129,52 @@ export default function TasksPage() {
     }
   }
 
+  const fetchUserGroups = async () => {
+    try {
+      setLoadingGroups(true)
+      const res = await fetch('/api/user-groups', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserGroups(data.groups || [])
+      }
+    } catch (error) {
+      console.error('Error fetching user groups:', error)
+    } finally {
+      setLoadingGroups(false)
+    }
+  }
+
+  const fetchGroupUsers = async (groupId: string) => {
+    try {
+      const res = await fetch(`/api/user-groups/${groupId}`, {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.group) {
+          const members = data.group.members || []
+          setGroupUsers(members.map((m: any) => m.user))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching group users:', error)
+      setGroupUsers([])
+    }
+  }
+
+  const handleGroupChange = (groupId: string | null) => {
+    setSelectedGroupId(groupId)
+    if (groupId) {
+      fetchGroupUsers(groupId)
+    } else {
+      setGroupUsers([])
+    }
+    // Reset selected users khi đổi nhóm
+    setSelectedUserIds([])
+  }
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     setCreating(true)
@@ -131,6 +191,9 @@ export default function TasksPage() {
         throw new Error(errorData.error || 'Lỗi khi tạo nhiệm vụ')
       }
 
+      const data = await res.json()
+      const newTask = data.task
+      
       setShowCreateModal(false)
       setCreateForm({
         name: '',
@@ -139,6 +202,13 @@ export default function TasksPage() {
         endDate: '',
         dailyAssignmentCount: 0
       })
+      
+      // Tự động mở modal upload file sau khi tạo nhiệm vụ thành công
+      if (newTask && newTask.id) {
+        setUploadTaskId(newTask.id)
+        setShowUploadModal(true)
+      }
+      
       fetchTasks()
     } catch (error: any) {
       alert(error.message || 'Lỗi khi tạo nhiệm vụ')
@@ -305,6 +375,8 @@ export default function TasksPage() {
   const openAssignModal = (task: Task) => {
     setSelectedTask(task)
     setSelectedUserIds([])
+    setSelectedGroupId(null)
+    setGroupUsers([])
     setShowAssignModal(true)
   }
 
@@ -573,9 +645,19 @@ export default function TasksPage() {
             <h2 className="text-2xl font-bold mb-4">Upload file Excel</h2>
             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-800 font-medium mb-2">Cấu trúc file Excel:</p>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-blue-700 mb-3">
                 STT | account | Tên KH | địa chỉ | số điện thoại | NV thực hiện
               </p>
+              <a
+                href="/api/tasks/template"
+                download="mau-upload-nhiem-vu.xlsx"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium underline"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Tải file mẫu Excel
+              </a>
             </div>
             <form onSubmit={handleUploadFile}>
               <div className="mb-4">
@@ -616,31 +698,85 @@ export default function TasksPage() {
       {/* Modal gán nhiệm vụ */}
       {showAssignModal && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Gán nhiệm vụ: {selectedTask.name}</h2>
             <form onSubmit={handleAssignTask}>
               <div className="mb-4">
-                <label className="block mb-2 font-semibold">Chọn người dùng</label>
-                <div className="border rounded p-3 max-h-60 overflow-y-auto">
-                  {users.map((user) => (
-                    <label key={user.id} className="flex items-center gap-2 mb-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedUserIds.includes(user.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedUserIds([...selectedUserIds, user.id])
-                          } else {
-                            setSelectedUserIds(selectedUserIds.filter(id => id !== user.id))
-                          }
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span>{user.username} {user.fullName && `(${user.fullName})`}</span>
-                    </label>
+                <label className="block mb-2 font-semibold">Chọn nhóm người dùng</label>
+                <select
+                  value={selectedGroupId || ''}
+                  onChange={(e) => handleGroupChange(e.target.value || null)}
+                  className="w-full border rounded px-3 py-2 mb-2"
+                >
+                  <option value="">-- Tất cả người dùng --</option>
+                  {userGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name} ({group._count.members} thành viên)
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
+
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">
+                  Chọn người dùng {selectedGroupId ? `(trong nhóm)` : `(tất cả)`}
+                </label>
+                <div className="border rounded p-3 max-h-60 overflow-y-auto bg-gray-50">
+                  {selectedGroupId ? (
+                    // Hiển thị user trong nhóm đã chọn
+                    groupUsers.length > 0 ? (
+                      groupUsers.map((user) => (
+                        <label key={user.id} className="flex items-center gap-2 mb-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedUserIds.includes(user.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUserIds([...selectedUserIds, user.id])
+                              } else {
+                                setSelectedUserIds(selectedUserIds.filter(id => id !== user.id))
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span className="flex-1">{user.username} {user.fullName && `(${user.fullName})`}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Nhóm này chưa có thành viên</p>
+                    )
+                  ) : (
+                    // Hiển thị tất cả user
+                    users.length > 0 ? (
+                      users.map((user) => (
+                        <label key={user.id} className="flex items-center gap-2 mb-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedUserIds.includes(user.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUserIds([...selectedUserIds, user.id])
+                              } else {
+                                setSelectedUserIds(selectedUserIds.filter(id => id !== user.id))
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span className="flex-1">{user.username} {user.fullName && `(${user.fullName})`}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Chưa có người dùng nào</p>
+                    )
+                  )}
+                </div>
+                {selectedUserIds.length > 0 && (
+                  <p className="text-sm text-blue-600 mt-2">
+                    Đã chọn: {selectedUserIds.length} người dùng
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -654,6 +790,8 @@ export default function TasksPage() {
                   onClick={() => {
                     setShowAssignModal(false)
                     setSelectedUserIds([])
+                    setSelectedGroupId(null)
+                    setGroupUsers([])
                   }}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
                 >
