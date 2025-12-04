@@ -72,6 +72,7 @@ export async function GET(
       // Logic: Lấy KH có assignedUserId = user hiện tại VÀ
       // (được phân giao hôm nay HOẶC hoàn thành hôm nay)
       // Dùng assignedAt để xác định chính xác KH được phân giao hôm nay
+      // Nếu assignedAt là null (chưa có trong DB), không hiển thị (chỉ hiển thị KH đã được phân giao hôm nay)
       whereCondition.AND = [
         {
           assignedUserId: userFromDb.id
@@ -79,7 +80,7 @@ export async function GET(
         {
           OR: [
             {
-              // KH được phân giao hôm nay (dựa trên assignedAt)
+              // KH được phân giao hôm nay (dựa trên assignedAt) - QUAN TRỌNG: phải có assignedAt
               assignedAt: {
                 gte: today,
                 lt: tomorrow
@@ -87,10 +88,21 @@ export async function GET(
             },
             {
               // KH đã hoàn thành hôm nay (để user vẫn thấy KH mình vừa hoàn thành)
-              completedAt: {
-                gte: today,
-                lt: tomorrow
-              }
+              // VÀ phải được phân giao hôm nay (assignedAt hôm nay)
+              AND: [
+                {
+                  completedAt: {
+                    gte: today,
+                    lt: tomorrow
+                  }
+                },
+                {
+                  assignedAt: {
+                    gte: today,
+                    lt: tomorrow
+                  }
+                }
+              ]
             }
           ]
         }

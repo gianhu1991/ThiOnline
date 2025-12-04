@@ -102,9 +102,10 @@ export async function POST(
         customerIndex += dailyCount
       }
 
+      const totalAssigned = Math.min(customersToAssign.length, assignedUsers.length * dailyCount)
       return NextResponse.json({ 
         success: true, 
-        message: `Đã phân giao ${pendingCustomers.length} khách hàng cho ${assignedUsers.length} người dùng` 
+        message: `Đã phân giao ${totalAssigned} khách hàng cho ${assignedUsers.length} người dùng` 
       })
     } else {
       return NextResponse.json({ error: 'Thiếu thông tin phân giao' }, { status: 400 })

@@ -262,31 +262,31 @@ export default function MyTasksPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border p-2 text-left">STT</th>
-                    <th className="border p-2 text-left">Account</th>
-                    <th className="border p-2 text-left">Tên KH</th>
-                    <th className="border p-2 text-left">Địa chỉ</th>
-                    <th className="border p-2 text-left">Số điện thoại</th>
-                    <th className="border p-2 text-left">Trạng thái</th>
-                    <th className="border p-2 text-left">Thao tác</th>
+                    <th className="border p-2 text-left text-xs font-semibold">STT</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Account</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Tên KH</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Địa chỉ</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Số điện thoại</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Trạng thái</th>
+                    <th className="border p-2 text-left text-xs font-semibold">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {customers.map((customer) => (
                     <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
-                      <td className="border p-2">{customer.stt}</td>
-                      <td className="border p-2">{customer.account}</td>
-                      <td className="border p-2 font-medium">{customer.customerName}</td>
-                      <td className="border p-2">{customer.address || '-'}</td>
-                      <td className="border p-2">{customer.phone || '-'}</td>
-                      <td className="border p-2">
+                      <td className="border p-2 text-sm">{customer.stt}</td>
+                      <td className="border p-2 text-sm">{customer.account}</td>
+                      <td className="border p-2 text-sm font-medium">{customer.customerName}</td>
+                      <td className="border p-2 text-sm">{customer.address || '-'}</td>
+                      <td className="border p-2 text-sm">{customer.phone || '-'}</td>
+                      <td className="border p-2 text-sm">
                         {customer.isCompleted ? (
-                          <span className="text-green-600 font-semibold">Đã hoàn thành</span>
+                          <span className="text-green-600 font-semibold text-xs">Đã hoàn thành</span>
                         ) : (
-                          <span className="text-orange-600 font-semibold">Chưa hoàn thành</span>
+                          <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
                         )}
                         {customer.completedAt && (
                           <div className="text-xs text-gray-500 mt-1">
@@ -294,17 +294,17 @@ export default function MyTasksPage() {
                           </div>
                         )}
                       </td>
-                      <td className="border p-2">
+                      <td className="border p-2 text-sm">
                         {!customer.isCompleted ? (
                           <button
                             onClick={() => handleComplete(customer.id)}
                             disabled={completing === customer.id || !selectedTask.isActive}
-                            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                            className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
                           >
                             {completing === customer.id ? 'Đang xử lý...' : 'Thực hiện'}
                           </button>
                         ) : (
-                          <span className="text-green-600 text-sm">✓ Hoàn thành</span>
+                          <span className="text-green-600 text-xs">✓ Hoàn thành</span>
                         )}
                       </td>
                     </tr>
