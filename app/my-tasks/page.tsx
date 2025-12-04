@@ -39,7 +39,7 @@ export default function MyTasksPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null)
   const [completing, setCompleting] = useState<string | null>(null)
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export default function MyTasksPage() {
   }
 
   const fetchTaskCustomers = async (taskId: string) => {
-    setLoadingCustomers(true)
+    setLoadingTaskId(taskId)
     try {
       const res = await fetch(`/api/tasks/${taskId}/my-customers`, {
         credentials: 'include',
@@ -87,7 +87,7 @@ export default function MyTasksPage() {
     } catch (error: any) {
       alert(error.message || 'Lỗi khi tải danh sách khách hàng')
     } finally {
-      setLoadingCustomers(false)
+      setLoadingTaskId(null)
     }
   }
 
@@ -190,10 +190,10 @@ export default function MyTasksPage() {
 
             <button
               onClick={() => fetchTaskCustomers(task.id)}
-              disabled={loadingCustomers || !task.isActive}
+              disabled={loadingTaskId === task.id || !task.isActive}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loadingCustomers ? 'Đang tải...' : 'Xem chi tiết'}
+              {loadingTaskId === task.id ? 'Đang tải...' : 'Xem chi tiết'}
             </button>
           </div>
         ))}
