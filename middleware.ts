@@ -33,13 +33,14 @@ export async function middleware(request: NextRequest) {
 
   // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents, trang chủ, settings và my-exams
   if (user.role !== 'admin') {
-    // Cho phép truy cập /videos, /documents, trang chủ (/), settings và my-exams
+    // Cho phép truy cập /videos, /documents, trang chủ (/), settings, my-exams và my-tasks
     if (
       pathname.startsWith('/videos') || 
       pathname.startsWith('/documents') || 
       pathname === '/' || 
       pathname === '/settings' ||
       pathname === '/my-exams' ||
+      pathname === '/my-tasks' ||
       pathname.match(/^\/exams\/[^/]+\/take$/) || // Cho phép làm bài thi
       pathname.match(/^\/exams\/[^/]+\/result$/) || // Cho phép xem kết quả
       pathname.match(/^\/exams\/[^/]+\/results$/) // Cho phép xem danh sách kết quả

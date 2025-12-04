@@ -87,6 +87,9 @@ export default function Navigation() {
                   <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Tạo bài thi
                   </Link>
+                  <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                    Quản lý nhiệm vụ
+                  </Link>
                   <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Video thực hành
                   </Link>
@@ -104,6 +107,9 @@ export default function Navigation() {
                   </Link>
                   <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Bài thi của tôi
+                  </Link>
+                  <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                    Nhiệm vụ của tôi
                   </Link>
                   <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                     Video thực hành

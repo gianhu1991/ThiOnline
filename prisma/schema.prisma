@@ -86,6 +86,7 @@ model User {
   updatedAt DateTime @updatedAt
   examAssignments ExamAssignment[]
   userGroupMembers UserGroupMember[]
+  taskAssignments TaskAssignment[]
 }
 
 model Category {
@@ -210,4 +211,55 @@ model Settings {
   value     String   // Giá trị (ví dụ: URL ảnh)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  name            String   // Tên nhiệm vụ (ví dụ: "Thay thế TB 1 băng tần")
+  description     String?  // Mô tả nhiệm vụ
+  isActive        Boolean  @default(true) // Tắt/mở nhiệm vụ
+  startDate       DateTime? // Thời gian bắt đầu thực hiện
+  endDate         DateTime? // Thời gian kết thúc thực hiện
+  dailyAssignmentCount Int @default(0) // Số lượng phiếu phân giao hàng ngày
+  createdBy       String   // Username người tạo
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  customers       TaskCustomer[]
+  assignments     TaskAssignment[]
+}
+
+model TaskCustomer {
+  id              String   @id @default(cuid())
+  taskId          String
+  stt             Int      // Số thứ tự
+  account         String   // Account khách hàng
+  customerName    String   // Tên khách hàng
+  address         String?  // Địa chỉ
+  phone           String?  // Số điện thoại
+  assignedUserId  String?  // ID người dùng được gán (từ cột NV thực hiện trong Excel)
+  assignedUsername String? // Username người dùng được gán (để dễ query)
+  isCompleted     Boolean  @default(false) // Đã hoàn thành hay chưa
+  completedAt     DateTime? // Thời gian hoàn thành
+  completedBy     String?  // Username người hoàn thành
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([assignedUserId])
+  @@index([assignedUsername])
+}
+
+model TaskAssignment {
+  id              String   @id @default(cuid())
+  taskId          String
+  userId          String   // ID người dùng được gán nhiệm vụ
+  assignedAt      DateTime @default(now())
+  assignedBy      String   // Username người gán
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
 }
