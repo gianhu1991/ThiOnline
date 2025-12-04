@@ -51,7 +51,8 @@ export async function PUT(
         ...(phone !== undefined && { phone: phone || null }),
         ...(assignedUsername !== undefined && { 
           assignedUserId,
-          assignedUsername: assignedUsername || null 
+          assignedUsername: assignedUsername || null,
+          assignedAt: assignedUserId ? new Date() : null // Cập nhật thời gian phân giao khi thay đổi
         }),
       }
     })

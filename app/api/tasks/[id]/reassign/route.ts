@@ -32,6 +32,7 @@ export async function POST(
         data: {
           assignedUserId: newUser.id,
           assignedUsername: newUser.username,
+          assignedAt: new Date(), // Lưu thời gian phân giao
         }
       })
 
@@ -63,26 +64,42 @@ export async function POST(
         return NextResponse.json({ error: 'Nhiệm vụ chưa được gán cho người dùng nào' }, { status: 400 })
       }
 
-      const pendingCustomers = task.customers
+      // Lấy KH chưa hoàn thành và chưa được phân giao hôm nay
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
+      // Lọc KH chưa được phân giao hôm nay (assignedAt không phải hôm nay hoặc null)
+      const customersToAssign = task.customers.filter(c => {
+        if (!c.assignedAt) return true // Chưa được phân giao bao giờ
+        const assignedDate = new Date(c.assignedAt)
+        assignedDate.setHours(0, 0, 0, 0)
+        return assignedDate.getTime() < today.getTime() // Được phân giao trước hôm nay
+      })
+      
       const assignedUsers = task.assignments.map(a => a.user)
       
-      // Phân giao đều cho các user được gán
-      let userIndex = 0
-      for (let i = 0; i < pendingCustomers.length; i += dailyCount) {
-        const batch = pendingCustomers.slice(i, i + dailyCount)
-        const assignedUser = assignedUsers[userIndex % assignedUsers.length]
+      // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH
+      let customerIndex = 0
+      for (let userIndex = 0; userIndex < assignedUsers.length; userIndex++) {
+        const assignedUser = assignedUsers[userIndex]
+        const batch = customersToAssign.slice(customerIndex, customerIndex + dailyCount)
         
-        await prisma.taskCustomer.updateMany({
-          where: {
-            id: { in: batch.map(c => c.id) }
-          },
-          data: {
-            assignedUserId: assignedUser.id,
-            assignedUsername: assignedUser.username,
-          }
-        })
-
-        userIndex++
+        if (batch.length > 0) {
+          await prisma.taskCustomer.updateMany({
+            where: {
+              id: { in: batch.map(c => c.id) }
+            },
+            data: {
+              assignedUserId: assignedUser.id,
+              assignedUsername: assignedUser.username,
+              assignedAt: new Date(), // Lưu thời gian phân giao
+            }
+          })
+        }
+        
+        customerIndex += dailyCount
       }
 
       return NextResponse.json({ 

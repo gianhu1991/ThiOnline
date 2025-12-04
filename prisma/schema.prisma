@@ -238,6 +238,7 @@ model TaskCustomer {
   phone           String?  // Số điện thoại
   assignedUserId  String?  // ID người dùng được gán (từ cột NV thực hiện trong Excel)
   assignedUsername String? // Username người dùng được gán (để dễ query)
+  assignedAt      DateTime? // Thời gian phân giao cho user (để filter theo ngày)
   isCompleted     Boolean  @default(false) // Đã hoàn thành hay chưa
   completedAt     DateTime? // Thời gian hoàn thành
   completedBy     String?  // Username người hoàn thành
@@ -248,6 +249,7 @@ model TaskCustomer {
   @@index([taskId])
   @@index([assignedUserId])
   @@index([assignedUsername])
+  @@index([assignedAt])
 }
 
 model TaskAssignment {

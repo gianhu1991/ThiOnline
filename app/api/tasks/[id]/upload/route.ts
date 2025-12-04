@@ -87,6 +87,7 @@ export async function POST(
         phone: phone ? phone.toString() : null,
         assignedUserId,
         assignedUsername: assignedUsername ? assignedUsername.toString() : null,
+        assignedAt: assignedUserId ? new Date() : null, // Lưu thời gian phân giao nếu có
         isCompleted: false,
       })
     }
