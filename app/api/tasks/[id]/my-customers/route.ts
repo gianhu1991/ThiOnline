@@ -51,12 +51,32 @@ export async function GET(
       return NextResponse.json({ error: 'Nhiệm vụ đã bị tắt' }, { status: 400 })
     }
 
+    // Lấy query parameter để xác định chế độ xem
+    const { searchParams } = new URL(request.url)
+    const view = searchParams.get('view') || 'all' // 'all' hoặc 'today'
+
+    // Xây dựng điều kiện where
+    const whereCondition: any = {
+      taskId: params.id,
+      assignedUserId: userFromDb.id
+    }
+
+    // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hôm nay
+    if (view === 'today') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
+      whereCondition.updatedAt = {
+        gte: today,
+        lt: tomorrow
+      }
+    }
+
     // Lấy danh sách khách hàng được gán cho user này
     const customers = await prisma.taskCustomer.findMany({
-      where: {
-        taskId: params.id,
-        assignedUserId: userFromDb.id
-      },
+      where: whereCondition,
       orderBy: { stt: 'asc' }
     })
 

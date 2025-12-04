@@ -41,6 +41,7 @@ export default function MyTasksPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null)
   const [completing, setCompleting] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'all' | 'today'>('all')
 
   useEffect(() => {
     fetchMyTasks()
@@ -68,10 +69,10 @@ export default function MyTasksPage() {
     }
   }
 
-  const fetchTaskCustomers = async (taskId: string) => {
+  const fetchTaskCustomers = async (taskId: string, view: 'all' | 'today' = 'all') => {
     setLoadingTaskId(taskId)
     try {
-      const res = await fetch(`/api/tasks/${taskId}/my-customers`, {
+      const res = await fetch(`/api/tasks/${taskId}/my-customers?view=${view}`, {
         credentials: 'include',
       })
 
@@ -83,12 +84,18 @@ export default function MyTasksPage() {
       const data = await res.json()
       setCustomers(data.customers || [])
       setSelectedTask(data.task)
+      setViewMode(view)
       setShowDetailModal(true)
     } catch (error: any) {
       alert(error.message || 'Lỗi khi tải danh sách khách hàng')
     } finally {
       setLoadingTaskId(null)
     }
+  }
+
+  const handleViewModeChange = async (newView: 'all' | 'today') => {
+    if (!selectedTask) return
+    await fetchTaskCustomers(selectedTask.id, newView)
   }
 
   const handleComplete = async (customerId: string) => {
@@ -216,11 +223,39 @@ export default function MyTasksPage() {
                   setShowDetailModal(false)
                   setSelectedTask(null)
                   setCustomers([])
+                  setViewMode('all')
                 }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
               </button>
+            </div>
+
+            {/* Tùy chọn xem */}
+            <div className="mb-4 flex gap-4 items-center">
+              <span className="font-semibold">Chế độ xem:</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="viewMode"
+                  value="all"
+                  checked={viewMode === 'all'}
+                  onChange={() => handleViewModeChange('all')}
+                  className="w-4 h-4"
+                />
+                <span>Xem toàn bộ</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="viewMode"
+                  value="today"
+                  checked={viewMode === 'today'}
+                  onChange={() => handleViewModeChange('today')}
+                  className="w-4 h-4"
+                />
+                <span>Xem theo ngày</span>
+              </label>
             </div>
 
             <div className="mb-4 p-3 bg-blue-50 rounded">
