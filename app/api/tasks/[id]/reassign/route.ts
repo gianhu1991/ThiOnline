@@ -70,15 +70,26 @@ export async function POST(
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
-      // Lọc KH chưa được phân giao hôm nay (assignedAt không phải hôm nay hoặc null)
+      // Lọc KH chưa được phân giao hôm nay
+      // KH được phân giao hôm nay = KH có assignedAt >= today AND assignedAt < tomorrow
+      // Chỉ lấy KH được phân giao TRƯỚC hôm nay (không phải hôm nay) hoặc chưa có assignedAt
       const customersToAssign = task.customers.filter(c => {
         if (!c.assignedAt) return true // Chưa được phân giao bao giờ
+        
         const assignedDate = new Date(c.assignedAt)
         assignedDate.setHours(0, 0, 0, 0)
-        return assignedDate.getTime() < today.getTime() // Được phân giao trước hôm nay
+        const assignedTime = assignedDate.getTime()
+        const todayTime = today.getTime()
+        
+        // Chỉ lấy KH được phân giao TRƯỚC hôm nay (không phải hôm nay)
+        return assignedTime < todayTime
       })
       
       const assignedUsers = task.assignments.map(a => a.user)
+      
+      // Reset assignedAt = null cho các KH chưa được phân giao hôm nay (để tránh hiển thị nhầm)
+      // Chỉ reset cho KH có assignedAt hôm nay nhưng chưa được phân giao trong lần này
+      const todayAssignedCustomerIds = new Set<string>()
       
       // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH
       let customerIndex = 0
@@ -87,20 +98,42 @@ export async function POST(
         const batch = customersToAssign.slice(customerIndex, customerIndex + dailyCount)
         
         if (batch.length > 0) {
+          const batchIds = batch.map(c => c.id)
+          batchIds.forEach(id => todayAssignedCustomerIds.add(id))
+          
           await prisma.taskCustomer.updateMany({
             where: {
-              id: { in: batch.map(c => c.id) }
+              id: { in: batchIds }
             },
             data: {
               assignedUserId: assignedUser.id,
               assignedUsername: assignedUser.username,
-              assignedAt: new Date(), // Lưu thời gian phân giao
+              assignedAt: new Date(), // Lưu thời gian phân giao mới
             }
           })
         }
         
         customerIndex += dailyCount
       }
+      
+      // Reset assignedAt = null cho các KH có assignedAt hôm nay nhưng không được phân giao trong lần này
+      // (Để tránh hiển thị nhầm các KH từ migration)
+      await prisma.taskCustomer.updateMany({
+        where: {
+          taskId: params.id,
+          isCompleted: false,
+          assignedAt: {
+            gte: today,
+            lt: tomorrow
+          },
+          id: {
+            notIn: Array.from(todayAssignedCustomerIds)
+          }
+        },
+        data: {
+          assignedAt: null
+        }
+      })
 
       const totalAssigned = Math.min(customersToAssign.length, assignedUsers.length * dailyCount)
       return NextResponse.json({ 
