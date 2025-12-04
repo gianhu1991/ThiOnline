@@ -34,6 +34,20 @@ interface UserGroup {
   }
 }
 
+interface Customer {
+  id: string
+  stt: number
+  account: string
+  customerName: string
+  address: string | null
+  phone: string | null
+  assignedUserId: string | null
+  assignedUsername: string | null
+  isCompleted: boolean
+  completedAt: string | null
+  completedBy: string | null
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -81,6 +95,25 @@ export default function TasksPage() {
   const [showReassignModal, setShowReassignModal] = useState(false)
   const [reassignDailyCount, setReassignDailyCount] = useState(0)
   const [reassigning, setReassigning] = useState(false)
+
+  // State cho xem danh sách khách hàng
+  const [showCustomersModal, setShowCustomersModal] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+
+  // State cho sửa khách hàng
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [editCustomerForm, setEditCustomerForm] = useState({
+    stt: 0,
+    account: '',
+    customerName: '',
+    address: '',
+    phone: '',
+    assignedUsername: ''
+  })
+  const [updatingCustomer, setUpdatingCustomer] = useState(false)
+  const [deletingCustomer, setDeletingCustomer] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTasks()
@@ -386,6 +419,106 @@ export default function TasksPage() {
     setShowReassignModal(true)
   }
 
+  const openCustomersModal = async (taskId: string) => {
+    setSelectedTask(tasks.find(t => t.id === taskId) || null)
+    setLoadingCustomers(true)
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCustomers(data.task.customers || [])
+        setShowCustomersModal(true)
+      } else {
+        alert('Lỗi khi tải danh sách khách hàng')
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      alert('Lỗi khi tải danh sách khách hàng')
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  const openEditCustomerModal = (customer: Customer) => {
+    setEditingCustomer(customer)
+    setEditCustomerForm({
+      stt: customer.stt,
+      account: customer.account,
+      customerName: customer.customerName,
+      address: customer.address || '',
+      phone: customer.phone || '',
+      assignedUsername: customer.assignedUsername || ''
+    })
+    setShowEditCustomerModal(true)
+  }
+
+  const handleUpdateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedTask || !editingCustomer) return
+
+    setUpdatingCustomer(true)
+    try {
+      const res = await fetch(`/api/tasks/${selectedTask.id}/customers/${editingCustomer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(editCustomerForm)
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Lỗi khi cập nhật khách hàng')
+      }
+
+      alert('Cập nhật khách hàng thành công')
+      setShowEditCustomerModal(false)
+      setEditingCustomer(null)
+      // Refresh danh sách khách hàng
+      if (selectedTask) {
+        openCustomersModal(selectedTask.id)
+      }
+      fetchTasks()
+    } catch (error: any) {
+      alert(error.message || 'Lỗi khi cập nhật khách hàng')
+    } finally {
+      setUpdatingCustomer(false)
+    }
+  }
+
+  const handleDeleteCustomer = async (customerId: string) => {
+    if (!selectedTask) return
+
+    if (!confirm('Bạn có chắc chắn muốn xóa khách hàng này không?')) {
+      return
+    }
+
+    setDeletingCustomer(customerId)
+    try {
+      const res = await fetch(`/api/tasks/${selectedTask.id}/customers/${customerId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Lỗi khi xóa khách hàng')
+      }
+
+      alert('Đã xóa khách hàng thành công')
+      // Refresh danh sách khách hàng
+      if (selectedTask) {
+        openCustomersModal(selectedTask.id)
+      }
+      fetchTasks()
+    } catch (error: any) {
+      alert(error.message || 'Lỗi khi xóa khách hàng')
+    } finally {
+      setDeletingCustomer(null)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -459,6 +592,12 @@ export default function TasksPage() {
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
               >
                 Quản lý
+              </button>
+              <button
+                onClick={() => openCustomersModal(task.id)}
+                className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 text-sm"
+              >
+                Xem DS khách hàng
               </button>
               <button
                 onClick={() => {
@@ -836,6 +975,198 @@ export default function TasksPage() {
                   onClick={() => {
                     setShowReassignModal(false)
                     setReassignDailyCount(0)
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xem danh sách khách hàng */}
+      {showCustomersModal && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
+              <button
+                onClick={() => {
+                  setShowCustomersModal(false)
+                  setCustomers([])
+                  setSelectedTask(null)
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {loadingCustomers ? (
+              <div className="text-center py-8">Đang tải...</div>
+            ) : (
+              <>
+                <div className="mb-4 p-3 bg-blue-50 rounded">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Tổng số: </span>
+                      <span className="font-bold">{customers.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Đã hoàn thành: </span>
+                      <span className="font-bold text-green-600">{customers.filter(c => c.isCompleted).length}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Chưa hoàn thành: </span>
+                      <span className="font-bold text-orange-600">{customers.filter(c => !c.isCompleted).length}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border p-2 text-left">STT</th>
+                        <th className="border p-2 text-left">Account</th>
+                        <th className="border p-2 text-left">Tên KH</th>
+                        <th className="border p-2 text-left">Địa chỉ</th>
+                        <th className="border p-2 text-left">Số điện thoại</th>
+                        <th className="border p-2 text-left">NV thực hiện</th>
+                        <th className="border p-2 text-left">Trạng thái</th>
+                        <th className="border p-2 text-left">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customers.map((customer) => (
+                        <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
+                          <td className="border p-2">{customer.stt}</td>
+                          <td className="border p-2">{customer.account}</td>
+                          <td className="border p-2 font-medium">{customer.customerName}</td>
+                          <td className="border p-2">{customer.address || '-'}</td>
+                          <td className="border p-2">{customer.phone || '-'}</td>
+                          <td className="border p-2">{customer.assignedUsername || '-'}</td>
+                          <td className="border p-2">
+                            {customer.isCompleted ? (
+                              <span className="text-green-600 font-semibold">Đã hoàn thành</span>
+                            ) : (
+                              <span className="text-orange-600 font-semibold">Chưa hoàn thành</span>
+                            )}
+                          </td>
+                          <td className="border p-2">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => openEditCustomerModal(customer)}
+                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCustomer(customer.id)}
+                                disabled={deletingCustomer === customer.id}
+                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {deletingCustomer === customer.id ? 'Đang xóa...' : 'Xóa'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {customers.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Chưa có khách hàng nào trong nhiệm vụ này.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal sửa khách hàng */}
+      {showEditCustomerModal && editingCustomer && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-4">Sửa thông tin khách hàng</h2>
+            <form onSubmit={handleUpdateCustomer}>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">STT *</label>
+                <input
+                  type="number"
+                  value={editCustomerForm.stt}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, stt: parseInt(e.target.value) || 0 })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                  min="0"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Account *</label>
+                <input
+                  type="text"
+                  value={editCustomerForm.account}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, account: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Tên khách hàng *</label>
+                <input
+                  type="text"
+                  value={editCustomerForm.customerName}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, customerName: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Địa chỉ</label>
+                <input
+                  type="text"
+                  value={editCustomerForm.address}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, address: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">Số điện thoại</label>
+                <input
+                  type="text"
+                  value={editCustomerForm.phone}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, phone: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 font-semibold">NV thực hiện (username)</label>
+                <input
+                  type="text"
+                  value={editCustomerForm.assignedUsername}
+                  onChange={(e) => setEditCustomerForm({ ...editCustomerForm, assignedUsername: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="Nhập username của người thực hiện"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={updatingCustomer}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {updatingCustomer ? 'Đang cập nhật...' : 'Cập nhật'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditCustomerModal(false)
+                    setEditingCustomer(null)
                   }}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
                 >
