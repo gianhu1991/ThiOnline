@@ -28,6 +28,35 @@ export async function GET(
       return NextResponse.json({ error: 'Không tìm thấy nhiệm vụ' }, { status: 404 })
     }
 
+    // Lấy danh sách unique usernames từ customers
+    const usernames = [...new Set(task.customers
+      .map(c => c.assignedUsername)
+      .filter((u): u is string => !!u)
+    )]
+
+    // Fetch thông tin fullName của users
+    const users = await prisma.user.findMany({
+      where: {
+        username: { in: usernames }
+      },
+      select: {
+        username: true,
+        fullName: true
+      }
+    })
+
+    // Tạo map username -> fullName (nếu không có fullName thì dùng username)
+    const usernameToFullName = new Map<string, string>()
+    users.forEach(user => {
+      usernameToFullName.set(user.username, user.fullName || user.username)
+    })
+
+    // Helper function để lấy tên hiển thị
+    const getDisplayName = (username: string | null): string => {
+      if (!username || username === 'Chưa gán') return 'Chưa gán'
+      return usernameToFullName.get(username) || username
+    }
+
     // Tạo dữ liệu tổng hợp theo user
     const summaryMap = new Map<string, { total: number; completed: number; pending: number }>()
     
@@ -46,9 +75,9 @@ export async function GET(
     })
 
     // Chuyển Map thành mảng và sắp xếp theo tên user
-    const summaryData = Array.from(summaryMap.entries())
+    const summaryDataSorted = Array.from(summaryMap.entries())
       .map(([username, stats]) => ({
-        'Tên NV': username,
+        'Tên NV': getDisplayName(username),
         'Số lượng KH phân giao': stats.total,
         'Đã thực hiện': stats.completed,
         'Chưa thực hiện': stats.pending,
@@ -59,6 +88,12 @@ export async function GET(
         if (b['Tên NV'] === 'Chưa gán') return -1
         return a['Tên NV'].localeCompare(b['Tên NV'])
       })
+      .map((item, index) => ({
+        'STT': index + 1,
+        ...item
+      }))
+    
+    const summaryData = summaryDataSorted
 
     // Tạo dữ liệu chi tiết
     const detailData = task.customers.map(customer => ({
@@ -67,7 +102,7 @@ export async function GET(
       'Tên KH': customer.customerName,
       'Địa chỉ': customer.address || '',
       'Số điện thoại': customer.phone || '',
-      'NV thực hiện': customer.assignedUsername || 'Chưa gán',
+      'NV thực hiện': getDisplayName(customer.assignedUsername),
       'Trạng thái': customer.isCompleted ? 'Đã thực hiện' : 'Chưa thực hiện',
     }))
 
@@ -77,7 +112,8 @@ export async function GET(
     // Sheet 1: Tổng hợp
     const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData)
     summaryWorksheet['!cols'] = [
-      { wch: 25 }, // Tên NV
+      { wch: 5 },  // STT
+      { wch: 30 }, // Tên NV
       { wch: 18 }, // Số lượng KH phân giao
       { wch: 15 }, // Đã thực hiện
       { wch: 15 }, // Chưa thực hiện
@@ -92,7 +128,7 @@ export async function GET(
       { wch: 30 }, // Tên KH
       { wch: 40 }, // Địa chỉ
       { wch: 15 }, // Số điện thoại
-      { wch: 20 }, // NV thực hiện
+      { wch: 30 }, // NV thực hiện
       { wch: 15 }, // Trạng thái
     ]
     XLSX.utils.book_append_sheet(workbook, detailWorksheet, 'Chi tiết')

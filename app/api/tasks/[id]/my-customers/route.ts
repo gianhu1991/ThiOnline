@@ -64,7 +64,8 @@ export async function GET(
       task: {
         id: task.id,
         name: task.name,
-        description: task.description
+        description: task.description,
+        isActive: task.isActive
       },
       customers 
     })
