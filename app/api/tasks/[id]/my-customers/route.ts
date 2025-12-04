@@ -58,22 +58,44 @@ export async function GET(
     // Xây dựng điều kiện where
     const whereCondition: any = {
       taskId: params.id,
-      assignedUserId: userFromDb.id
     }
 
     // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hoặc hoàn thành hôm nay
-    // Logic: Lấy KH có updatedAt hôm nay (được phân giao hoặc hoàn thành hôm nay)
     if (view === 'today') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
-      // Lấy KH có updatedAt hôm nay (được phân giao hoặc cập nhật hôm nay)
-      whereCondition.updatedAt = {
-        gte: today,
-        lt: tomorrow
-      }
+      // Logic: Lấy KH có assignedUserId = user hiện tại VÀ
+      // (được phân giao hôm nay HOẶC hoàn thành hôm nay)
+      whereCondition.AND = [
+        {
+          assignedUserId: userFromDb.id
+        },
+        {
+          OR: [
+            {
+              // KH được phân giao hôm nay: updatedAt hôm nay và chưa hoàn thành
+              updatedAt: {
+                gte: today,
+                lt: tomorrow
+              },
+              completedAt: null
+            },
+            {
+              // KH đã hoàn thành hôm nay
+              completedAt: {
+                gte: today,
+                lt: tomorrow
+              }
+            }
+          ]
+        }
+      ]
+    } else {
+      // Xem toàn bộ: chỉ cần assignedUserId = user hiện tại
+      whereCondition.assignedUserId = userFromDb.id
     }
 
     // Lấy danh sách khách hàng được gán cho user này
