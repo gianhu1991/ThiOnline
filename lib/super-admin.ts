@@ -44,17 +44,30 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
  */
 export async function isSuperAdminByUsername(username: string): Promise<boolean> {
   try {
+    // Trim và normalize username để tránh lỗi khoảng trắng
+    const normalizedUsername = username?.trim().toLowerCase()
+    
     // User có username = "admin" luôn là Super Admin (kiểm tra đầu tiên)
-    if (username === 'admin') {
-      console.log(`[SuperAdmin Check] Username "${username}" is Super Admin (admin user)`)
+    if (normalizedUsername === 'admin') {
+      console.log(`[SuperAdmin Check] Username "${username}" (normalized: "${normalizedUsername}") is Super Admin (admin user)`)
       return true
     }
 
-    // Lấy user từ database
-    const user = await prisma.user.findUnique({
+    // Lấy user từ database (thử cả username gốc và normalized)
+    let user = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, role: true, createdAt: true },
+      select: { id: true, username: true, role: true, createdAt: true },
     })
+    
+    // Nếu không tìm thấy, thử tìm với username đã normalize
+    if (!user && normalizedUsername) {
+      // Tìm tất cả user và so sánh
+      const allUsers = await prisma.user.findMany({
+        where: { role: 'admin' },
+        select: { id: true, username: true, role: true, createdAt: true },
+      })
+      user = allUsers.find(u => u.username.trim().toLowerCase() === normalizedUsername) || null
+    }
 
     if (!user) {
       console.log(`[SuperAdmin Check] User ${username} not found in database`)

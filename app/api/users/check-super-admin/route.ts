@@ -14,9 +14,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isSuperAdmin: false })
     }
 
-    console.log('[Check Super Admin API] Checking username:', user.username)
+    console.log('[Check Super Admin API] Checking username:', user.username, 'Type:', typeof user.username)
+    
+    // Kiểm tra trực tiếp: nếu username là "admin" (case-insensitive) thì là Super Admin
+    const normalizedUsername = user.username?.trim().toLowerCase()
+    if (normalizedUsername === 'admin') {
+      console.log('[Check Super Admin API] Username is "admin", returning true')
+      return NextResponse.json({ isSuperAdmin: true })
+    }
+    
+    // Kiểm tra từ database
     const isSuperAdmin = await isSuperAdminByUsername(user.username)
-    console.log('[Check Super Admin API] Result:', isSuperAdmin)
+    console.log('[Check Super Admin API] Result from isSuperAdminByUsername:', isSuperAdmin)
 
     return NextResponse.json({ isSuperAdmin })
   } catch (error: any) {
