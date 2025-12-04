@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
-import { isSuperAdminByUsername } from '@/lib/super-admin'
 import * as XLSX from 'xlsx'
 
-// Upload file Excel cho nhiệm vụ (Super Admin)
+// Upload file Excel cho nhiệm vụ (Admin)
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,14 +12,7 @@ export async function POST(
     const user = await getJWT(request)
     
     if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Kiểm tra super admin
-    const isSuperAdmin = await isSuperAdminByUsername(user.username)
-
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: 'Chỉ Super Admin mới được upload file' }, { status: 403 })
+      return NextResponse.json({ error: 'Chỉ admin mới được upload file' }, { status: 403 })
     }
 
     // Kiểm tra nhiệm vụ tồn tại

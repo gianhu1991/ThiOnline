@@ -29,7 +29,6 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   
   // State cho modal tạo nhiệm vụ
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -71,39 +70,9 @@ export default function TasksPage() {
   const [reassigning, setReassigning] = useState(false)
 
   useEffect(() => {
-    checkSuperAdmin()
     fetchTasks()
     fetchUsers()
   }, [])
-
-  const checkSuperAdmin = async () => {
-    try {
-      const res = await fetch('/api/users/check-super-admin', {
-        credentials: 'include',
-      })
-      const data = await res.json()
-      console.log('[Tasks Page] Super Admin check result:', data)
-      setIsSuperAdmin(data.isSuperAdmin || false)
-      
-      // Nếu không phải super admin, vẫn cho phép nếu là user "admin"
-      if (!data.isSuperAdmin) {
-        // Kiểm tra lại bằng cách lấy thông tin user hiện tại
-        const meRes = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-        if (meRes.ok) {
-          const meData = await meRes.json()
-          if (meData.user?.username === 'admin') {
-            console.log('[Tasks Page] User is "admin", allowing access')
-            setIsSuperAdmin(true)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking super admin:', error)
-      setIsSuperAdmin(false)
-    }
-  }
 
   const fetchTasks = async () => {
     try {
@@ -114,8 +83,7 @@ export default function TasksPage() {
       
       if (!res.ok) {
         if (res.status === 403) {
-          setError('Chỉ Super Admin mới được truy cập trang này')
-          setIsSuperAdmin(false)
+          setError('Chỉ admin mới được truy cập trang này')
         } else {
           const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định' }))
           throw new Error(errorData.error || `Lỗi ${res.status}`)
@@ -346,15 +314,6 @@ export default function TasksPage() {
     setShowReassignModal(true)
   }
 
-  if (!isSuperAdmin) {
-    return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Bạn không có quyền truy cập trang này. Chỉ Super Admin mới được phép.</p>
-        </div>
-      </div>
-    )
-  }
 
   if (loading) {
     return (

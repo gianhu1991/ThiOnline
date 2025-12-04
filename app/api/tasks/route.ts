@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
-import { isSuperAdminByUsername } from '@/lib/super-admin'
 
-// Lấy danh sách tất cả nhiệm vụ (Super Admin)
+// Lấy danh sách tất cả nhiệm vụ (Admin)
 export async function GET(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
     if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Kiểm tra super admin
-    const isSuperAdmin = await isSuperAdminByUsername(user.username)
-
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: 'Chỉ Super Admin mới được truy cập' }, { status: 403 })
+      return NextResponse.json({ error: 'Chỉ admin mới được truy cập' }, { status: 403 })
     }
 
     const tasks = await prisma.task.findMany({
@@ -57,20 +49,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Tạo nhiệm vụ mới (Super Admin)
+// Tạo nhiệm vụ mới (Admin)
 export async function POST(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
     if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Kiểm tra super admin
-    const isSuperAdmin = await isSuperAdminByUsername(user.username)
-
-    if (!isSuperAdmin) {
-      return NextResponse.json({ error: 'Chỉ Super Admin mới được tạo nhiệm vụ' }, { status: 403 })
+      return NextResponse.json({ error: 'Chỉ admin mới được tạo nhiệm vụ' }, { status: 403 })
     }
 
     const { name, description, startDate, endDate, dailyAssignmentCount } = await request.json()

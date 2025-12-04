@@ -9,18 +9,25 @@ export async function GET(request: NextRequest) {
     
     console.log('[Check Super Admin API] JWT user:', user)
     
-    if (!user || user.role !== 'admin') {
-      console.log('[Check Super Admin API] User not admin or not authenticated')
+    if (!user) {
+      console.log('[Check Super Admin API] User not authenticated')
       return NextResponse.json({ isSuperAdmin: false })
     }
 
-    console.log('[Check Super Admin API] Checking username:', user.username, 'Type:', typeof user.username)
+    console.log('[Check Super Admin API] Checking username:', user.username, 'Type:', typeof user.username, 'Role:', user.role)
     
     // Kiểm tra trực tiếp: nếu username là "admin" (case-insensitive) thì là Super Admin
+    // Không cần kiểm tra role vì username "admin" luôn là Super Admin
     const normalizedUsername = user.username?.trim().toLowerCase()
     if (normalizedUsername === 'admin') {
-      console.log('[Check Super Admin API] Username is "admin", returning true')
+      console.log('[Check Super Admin API] Username is "admin", returning true (Super Admin)')
       return NextResponse.json({ isSuperAdmin: true })
+    }
+    
+    // Nếu không phải "admin", kiểm tra role phải là "admin"
+    if (user.role !== 'admin') {
+      console.log('[Check Super Admin API] User role is not admin:', user.role)
+      return NextResponse.json({ isSuperAdmin: false })
     }
     
     // Kiểm tra từ database
