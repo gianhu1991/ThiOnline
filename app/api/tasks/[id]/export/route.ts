@@ -29,10 +29,13 @@ export async function GET(
     }
 
     // Lấy danh sách unique usernames từ customers
-    const usernames = [...new Set(task.customers
-      .map(c => c.assignedUsername)
-      .filter((u): u is string => !!u)
-    )]
+    const usernameSet = new Set<string>()
+    task.customers.forEach(c => {
+      if (c.assignedUsername) {
+        usernameSet.add(c.assignedUsername)
+      }
+    })
+    const usernames = Array.from(usernameSet)
 
     // Fetch thông tin fullName của users
     const users = await prisma.user.findMany({
