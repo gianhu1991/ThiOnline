@@ -44,8 +44,9 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
  */
 export async function isSuperAdminByUsername(username: string): Promise<boolean> {
   try {
-    // User có username = "admin" luôn là Super Admin
+    // User có username = "admin" luôn là Super Admin (kiểm tra đầu tiên)
     if (username === 'admin') {
+      console.log(`[SuperAdmin Check] Username "${username}" is Super Admin (admin user)`)
       return true
     }
 
@@ -56,11 +57,12 @@ export async function isSuperAdminByUsername(username: string): Promise<boolean>
     })
 
     if (!user) {
-      console.log(`[SuperAdmin Check] User ${username} not found`)
+      console.log(`[SuperAdmin Check] User ${username} not found in database`)
       return false
     }
 
     if (user.role !== 'admin') {
+      console.log(`[SuperAdmin Check] User ${username} is not admin (role: ${user.role})`)
       return false
     }
 

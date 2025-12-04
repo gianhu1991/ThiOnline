@@ -78,9 +78,27 @@ export default function TasksPage() {
 
   const checkSuperAdmin = async () => {
     try {
-      const res = await fetch('/api/users/check-super-admin')
+      const res = await fetch('/api/users/check-super-admin', {
+        credentials: 'include',
+      })
       const data = await res.json()
+      console.log('[Tasks Page] Super Admin check result:', data)
       setIsSuperAdmin(data.isSuperAdmin || false)
+      
+      // Nếu không phải super admin, vẫn cho phép nếu là user "admin"
+      if (!data.isSuperAdmin) {
+        // Kiểm tra lại bằng cách lấy thông tin user hiện tại
+        const meRes = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        if (meRes.ok) {
+          const meData = await meRes.json()
+          if (meData.user?.username === 'admin') {
+            console.log('[Tasks Page] User is "admin", allowing access')
+            setIsSuperAdmin(true)
+          }
+        }
+      }
     } catch (error) {
       console.error('Error checking super admin:', error)
       setIsSuperAdmin(false)
