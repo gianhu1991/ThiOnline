@@ -53,7 +53,7 @@ export async function GET(
 
     // Lấy query parameter để xác định chế độ xem
     const { searchParams } = new URL(request.url)
-    const view = searchParams.get('view') || 'all' // 'all' hoặc 'today'
+    const view = searchParams.get('view') || 'today' // Mặc định là 'today', có thể chuyển sang 'all'
 
     // Xây dựng điều kiện where
     const whereCondition: any = {
@@ -61,13 +61,15 @@ export async function GET(
       assignedUserId: userFromDb.id
     }
 
-    // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hôm nay
+    // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hoặc hoàn thành hôm nay
+    // Logic: Lấy KH có updatedAt hôm nay (được phân giao hoặc hoàn thành hôm nay)
     if (view === 'today') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
+      // Lấy KH có updatedAt hôm nay (được phân giao hoặc cập nhật hôm nay)
       whereCondition.updatedAt = {
         gte: today,
         lt: tomorrow

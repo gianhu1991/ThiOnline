@@ -41,7 +41,7 @@ export default function MyTasksPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null)
   const [completing, setCompleting] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'all' | 'today'>('all')
+  const [viewMode, setViewMode] = useState<'all' | 'today'>('today') // Mặc định là 'today'
 
   useEffect(() => {
     fetchMyTasks()
@@ -69,7 +69,7 @@ export default function MyTasksPage() {
     }
   }
 
-  const fetchTaskCustomers = async (taskId: string, view: 'all' | 'today' = 'all') => {
+  const fetchTaskCustomers = async (taskId: string, view: 'all' | 'today' = 'today') => {
     setLoadingTaskId(taskId)
     try {
       const res = await fetch(`/api/tasks/${taskId}/my-customers?view=${view}`, {
@@ -223,7 +223,7 @@ export default function MyTasksPage() {
                   setShowDetailModal(false)
                   setSelectedTask(null)
                   setCustomers([])
-                  setViewMode('all')
+                  setViewMode('today')
                 }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -232,30 +232,16 @@ export default function MyTasksPage() {
             </div>
 
             {/* Tùy chọn xem */}
-            <div className="mb-4 flex gap-4 items-center">
-              <span className="font-semibold">Chế độ xem:</span>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="viewMode"
-                  value="all"
-                  checked={viewMode === 'all'}
-                  onChange={() => handleViewModeChange('all')}
-                  className="w-4 h-4"
-                />
-                <span>Xem toàn bộ</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="viewMode"
-                  value="today"
-                  checked={viewMode === 'today'}
-                  onChange={() => handleViewModeChange('today')}
-                  className="w-4 h-4"
-                />
-                <span>Xem theo ngày</span>
-              </label>
+            <div className="mb-4 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                {viewMode === 'today' ? 'Đang xem: Khách hàng phân giao theo ngày' : 'Đang xem: Tất cả khách hàng'}
+              </div>
+              <button
+                onClick={() => handleViewModeChange(viewMode === 'today' ? 'all' : 'today')}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+              >
+                {viewMode === 'today' ? 'Xem toàn bộ' : 'Xem theo ngày'}
+              </button>
             </div>
 
             <div className="mb-4 p-3 bg-blue-50 rounded">
