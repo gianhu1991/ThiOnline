@@ -23,6 +23,7 @@ interface User {
   id: string
   username: string
   fullName: string | null
+  role: string
 }
 
 interface UserGroup {
@@ -376,20 +377,51 @@ export default function TasksPage() {
       })
 
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Lỗi khi xuất file')
+        // Thử parse JSON error, nếu không được thì dùng text
+        let errorMessage = 'Lỗi khi xuất file'
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          const errorText = await res.text()
+          errorMessage = errorText || errorMessage
+        }
+        alert(errorMessage)
+        return
       }
 
+      // Kiểm tra content type
+      const contentType = res.headers.get('Content-Type')
+      if (!contentType || !contentType.includes('spreadsheet')) {
+        alert('Lỗi: File không đúng định dạng')
+        return
+      }
+
+      // Lấy blob từ response
       const blob = await res.blob()
+      
+      // Tạo URL tạm thời và tải file
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `ket-qua-${Date.now()}.xlsx`
+      
+      // Lấy tên file từ header Content-Disposition
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let fileName = `ket-qua-${Date.now()}.xlsx`
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = decodeURIComponent(fileNameMatch[1].replace(/['"]/g, ''))
+        }
+      }
+      
+      a.download = fileName
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     } catch (error: any) {
+      console.error('Error exporting file:', error)
       alert(error.message || 'Lỗi khi xuất file')
     }
   }
@@ -405,11 +437,28 @@ export default function TasksPage() {
     setShowManageModal(true)
   }
 
-  const openAssignModal = (task: Task) => {
+  const openAssignModal = async (task: Task) => {
     setSelectedTask(task)
-    setSelectedUserIds([])
     setSelectedGroupId(null)
     setGroupUsers([])
+    
+    // Fetch danh sách user đã được gán nhiệm vụ
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const assignedUserIds = (data.task.assignments || []).map((a: any) => a.user.id)
+        setSelectedUserIds(assignedUserIds)
+      } else {
+        setSelectedUserIds([])
+      }
+    } catch (error) {
+      console.error('Error fetching task assignments:', error)
+      setSelectedUserIds([])
+    }
+    
     setShowAssignModal(true)
   }
 
@@ -1145,14 +1194,21 @@ export default function TasksPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block mb-2 font-semibold">NV thực hiện (username)</label>
-                <input
-                  type="text"
+                <label className="block mb-2 font-semibold">NV thực hiện</label>
+                <select
                   value={editCustomerForm.assignedUsername}
                   onChange={(e) => setEditCustomerForm({ ...editCustomerForm, assignedUsername: e.target.value })}
                   className="w-full border rounded px-3 py-2"
-                  placeholder="Nhập username của người thực hiện"
-                />
+                >
+                  <option value="">-- Chọn người thực hiện --</option>
+                  {users
+                    .filter(user => user.role !== 'admin') // Chỉ hiển thị user, không hiển thị admin
+                    .map(user => (
+                      <option key={user.id} value={user.username}>
+                        {user.username} {user.fullName ? `(${user.fullName})` : ''}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="flex gap-2">
                 <button
