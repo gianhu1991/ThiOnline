@@ -56,57 +56,32 @@ export async function GET(
     const view = searchParams.get('view') || 'today' // Mặc định là 'today', có thể chuyển sang 'all'
 
     // Xây dựng điều kiện where
-    // QUAN TRỌNG: Phải dùng AND để đảm bảo assignedUserId luôn được filter
     const whereCondition: any = {
       taskId: params.id,
       assignedUserId: userFromDb.id // Luôn filter theo user hiện tại
     }
 
-    // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hoặc hoàn thành hôm nay
+    // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hôm nay
     if (view === 'today') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
-      // Logic: Lấy KH có assignedUserId = user hiện tại VÀ
-      // (được phân giao hôm nay HOẶC hoàn thành hôm nay)
-      // Dùng assignedAt để xác định chính xác KH được phân giao hôm nay
-      // Nếu assignedAt là null (chưa có trong DB), không hiển thị (chỉ hiển thị KH đã được phân giao hôm nay)
+      // Logic: CHỈ lấy KH có assignedAt hôm nay (được phân giao hôm nay)
+      // KHÔNG lấy KH có assignedAt = null hoặc assignedAt < hôm nay
       whereCondition.AND = [
         {
           assignedUserId: userFromDb.id
         },
         {
-          OR: [
-            {
-              // KH được phân giao hôm nay (dựa trên assignedAt) - QUAN TRỌNG: phải có assignedAt
-              assignedAt: {
-                gte: today,
-                lt: tomorrow
-              }
-            },
-            {
-              // KH đã hoàn thành hôm nay (để user vẫn thấy KH mình vừa hoàn thành)
-              // VÀ phải được phân giao hôm nay (assignedAt hôm nay)
-              AND: [
-                {
-                  completedAt: {
-                    gte: today,
-                    lt: tomorrow
-                  }
-                },
-                {
-                  assignedAt: {
-                    gte: today,
-                    lt: tomorrow
-                  }
-                }
-              ]
-            }
-          ]
+          assignedAt: {
+            gte: today,
+            lt: tomorrow
+          }
         }
       ]
+      // Lưu ý: Nếu assignedAt là null, điều kiện gte sẽ không match, nên KH đó sẽ không được hiển thị
     }
 
     // Lấy danh sách khách hàng được gán cho user này
