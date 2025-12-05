@@ -44,13 +44,20 @@ export async function GET(request: NextRequest) {
     const documents = await prisma.document.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      // Chỉ select fields cần thiết nếu không cần full data (tối ưu cho dropdown)
-      ...(fullData ? {} : {
-        select: {
-          id: true,
-          title: true,
-        }
-      })
+      // Luôn trả về đầy đủ dữ liệu cho trang documents
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        url: true,
+        fileName: true,
+        fileSize: true,
+        category: true,
+        isPublic: true,
+        downloadCount: true,
+        uploadedBy: true,
+        createdAt: true,
+      }
     })
 
     return NextResponse.json(documents)

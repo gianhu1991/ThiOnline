@@ -79,8 +79,8 @@ export default function DocumentsPage() {
     }
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 B'
+  const formatFileSize = (bytes: number | null | undefined) => {
+    if (!bytes || bytes === 0) return '0 B'
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -301,7 +301,7 @@ export default function DocumentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                  <span>{doc.downloadCount} lượt tải</span>
+                  <span>{(doc.downloadCount || 0)} lượt tải</span>
                   {doc.category && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
                       {doc.category}
@@ -310,17 +310,27 @@ export default function DocumentsPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                   <span>{formatFileSize(doc.fileSize)}</span>
-                  <span>{new Date(doc.createdAt).toLocaleDateString('vi-VN')}</span>
+                  <span>{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('vi-VN') : '-'}</span>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center font-medium"
-                  >
-                    Tải xuống
-                  </a>
+                  {doc.url ? (
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center font-medium"
+                    >
+                      Tải xuống
+                    </a>
+                  ) : (
+                    <button
+                      disabled
+                      className="flex-1 bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed text-center font-medium"
+                    >
+                      Không có file
+                    </button>
+                  )}
                   {userRole === 'admin' && (
                     <>
                       <button
