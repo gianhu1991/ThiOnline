@@ -62,26 +62,33 @@ export async function GET(
     }
 
     // Nếu xem theo ngày, chỉ lấy khách hàng được phân giao hôm nay
+    // HOẶC khách hàng chưa được phân giao theo ngày (assignedAt = null) - những KH này luôn hiển thị
     if (view === 'today') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
-      // Logic: CHỈ lấy KH có assignedAt hôm nay (được phân giao hôm nay)
-      // KHÔNG lấy KH có assignedAt = null hoặc assignedAt < hôm nay
+      // Logic: Lấy KH có assignedAt hôm nay HOẶC assignedAt = null (chưa được phân giao theo ngày)
+      // KH có assignedAt = null là những KH đã được gán trong Excel hoặc khi gán task, chưa được phân giao theo ngày
       whereCondition.AND = [
         {
           assignedUserId: userFromDb.id
         },
         {
-          assignedAt: {
-            gte: today,
-            lt: tomorrow
-          }
+          OR: [
+            {
+              assignedAt: {
+                gte: today,
+                lt: tomorrow
+              }
+            },
+            {
+              assignedAt: null // KH chưa được phân giao theo ngày - luôn hiển thị
+            }
+          ]
         }
       ]
-      // Lưu ý: Nếu assignedAt là null, điều kiện gte sẽ không match, nên KH đó sẽ không được hiển thị
     }
 
     // Lấy danh sách khách hàng được gán cho user này

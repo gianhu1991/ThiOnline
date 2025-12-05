@@ -61,89 +61,18 @@ export async function POST(
       )
     )
 
-    // Tự động phân giao các KH chưa được gán cho các user đã được gán nhiệm vụ
-    // Logic: TUÂN THEO PHÂN GIAO TRONG FILE EXCEL
-    // 1. Nếu KH đã được gán trong Excel (assignedUserId != null) -> GIỮ NGUYÊN, không phân giao lại
-    // 2. Nếu KH chưa được gán trong Excel (assignedUserId = null) -> phân giao đều cho các user đã được gán task
-    // 3. Phân giao trong Excel là nguồn gốc, không được thay đổi
-    let autoAssignedCount = 0
-    
-    // Lấy tất cả user đã được gán nhiệm vụ (bao gồm cả user mới gán)
-    const allTaskAssignments = await prisma.taskAssignment.findMany({
-      where: { taskId: params.id },
-      include: {
-        user: {
-          select: { id: true, username: true }
-        }
-      }
-    })
+    // KHÔNG tự động phân giao customers khi gán task
+    // Phân giao trong Excel là nguồn gốc và duy nhất
+    // Khi user được gán task, họ sẽ thấy các KH đã được gán cho họ trong Excel (assignedUserId = user.id)
+    // KH chưa được gán trong Excel (assignedUserId = null) sẽ không được phân giao tự động
+    // Admin phải sử dụng chức năng "Phân giao lại" để phân giao KH chưa được gán
 
-    if (allTaskAssignments.length > 0) {
-      const assignedUserIds = new Set(allTaskAssignments.map(a => a.user.id))
-      const assignedUsers = allTaskAssignments.map(a => a.user)
-      
-      // CHỈ lấy các KH chưa được gán trong Excel (assignedUserId = null)
-      // KH đã được gán trong Excel (assignedUserId != null) sẽ được GIỮ NGUYÊN
-      const unassignedCustomers = await prisma.taskCustomer.findMany({
-        where: {
-          taskId: params.id,
-          assignedUserId: null, // CHỈ phân giao KH chưa được gán trong Excel
-          isCompleted: false
-        },
-        orderBy: { stt: 'asc' } // Tuân theo thứ tự trong Excel
-      })
-
-      if (unassignedCustomers.length > 0) {
-        // Phân giao đều cho các user (round-robin) - tuân theo thứ tự trong Excel (stt)
-        // Nhóm customers theo user để update theo batch (nhanh hơn)
-        const customersByUser = new Map<string, string[]>() // userId -> customerIds[]
-        
-        for (let i = 0; i < unassignedCustomers.length; i++) {
-          const customer = unassignedCustomers[i]
-          const assignedUser = assignedUsers[i % assignedUsers.length]
-          
-          if (!customersByUser.has(assignedUser.id)) {
-            customersByUser.set(assignedUser.id, [])
-          }
-          customersByUser.get(assignedUser.id)!.push(customer.id)
-        }
-        
-        // Update theo batch cho mỗi user
-        for (const [userId, customerIds] of customersByUser.entries()) {
-          const assignedUser = assignedUsers.find(u => u.id === userId)
-          if (!assignedUser) continue
-          
-          // Update tất cả customers của user này trong một lần
-          await prisma.taskCustomer.updateMany({
-            where: {
-              id: { in: customerIds }
-            },
-            data: {
-              assignedUserId: assignedUser.id,
-              assignedUsername: assignedUser.username,
-              assignedAt: null // Chưa phân giao theo ngày, sẽ được phân giao khi chạy "Phân giao lại"
-            }
-          })
-          autoAssignedCount += customerIds.length
-        }
-      }
-      
-      // KH đã được gán trong Excel (assignedUserId != null) sẽ được GIỮ NGUYÊN
-      // Khi user được gán task, họ sẽ thấy các KH đã được gán cho họ trong Excel
-      // Không cần làm gì thêm - phân giao trong Excel là nguồn gốc
-    }
-
-    // Tạo thông báo chi tiết
-    let message = `Đã gán nhiệm vụ cho ${assignments.length} người dùng`
-    if (autoAssignedCount > 0) {
-      message += `. Đã tự động phân giao ${autoAssignedCount} khách hàng chưa được gán cho các nhân viên`
-    }
+    const message = `Đã gán nhiệm vụ cho ${assignments.length} người dùng`
 
     return NextResponse.json({ 
       success: true, 
       message,
-      assignments,
-      autoAssignedCustomers: autoAssignedCount
+      assignments
     })
   } catch (error: any) {
     console.error('Error assigning task:', error)
