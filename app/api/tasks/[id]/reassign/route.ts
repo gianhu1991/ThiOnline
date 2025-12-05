@@ -128,6 +128,10 @@ export async function POST(
       // 1. KHÔNG được phân giao đúng trong ngày (không có trong todayAssignedCustomerIds)
       // 2. KHÔNG được phân giao mới trong lần này (không có trong newlyAssignedCustomerIds)
       // (Để tránh hiển thị nhầm các KH từ migration hoặc phân giao sai)
+      const allValidCustomerIds = new Set<string>()
+      todayAssignedCustomerIds.forEach(id => allValidCustomerIds.add(id))
+      newlyAssignedCustomerIds.forEach(id => allValidCustomerIds.add(id))
+      
       await prisma.taskCustomer.updateMany({
         where: {
           taskId: params.id,
@@ -137,7 +141,7 @@ export async function POST(
             lt: tomorrow
           },
           id: {
-            notIn: Array.from(new Set([...todayAssignedCustomerIds, ...newlyAssignedCustomerIds]))
+            notIn: Array.from(allValidCustomerIds)
           }
         },
         data: {
