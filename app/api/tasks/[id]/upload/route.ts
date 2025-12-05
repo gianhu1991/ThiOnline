@@ -49,12 +49,16 @@ export async function POST(
       return NextResponse.json({ error: 'File Excel không có dữ liệu' }, { status: 400 })
     }
 
-    // Lấy danh sách khách hàng hiện có để kiểm tra trùng lặp và cập nhật phân giao
+    // Lấy danh sách khách hàng hiện có để kiểm tra trùng lặp và cập nhật
     const existingCustomers = await prisma.taskCustomer.findMany({
       where: { taskId: params.id },
       select: { 
         id: true,
         account: true,
+        stt: true,
+        customerName: true,
+        address: true,
+        phone: true,
         assignedUserId: true,
         assignedUsername: true
       }
@@ -79,11 +83,30 @@ export async function POST(
 
     // Xử lý dữ liệu Excel
     // Cấu trúc: STT, account, Tên KH, địa chỉ, số điện thoại, NV thực hiện
+    
+    // Bước 1: Loại bỏ trùng lặp trong file Excel (nếu có nhiều dòng cùng account, chỉ lấy dòng cuối cùng)
+    const excelDataMap = new Map<string, any>() // account -> row data
+    for (const row of data as any[]) {
+      const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
+      const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
+      
+      if (!account || !customerName) {
+        continue // Bỏ qua dòng không hợp lệ
+      }
+      
+      const accountNormalized = account.toString().toLowerCase().trim()
+      // Lưu dòng cuối cùng nếu có trùng lặp
+      excelDataMap.set(accountNormalized, row)
+    }
+    
+    console.log(`[Upload] Đã loại bỏ trùng lặp: ${data.length} dòng -> ${excelDataMap.size} KH duy nhất`)
+    
+    // Bước 2: Xử lý từng KH (đã loại bỏ trùng lặp)
     const customers = [] // KH mới cần tạo
-    const customersToUpdate = [] // KH đã tồn tại cần cập nhật phân giao
+    const customersToUpdate = [] // KH đã tồn tại cần cập nhật
     let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
     
-    for (const row of data as any[]) {
+    for (const [accountNormalized, row] of excelDataMap.entries()) {
       const stt = row['STT'] || row['stt'] || row['Số thứ tự'] || null
       const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
       const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
@@ -137,9 +160,20 @@ export async function POST(
         }
       }
 
-      // Nếu KH đã tồn tại, kiểm tra xem có cần cập nhật phân giao không
+      // Nếu KH đã tồn tại, cập nhật tất cả thông tin từ Excel
       if (existingCustomer) {
-        // So sánh phân giao hiện tại với phân giao trong Excel
+        // Chuẩn bị dữ liệu cập nhật
+        const updateData: any = {
+          stt: stt ? parseInt(stt.toString()) : existingCustomer.stt || 0,
+          customerName: customerName.toString(),
+          address: address ? address.toString() : null,
+          phone: phone ? phone.toString() : null,
+          assignedUserId,
+          assignedUsername: actualAssignedUsername,
+          assignedAt: assignedUserId ? new Date() : null,
+        }
+        
+        // Kiểm tra xem có thay đổi gì không
         const currentAssignedUserId = existingCustomer.assignedUserId
         const currentAssignedUsername = existingCustomer.assignedUsername || null
         const excelAssignedUsername = actualAssignedUsername || null
@@ -148,22 +182,20 @@ export async function POST(
         console.log(`  - Hiện tại: userId=${currentAssignedUserId}, username="${currentAssignedUsername}"`)
         console.log(`  - Excel: userId=${assignedUserId}, username="${excelAssignedUsername}"`)
         
-        // So sánh chính xác (case-sensitive cho username, vì đã được normalize từ database)
+        // So sánh để xem có thay đổi không
         const userIdChanged = currentAssignedUserId !== assignedUserId
         const usernameChanged = currentAssignedUsername?.toLowerCase().trim() !== excelAssignedUsername?.toLowerCase().trim()
         
-        // Nếu phân giao khác nhau, cần cập nhật theo Excel
+        // Luôn cập nhật để đảm bảo dữ liệu từ Excel là nguồn gốc
+        customersToUpdate.push({
+          id: existingCustomer.id,
+          ...updateData
+        })
+        
         if (userIdChanged || usernameChanged) {
-          customersToUpdate.push({
-            id: existingCustomer.id,
-            assignedUserId,
-            assignedUsername: actualAssignedUsername,
-            assignedAt: assignedUserId ? new Date() : null, // Cập nhật thời gian phân giao nếu có
-          })
           console.log(`[Upload] ✓ Cần cập nhật phân giao cho KH ${account}: "${currentAssignedUsername || 'null'}" -> "${actualAssignedUsername || 'null'}"`)
         } else {
-          skippedCount++ // KH đã tồn tại và phân giao giống nhau, không cần cập nhật
-          console.log(`[Upload] - Bỏ qua KH ${account}: phân giao không thay đổi`)
+          console.log(`[Upload] ✓ Cập nhật thông tin KH ${account} (phân giao không thay đổi)`)
         }
       } else {
         // KH mới, thêm vào danh sách tạo mới
@@ -217,29 +249,27 @@ export async function POST(
     
     console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
 
-    // Cập nhật phân giao cho các KH đã tồn tại nhưng có phân giao khác trong Excel
+    // Cập nhật tất cả thông tin cho các KH đã tồn tại
     let updatedCount = 0
     if (customersToUpdate.length > 0) {
-      console.log(`[Upload] Bắt đầu cập nhật phân giao cho ${customersToUpdate.length} khách hàng...`)
+      console.log(`[Upload] Bắt đầu cập nhật ${customersToUpdate.length} khách hàng...`)
       
       // Cập nhật từng KH để có thể log chi tiết
       for (const customerUpdate of customersToUpdate) {
         try {
+          const { id, ...updateData } = customerUpdate
+          
           const beforeUpdate = await prisma.taskCustomer.findUnique({
-            where: { id: customerUpdate.id },
-            select: { account: true, assignedUserId: true, assignedUsername: true }
+            where: { id },
+            select: { account: true, customerName: true, assignedUsername: true }
           })
           
-          const updateResult = await prisma.taskCustomer.update({
-            where: { id: customerUpdate.id },
-            data: {
-              assignedUserId: customerUpdate.assignedUserId,
-              assignedUsername: customerUpdate.assignedUsername,
-              assignedAt: customerUpdate.assignedAt,
-            }
+          await prisma.taskCustomer.update({
+            where: { id },
+            data: updateData
           })
           
-          console.log(`[Upload] ✓ Đã cập nhật KH ${beforeUpdate?.account}: "${beforeUpdate?.assignedUsername || 'null'}" -> "${customerUpdate.assignedUsername || 'null'}"`)
+          console.log(`[Upload] ✓ Đã cập nhật KH ${beforeUpdate?.account}: "${beforeUpdate?.customerName}" (phân giao: "${beforeUpdate?.assignedUsername || 'null'}" -> "${updateData.assignedUsername || 'null'}")`)
           updatedCount++
         } catch (error: any) {
           console.error(`[Upload] ✗ Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
@@ -248,7 +278,7 @@ export async function POST(
       
       console.log(`[Upload] Hoàn thành: Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
     } else {
-      console.log(`[Upload] Không có KH nào cần cập nhật phân giao`)
+      console.log(`[Upload] Không có KH nào cần cập nhật`)
     }
 
     // KHÔNG tự động phân giao khi upload
