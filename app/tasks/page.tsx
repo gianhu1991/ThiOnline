@@ -1119,17 +1119,11 @@ export default function TasksPage() {
       {/* Modal xem danh sách khách hàng */}
       {showCustomersModal && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
-              <div className="flex gap-2 items-center">
-                <button
-                  onClick={handleDeleteAllCustomers}
-                  disabled={deletingAllCustomers || customers.length === 0}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
-                </button>
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] flex flex-col">
+            {/* Header cố định */}
+            <div className="flex-shrink-0 p-6 pb-4 border-b">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
                 <button
                   onClick={() => {
                     setShowCustomersModal(false)
@@ -1142,75 +1136,104 @@ export default function TasksPage() {
                   ×
                 </button>
               </div>
+
+              {loadingCustomers ? (
+                <div className="text-center py-8">Đang tải...</div>
+              ) : (
+                <>
+                  {/* Ô tìm kiếm */}
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ, NV thực hiện..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Lọc danh sách khách hàng theo searchTerm */}
+                  {(() => {
+                    const filteredCustomers = customers.filter(customer => {
+                      if (!searchTerm.trim()) return true
+                      const search = searchTerm.toLowerCase()
+                      return (
+                        customer.customerName.toLowerCase().includes(search) ||
+                        customer.account.toLowerCase().includes(search) ||
+                        (customer.phone && customer.phone.toLowerCase().includes(search)) ||
+                        (customer.address && customer.address.toLowerCase().includes(search)) ||
+                        (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
+                      )
+                    })
+                    
+                    return (
+                      <>
+                        <div className="mb-4 p-3 bg-blue-50 rounded flex justify-between items-center">
+                          <div className="grid grid-cols-3 gap-4 text-sm flex-1">
+                            <div>
+                              <span className="text-gray-600">Tổng số: </span>
+                              <span className="font-bold">{filteredCustomers.length}</span>
+                              {searchTerm && (
+                                <span className="text-gray-500 text-xs ml-1">
+                                  (trong {customers.length} KH)
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Đã hoàn thành: </span>
+                              <span className="font-bold text-green-600">{filteredCustomers.filter(c => c.isCompleted).length}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Chưa hoàn thành: </span>
+                              <span className="font-bold text-orange-600">{filteredCustomers.filter(c => !c.isCompleted).length}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleDeleteAllCustomers}
+                            disabled={deletingAllCustomers || customers.length === 0}
+                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ml-4"
+                          >
+                            {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
+                          </button>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </>
+              )}
             </div>
 
-            {loadingCustomers ? (
-              <div className="text-center py-8">Đang tải...</div>
-            ) : (
-              <>
-                {/* Ô tìm kiếm */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ, NV thực hiện..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Lọc danh sách khách hàng theo searchTerm */}
-                {(() => {
-                  const filteredCustomers = customers.filter(customer => {
-                    if (!searchTerm.trim()) return true
-                    const search = searchTerm.toLowerCase()
-                    return (
-                      customer.customerName.toLowerCase().includes(search) ||
-                      customer.account.toLowerCase().includes(search) ||
-                      (customer.phone && customer.phone.toLowerCase().includes(search)) ||
-                      (customer.address && customer.address.toLowerCase().includes(search)) ||
-                      (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
-                    )
-                  })
-                  
+            {/* Nội dung cuộn được */}
+            <div className="flex-1 overflow-y-auto p-6 pt-4">
+              {!loadingCustomers && (() => {
+                const filteredCustomers = customers.filter(customer => {
+                  if (!searchTerm.trim()) return true
+                  const search = searchTerm.toLowerCase()
                   return (
-                    <>
-                      <div className="mb-4 p-3 bg-blue-50 rounded">
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-600">Tổng số: </span>
-                            <span className="font-bold">{filteredCustomers.length}</span>
-                            {searchTerm && (
-                              <span className="text-gray-500 text-xs ml-1">
-                                (trong {customers.length} KH)
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Đã hoàn thành: </span>
-                            <span className="font-bold text-green-600">{filteredCustomers.filter(c => c.isCompleted).length}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Chưa hoàn thành: </span>
-                            <span className="font-bold text-orange-600">{filteredCustomers.filter(c => !c.isCompleted).length}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="border p-2 text-left">STT</th>
-                              <th className="border p-2 text-left">Account</th>
-                              <th className="border p-2 text-left">Tên KH</th>
-                              <th className="border p-2 text-left">Địa chỉ</th>
-                              <th className="border p-2 text-left">Số điện thoại</th>
-                              <th className="border p-2 text-left">NV thực hiện</th>
-                              <th className="border p-2 text-left">Trạng thái</th>
-                              <th className="border p-2 text-left">Thao tác</th>
-                            </tr>
-                          </thead>
+                    customer.customerName.toLowerCase().includes(search) ||
+                    customer.account.toLowerCase().includes(search) ||
+                    (customer.phone && customer.phone.toLowerCase().includes(search)) ||
+                    (customer.address && customer.address.toLowerCase().includes(search)) ||
+                    (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
+                  )
+                })
+                
+                return (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                          <tr>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">STT</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Account</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Tên KH</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Địa chỉ</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Số điện thoại</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">NV thực hiện</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Trạng thái</th>
+                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Thao tác</th>
+                          </tr>
+                        </thead>
                           <tbody>
                             {filteredCustomers.length > 0 ? (
                               filteredCustomers.map((customer) => (
