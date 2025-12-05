@@ -18,7 +18,8 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const includeCustomers = searchParams.get('includeCustomers') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '1000') // Mặc định 1000, có thể tăng nếu cần
+    // Tăng limit lên rất cao để load tất cả khách hàng (không giới hạn)
+    const limit = parseInt(searchParams.get('limit') || '1000000') // Mặc định 1 triệu để load tất cả
     const skip = (page - 1) * limit
     
     const task = await prisma.task.findUnique({
