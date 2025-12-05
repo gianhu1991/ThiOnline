@@ -18,8 +18,8 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const includeCustomers = searchParams.get('includeCustomers') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
-    // Tăng limit lên rất cao để load tất cả khách hàng (không giới hạn)
-    const limit = parseInt(searchParams.get('limit') || '1000000') // Mặc định 1 triệu để load tất cả
+    // Phân trang: mỗi trang 50 khách hàng
+    const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
     
     const task = await prisma.task.findUnique({
@@ -57,12 +57,34 @@ export async function GET(
       }
     })
     
-    // Nếu có includeCustomers, thêm thông tin pagination
+    // Nếu có includeCustomers, thêm thông tin pagination và thống kê
     let customerCount = null
+    let completedCount = 0
+    let pendingCount = 0
+    
     if (includeCustomers) {
       customerCount = await prisma.taskCustomer.count({
         where: { taskId: params.id }
       })
+      
+      // Lấy thống kê completed và pending
+      const [completed, pending] = await Promise.all([
+        prisma.taskCustomer.count({
+          where: { 
+            taskId: params.id,
+            isCompleted: true
+          }
+        }),
+        prisma.taskCustomer.count({
+          where: { 
+            taskId: params.id,
+            isCompleted: false
+          }
+        })
+      ])
+      
+      completedCount = completed
+      pendingCount = pending
     }
 
     if (!task) {
@@ -74,6 +96,8 @@ export async function GET(
       ...(includeCustomers && customerCount !== null && {
         pagination: {
           total: customerCount,
+          completed: completedCount,
+          pending: pendingCount,
           page,
           limit,
           totalPages: Math.ceil(customerCount / limit)

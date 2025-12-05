@@ -102,6 +102,11 @@ export default function TasksPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingCustomers, setLoadingCustomers] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCustomers, setTotalCustomers] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
 
   // State cho sửa khách hàng
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
@@ -482,19 +487,33 @@ export default function TasksPage() {
     setShowReassignModal(true)
   }
 
-  const openCustomersModal = async (taskId: string) => {
+  const openCustomersModal = async (taskId: string, page: number = 1) => {
     setSelectedTask(tasks.find(t => t.id === taskId) || null)
-    setLoadingCustomers(true)
+    setCurrentPage(page)
     setSearchTerm('') // Reset search khi mở modal
+    await fetchCustomersPage(taskId, page)
+  }
+
+  const fetchCustomersPage = async (taskId: string, page: number = 1) => {
+    setLoadingCustomers(true)
     try {
-      // Chỉ load customers khi mở modal (tối ưu: không load khi không cần)
-      const res = await fetch(`/api/tasks/${taskId}?includeCustomers=true`, {
+      // Load customers với pagination
+      const res = await fetch(`/api/tasks/${taskId}?includeCustomers=true&page=${page}&limit=50`, {
         credentials: 'include',
       })
       if (res.ok) {
         const data = await res.json()
         setCustomers(data.task.customers || [])
-        setShowCustomersModal(true)
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages)
+          setTotalCustomers(data.pagination.total)
+          setCompletedCount(data.pagination.completed || 0)
+          setPendingCount(data.pagination.pending || 0)
+          setCurrentPage(data.pagination.page)
+        }
+        if (page === 1) {
+          setShowCustomersModal(true)
+        }
       } else {
         alert('Lỗi khi tải danh sách khách hàng')
       }
@@ -542,7 +561,7 @@ export default function TasksPage() {
       setEditingCustomer(null)
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        openCustomersModal(selectedTask.id)
+        await fetchCustomersPage(selectedTask.id, currentPage)
       }
       fetchTasks()
     } catch (error: any) {
@@ -574,7 +593,7 @@ export default function TasksPage() {
       alert('Đã xóa khách hàng thành công')
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        openCustomersModal(selectedTask.id)
+        await fetchCustomersPage(selectedTask.id, currentPage)
       }
       fetchTasks()
     } catch (error: any) {
@@ -611,9 +630,9 @@ export default function TasksPage() {
   }
 
   const handleDeleteAllCustomers = async () => {
-    if (!selectedTask) return
+      if (!selectedTask) return
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ ${customers.length} khách hàng trong nhiệm vụ này không? Hành động này không thể hoàn tác!`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ ${totalCustomers} khách hàng trong nhiệm vụ này không? Hành động này không thể hoàn tác!`)) {
       return
     }
 
@@ -633,7 +652,7 @@ export default function TasksPage() {
       alert(data.message || 'Đã xóa tất cả khách hàng thành công')
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        openCustomersModal(selectedTask.id)
+        await fetchCustomersPage(selectedTask.id, currentPage)
       }
       fetchTasks()
     } catch (error: any) {
@@ -1131,6 +1150,11 @@ export default function TasksPage() {
                     setCustomers([])
                     setSelectedTask(null)
                     setSearchTerm('') // Reset search khi đóng modal
+                    setCurrentPage(1)
+                    setTotalPages(1)
+                    setTotalCustomers(0)
+                    setCompletedCount(0)
+                    setPendingCount(0)
                   }}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
@@ -1173,25 +1197,25 @@ export default function TasksPage() {
                           <div className="grid grid-cols-3 gap-4 text-sm flex-1">
                             <div>
                               <span className="text-gray-600">Tổng số: </span>
-                              <span className="font-bold">{filteredCustomers.length}</span>
+                              <span className="font-bold">{totalCustomers}</span>
                               {searchTerm && (
                                 <span className="text-gray-500 text-xs ml-1">
-                                  (trong {customers.length} KH)
+                                  (hiển thị {filteredCustomers.length} trên trang này)
                                 </span>
                               )}
                             </div>
                             <div>
                               <span className="text-gray-600">Đã hoàn thành: </span>
-                              <span className="font-bold text-green-600">{filteredCustomers.filter(c => c.isCompleted).length}</span>
+                              <span className="font-bold text-green-600">{completedCount}</span>
                             </div>
                             <div>
                               <span className="text-gray-600">Chưa hoàn thành: </span>
-                              <span className="font-bold text-orange-600">{filteredCustomers.filter(c => !c.isCompleted).length}</span>
+                              <span className="font-bold text-orange-600">{pendingCount}</span>
                             </div>
                           </div>
                           <button
                             onClick={handleDeleteAllCustomers}
-                            disabled={deletingAllCustomers || customers.length === 0}
+                            disabled={deletingAllCustomers || totalCustomers === 0}
                             className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ml-4"
                           >
                             {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
@@ -1274,13 +1298,36 @@ export default function TasksPage() {
                             ) : (
                               <tr>
                                 <td colSpan={8} className="border p-4 text-center text-gray-500">
-                                  {searchTerm ? 'Không tìm thấy khách hàng nào phù hợp' : 'Chưa có khách hàng nào trong nhiệm vụ này.'}
+                                  {searchTerm ? 'Không tìm thấy khách hàng nào' : 'Chưa có khách hàng nào'}
                                 </td>
                               </tr>
                             )}
                           </tbody>
                         </table>
                       </div>
+                      
+                      {/* Pagination controls */}
+                      {totalPages > 1 && (
+                        <div className="mt-4 flex justify-center items-center gap-2">
+                          <button
+                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage - 1)}
+                            disabled={currentPage === 1 || loadingCustomers}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Trước
+                          </button>
+                          <span className="px-4 py-2 text-sm text-gray-700">
+                            Trang {currentPage} / {totalPages}
+                          </span>
+                          <button
+                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage + 1)}
+                            disabled={currentPage === totalPages || loadingCustomers}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      )}
                   </>
                 )
               })()}
