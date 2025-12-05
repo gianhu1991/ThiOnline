@@ -61,10 +61,60 @@ export async function POST(
       )
     )
 
+    // Tự động phân giao các KH chưa được gán cho các user đã được gán nhiệm vụ
+    let autoAssignedCount = 0
+    const unassignedCustomers = await prisma.taskCustomer.findMany({
+      where: {
+        taskId: params.id,
+        assignedUserId: null,
+        isCompleted: false
+      },
+      orderBy: { stt: 'asc' }
+    })
+
+    if (unassignedCustomers.length > 0) {
+      // Lấy tất cả user đã được gán nhiệm vụ (bao gồm cả user mới gán)
+      const allTaskAssignments = await prisma.taskAssignment.findMany({
+        where: { taskId: params.id },
+        include: {
+          user: {
+            select: { id: true, username: true }
+          }
+        }
+      })
+
+      if (allTaskAssignments.length > 0) {
+        const assignedUsers = allTaskAssignments.map(a => a.user)
+        
+        // Phân giao đều cho các user (round-robin)
+        for (let i = 0; i < unassignedCustomers.length; i++) {
+          const customer = unassignedCustomers[i]
+          const assignedUser = assignedUsers[i % assignedUsers.length]
+          
+          await prisma.taskCustomer.update({
+            where: { id: customer.id },
+            data: {
+              assignedUserId: assignedUser.id,
+              assignedUsername: assignedUser.username,
+              assignedAt: null // Chưa phân giao theo ngày, sẽ được phân giao khi chạy "Phân giao lại"
+            }
+          })
+          autoAssignedCount++
+        }
+      }
+    }
+
+    // Tạo thông báo chi tiết
+    let message = `Đã gán nhiệm vụ cho ${assignments.length} người dùng`
+    if (autoAssignedCount > 0) {
+      message += `. Đã tự động phân giao ${autoAssignedCount} khách hàng chưa được gán cho các nhân viên`
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: `Đã gán nhiệm vụ cho ${assignments.length} người dùng`,
-      assignments 
+      message,
+      assignments,
+      autoAssignedCustomers: autoAssignedCount
     })
   } catch (error: any) {
     console.error('Error assigning task:', error)
