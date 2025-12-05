@@ -49,6 +49,11 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           title: true,
+          viewCount: true, // Cần viewCount để hiển thị
+          category: true, // Cần category để hiển thị
+          thumbnail: true, // Cần thumbnail để hiển thị
+          uploadedBy: true, // Cần uploadedBy để hiển thị
+          createdAt: true, // Cần createdAt để hiển thị
         }
       })
     })

@@ -425,7 +425,7 @@ export default function VideosPage() {
                       {video.title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <span>{video.viewCount.toLocaleString('vi-VN')} lượt xem</span>
+                      <span>{(video.viewCount || 0).toLocaleString('vi-VN')} lượt xem</span>
                       {video.category && (
                         <>
                           <span>•</span>

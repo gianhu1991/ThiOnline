@@ -139,7 +139,7 @@ export default function VideoDetailPage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-medium">{video.viewCount.toLocaleString('vi-VN')} lượt xem</span>
+                  <span className="font-medium">{(video.viewCount || 0).toLocaleString('vi-VN')} lượt xem</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +188,7 @@ export default function VideoDetailPage() {
             <div className="space-y-3">
               <div>
                 <div className="text-xs text-gray-500 mb-1">Lượt xem</div>
-                <div className="text-base font-semibold text-gray-900">{video.viewCount.toLocaleString('vi-VN')}</div>
+                <div className="text-base font-semibold text-gray-900">{(video.viewCount || 0).toLocaleString('vi-VN')}</div>
               </div>
               {video.category && (
                 <div>
