@@ -116,6 +116,11 @@ export async function POST(
       existingAccounts.add(accountNormalized)
     }
 
+    // Lưu danh sách account của KH mới để query lại sau (chỉ các KH không có assignedUserId)
+    const newUnassignedAccounts = customers
+      .filter(c => !c.assignedUserId)
+      .map(c => c.account.toLowerCase().trim())
+
     // Lưu vào database theo batch để tránh timeout (500 records mỗi batch)
     const BATCH_SIZE = 500
     let addedCount = 0
@@ -141,8 +146,62 @@ export async function POST(
     
     console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
 
+    // Tự động phân giao các KH mới không có assignedUserId cho các user đã được gán nhiệm vụ
+    let autoAssignedCount = 0
+    if (newUnassignedAccounts.length > 0) {
+      // Lấy danh sách user đã được gán nhiệm vụ
+      const taskAssignments = await prisma.taskAssignment.findMany({
+        where: { taskId: params.id },
+        include: {
+          user: {
+            select: { id: true, username: true }
+          }
+        }
+      })
+
+      if (taskAssignments.length > 0) {
+        // Lấy tất cả KH không có assignedUserId và filter theo danh sách account mới
+        const allUnassignedCustomers = await prisma.taskCustomer.findMany({
+          where: {
+            taskId: params.id,
+            assignedUserId: null,
+            isCompleted: false
+          },
+          orderBy: { stt: 'asc' }
+        })
+        
+        // Filter chỉ lấy các KH mới vừa upload (so sánh account case-insensitive)
+        const unassignedCustomers = allUnassignedCustomers.filter(c => 
+          newUnassignedAccounts.includes(c.account.toLowerCase().trim())
+        )
+
+        if (unassignedCustomers.length > 0) {
+          const assignedUsers = taskAssignments.map(a => a.user)
+          
+          // Phân giao đều cho các user (round-robin)
+          for (let i = 0; i < unassignedCustomers.length; i++) {
+            const customer = unassignedCustomers[i]
+            const assignedUser = assignedUsers[i % assignedUsers.length]
+            
+            await prisma.taskCustomer.update({
+              where: { id: customer.id },
+              data: {
+                assignedUserId: assignedUser.id,
+                assignedUsername: assignedUser.username,
+                assignedAt: null // Chưa phân giao theo ngày, sẽ được phân giao khi chạy "Phân giao lại"
+              }
+            })
+            autoAssignedCount++
+          }
+        }
+      }
+    }
+
     // Tạo thông báo chi tiết
     let message = `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
+    if (autoAssignedCount > 0) {
+      message += `. Đã tự động phân giao ${autoAssignedCount} khách hàng cho các nhân viên đã được gán nhiệm vụ`
+    }
     if (skippedCount > 0) {
       message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại (trùng account)`
     }
@@ -151,6 +210,7 @@ export async function POST(
       success: true, 
       message,
       added: addedCount,
+      autoAssigned: autoAssignedCount,
       skipped: skippedCount,
       total: addedCount + skippedCount
     })
