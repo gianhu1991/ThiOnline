@@ -242,7 +242,7 @@ export default function MyTasksPage() {
       {/* Modal chi tiết khách hàng */}
       {showDetailModal && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-7xl w-full max-h-[95vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-[95vw] sm:max-w-[98vw] w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl sm:text-2xl font-bold">Chi tiết: {selectedTask.name}</h2>
               <button
@@ -345,7 +345,7 @@ export default function MyTasksPage() {
                     customers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-gray-50">
                         <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">{customer.stt}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-mono break-all">{customer.account}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-all">{customer.account}</td>
                         <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-medium">{customer.customerName}</td>
                         <td className="border p-1.5 sm:p-2 text-xs sm:text-sm hidden sm:table-cell">{customer.address || '-'}</td>
                         <td className="border p-1.5 sm:p-2 text-xs sm:text-sm whitespace-nowrap">{customer.phone || '-'}</td>
