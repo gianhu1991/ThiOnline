@@ -101,6 +101,7 @@ export default function TasksPage() {
   const [showCustomersModal, setShowCustomersModal] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   // State cho sửa khách hàng
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
@@ -472,6 +473,7 @@ export default function TasksPage() {
   const openCustomersModal = async (taskId: string) => {
     setSelectedTask(tasks.find(t => t.id === taskId) || null)
     setLoadingCustomers(true)
+    setSearchTerm('') // Reset search khi mở modal
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         credentials: 'include',
@@ -1080,6 +1082,7 @@ export default function TasksPage() {
                   setShowCustomersModal(false)
                   setCustomers([])
                   setSelectedTask(null)
+                  setSearchTerm('') // Reset search khi đóng modal
                 }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -1091,39 +1094,72 @@ export default function TasksPage() {
               <div className="text-center py-8">Đang tải...</div>
             ) : (
               <>
-                <div className="mb-4 p-3 bg-blue-50 rounded">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Tổng số: </span>
-                      <span className="font-bold">{customers.length}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Đã hoàn thành: </span>
-                      <span className="font-bold text-green-600">{customers.filter(c => c.isCompleted).length}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Chưa hoàn thành: </span>
-                      <span className="font-bold text-orange-600">{customers.filter(c => !c.isCompleted).length}</span>
-                    </div>
-                  </div>
+                {/* Ô tìm kiếm */}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ, NV thực hiện..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border p-2 text-left">STT</th>
-                        <th className="border p-2 text-left">Account</th>
-                        <th className="border p-2 text-left">Tên KH</th>
-                        <th className="border p-2 text-left">Địa chỉ</th>
-                        <th className="border p-2 text-left">Số điện thoại</th>
-                        <th className="border p-2 text-left">NV thực hiện</th>
-                        <th className="border p-2 text-left">Trạng thái</th>
-                        <th className="border p-2 text-left">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customers.map((customer) => (
+                {/* Lọc danh sách khách hàng theo searchTerm */}
+                {(() => {
+                  const filteredCustomers = customers.filter(customer => {
+                    if (!searchTerm.trim()) return true
+                    const search = searchTerm.toLowerCase()
+                    return (
+                      customer.customerName.toLowerCase().includes(search) ||
+                      customer.account.toLowerCase().includes(search) ||
+                      (customer.phone && customer.phone.toLowerCase().includes(search)) ||
+                      (customer.address && customer.address.toLowerCase().includes(search)) ||
+                      (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
+                    )
+                  })
+                  
+                  return (
+                    <>
+                      <div className="mb-4 p-3 bg-blue-50 rounded">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">Tổng số: </span>
+                            <span className="font-bold">{filteredCustomers.length}</span>
+                            {searchTerm && (
+                              <span className="text-gray-500 text-xs ml-1">
+                                (trong {customers.length} KH)
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Đã hoàn thành: </span>
+                            <span className="font-bold text-green-600">{filteredCustomers.filter(c => c.isCompleted).length}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Chưa hoàn thành: </span>
+                            <span className="font-bold text-orange-600">{filteredCustomers.filter(c => !c.isCompleted).length}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="border p-2 text-left">STT</th>
+                              <th className="border p-2 text-left">Account</th>
+                              <th className="border p-2 text-left">Tên KH</th>
+                              <th className="border p-2 text-left">Địa chỉ</th>
+                              <th className="border p-2 text-left">Số điện thoại</th>
+                              <th className="border p-2 text-left">NV thực hiện</th>
+                              <th className="border p-2 text-left">Trạng thái</th>
+                              <th className="border p-2 text-left">Thao tác</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredCustomers.length > 0 ? (
+                              filteredCustomers.map((customer) => (
                         <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
                           <td className="border p-2">{customer.stt}</td>
                           <td className="border p-2">{customer.account}</td>
@@ -1155,17 +1191,21 @@ export default function TasksPage() {
                               </button>
                             </div>
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {customers.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    Chưa có khách hàng nào trong nhiệm vụ này.
-                  </div>
-                )}
+                              </tr>
+                            ))
+                            ) : (
+                              <tr>
+                                <td colSpan={8} className="border p-4 text-center text-gray-500">
+                                  {searchTerm ? 'Không tìm thấy khách hàng nào phù hợp' : 'Chưa có khách hàng nào trong nhiệm vụ này.'}
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )
+                })()}
               </>
             )}
           </div>
