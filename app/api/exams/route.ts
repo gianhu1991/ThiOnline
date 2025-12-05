@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
     
@@ -13,12 +13,24 @@ export async function GET() {
     const examCount = await prisma.exam.count()
     console.log('[GET /api/exams] Tổng số bài thi trong database:', examCount)
     
+    // Kiểm tra query parameter để xem có cần full data không
+    const { searchParams } = new URL(request.url)
+    const fullData = searchParams.get('full') === 'true'
+    
     const exams = await prisma.exam.findMany({
-      include: {
-        _count: {
-          select: { examResults: true }
+      // Chỉ select fields cần thiết nếu không cần full data (tối ưu cho dropdown)
+      ...(fullData ? {
+        include: {
+          _count: {
+            select: { examResults: true }
+          }
         }
-      },
+      } : {
+        select: {
+          id: true,
+          title: true,
+        }
+      }),
       orderBy: { createdAt: 'desc' },
     })
     

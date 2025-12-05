@@ -8,6 +8,7 @@ interface CheckboxDropdownProps {
   selectedIds: string[]
   onSelectionChange: (selectedIds: string[]) => void
   placeholder?: string
+  onOpen?: () => void // Callback khi mở dropdown (lazy load)
 }
 
 export default function CheckboxDropdown({
@@ -16,6 +17,7 @@ export default function CheckboxDropdown({
   selectedIds,
   onSelectionChange,
   placeholder = 'Chọn...',
+  onOpen,
 }: CheckboxDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,7 +64,12 @@ export default function CheckboxDropdown({
       {label && <label className="block mb-2 font-semibold text-gray-700 text-sm">{label}</label>}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen && onOpen) {
+            onOpen() // Lazy load khi mở dropdown
+          }
+          setIsOpen(!isOpen)
+        }}
         className={`w-full px-4 py-2.5 text-left flex items-center justify-between bg-white border-2 rounded-lg transition-all ${
           isOpen 
             ? 'border-blue-500 shadow-md' 

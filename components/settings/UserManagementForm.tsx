@@ -37,29 +37,29 @@ export default function UserManagementForm() {
   })
 
   useEffect(() => {
-    fetchUsers()
-    fetchCurrentUser()
+    // Fetch users và current user cùng lúc để tối ưu
+    Promise.all([
+      fetchUsers(),
+      fetchCurrentUser()
+    ])
   }, [])
 
   const fetchCurrentUser = async () => {
     try {
-      const res = await fetch('/api/auth/me', {
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const data = await res.json()
+      // Fetch current user và check super admin cùng lúc
+      const [meRes, superAdminRes] = await Promise.all([
+        fetch('/api/auth/me', { credentials: 'include' }),
+        fetch('/api/users/check-super-admin', { credentials: 'include' })
+      ])
+      
+      if (meRes.ok) {
+        const data = await meRes.json()
         setCurrentUserId(data.user?.id || null)
-        
-        // Kiểm tra xem có phải super admin không
-        if (data.user?.id) {
-          const superAdminRes = await fetch('/api/users/check-super-admin', {
-            credentials: 'include',
-          })
-          if (superAdminRes.ok) {
-            const superAdminData = await superAdminRes.json()
-            setIsSuperAdmin(superAdminData.isSuperAdmin || false)
-          }
-        }
+      }
+      
+      if (superAdminRes.ok) {
+        const superAdminData = await superAdminRes.json()
+        setIsSuperAdmin(superAdminData.isSuperAdmin || false)
       }
     } catch (error) {
       console.error('Error fetching current user:', error)
@@ -108,21 +108,8 @@ export default function UserManagementForm() {
     setUserError('')
     setUserSuccess('')
     
-    // Kiểm tra lại super admin status
-    if (currentUserId) {
-      try {
-        const superAdminRes = await fetch('/api/users/check-super-admin', {
-          credentials: 'include',
-        })
-        if (superAdminRes.ok) {
-          const superAdminData = await superAdminRes.json()
-          setIsSuperAdmin(superAdminData.isSuperAdmin || false)
-        }
-      } catch (error) {
-        console.error('Error checking super admin:', error)
-      }
-    }
-    
+    // Không cần check lại super admin status mỗi lần edit (đã check khi mount)
+    // Chỉ set editing user và form data
     setEditingUser(user)
     setEditFormData({
       username: user.username,

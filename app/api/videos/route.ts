@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const user = await getJWT(request)
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    const fullData = searchParams.get('full') === 'true'
 
     const where: any = {}
     
@@ -39,10 +40,17 @@ export async function GET(request: NextRequest) {
     if (category && category !== 'all') {
       where.category = category
     }
-
+    
     const videos = await prisma.video.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      // Chỉ select fields cần thiết nếu không cần full data (tối ưu cho dropdown)
+      ...(fullData ? {} : {
+        select: {
+          id: true,
+          title: true,
+        }
+      })
     })
 
     return NextResponse.json(videos)

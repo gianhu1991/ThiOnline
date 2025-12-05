@@ -84,10 +84,8 @@ export default function UserGroupManagementForm() {
   useEffect(() => {
     if (selectedGroup) {
       fetchGroupDetail(selectedGroup.id)
-      fetchAllUsers()
-      fetchAllVideos()
-      fetchAllDocuments()
-      fetchAllExams()
+      // Lazy load: chỉ fetch khi cần (khi mở dropdown)
+      // Không fetch tất cả cùng lúc để tối ưu performance
     }
   }, [selectedGroup])
 
@@ -127,7 +125,10 @@ export default function UserGroupManagementForm() {
     }
   }
 
+  // Lazy load functions - chỉ fetch khi cần
   const fetchAllUsers = async () => {
+    if (allUsers.length > 0) return // Đã có data, không fetch lại
+    
     try {
       const res = await fetch('/api/users', {
         credentials: 'include',
@@ -142,8 +143,11 @@ export default function UserGroupManagementForm() {
   }
 
   const fetchAllVideos = async () => {
+    if (allVideos.length > 0) return // Đã có data, không fetch lại
+    
     try {
-      const res = await fetch('/api/videos', {
+      // Chỉ fetch id và title (tối ưu)
+      const res = await fetch('/api/videos?full=false', {
         credentials: 'include',
       })
       const data = await res.json()
@@ -156,8 +160,11 @@ export default function UserGroupManagementForm() {
   }
 
   const fetchAllDocuments = async () => {
+    if (allDocuments.length > 0) return // Đã có data, không fetch lại
+    
     try {
-      const res = await fetch('/api/documents', {
+      // Chỉ fetch id và title (tối ưu)
+      const res = await fetch('/api/documents?full=false', {
         credentials: 'include',
       })
       const data = await res.json()
@@ -170,12 +177,15 @@ export default function UserGroupManagementForm() {
   }
 
   const fetchAllExams = async () => {
+    if (allExams.length > 0) return // Đã có data, không fetch lại
+    
     try {
-      const res = await fetch('/api/exams', {
+      // Chỉ fetch id và title (tối ưu)
+      const res = await fetch('/api/exams?full=false', {
         credentials: 'include',
       })
       const data = await res.json()
-      if (res.ok && Array.isArray(data)) {
+      if (Array.isArray(data)) {
         setAllExams(data)
       }
     } catch (error) {
@@ -757,6 +767,7 @@ export default function UserGroupManagementForm() {
                   selectedIds={selectedUserIds}
                   onSelectionChange={setSelectedUserIds}
                   placeholder="Chọn thành viên..."
+                  onOpen={() => fetchAllUsers()}
                 />
                 <button
                   onClick={handleSaveMembers}
@@ -786,6 +797,7 @@ export default function UserGroupManagementForm() {
                   selectedIds={selectedVideoIds}
                   onSelectionChange={setSelectedVideoIds}
                   placeholder="Chọn video..."
+                  onOpen={() => fetchAllVideos()}
                 />
                 <button
                   onClick={handleSaveVideos}
@@ -815,6 +827,7 @@ export default function UserGroupManagementForm() {
                   selectedIds={selectedDocumentIds}
                   onSelectionChange={setSelectedDocumentIds}
                   placeholder="Chọn tài liệu..."
+                  onOpen={() => fetchAllDocuments()}
                 />
                 <button
                   onClick={handleSaveDocuments}
@@ -844,6 +857,7 @@ export default function UserGroupManagementForm() {
                   selectedIds={selectedExamIds}
                   onSelectionChange={setSelectedExamIds}
                   placeholder="Chọn bài thi..."
+                  onOpen={() => fetchAllExams()}
                 />
                 <button
                   onClick={handleSaveExams}
