@@ -94,9 +94,26 @@ export async function POST(
 
       // Tìm user từ cache (không cần query database)
       let assignedUserId = null
+      let actualAssignedUsername = null
       if (assignedUsername) {
         const usernameNormalized = assignedUsername.toString().toLowerCase().trim()
         assignedUserId = userMap.get(usernameNormalized) || null
+        
+        // Nếu tìm thấy user, lấy username thực tế từ database (không phải từ Excel)
+        // Điều này đảm bảo assignedUsername luôn khớp với username trong database
+        if (assignedUserId) {
+          // Tìm username thực tế từ allUsers
+          const actualUser = allUsers.find(u => u.id === assignedUserId)
+          if (actualUser) {
+            actualAssignedUsername = actualUser.username
+          } else {
+            // Fallback: dùng giá trị từ Excel nếu không tìm thấy
+            actualAssignedUsername = assignedUsername.toString().trim()
+          }
+        } else {
+          // Nếu không tìm thấy user, vẫn lưu giá trị từ Excel để có thể tìm kiếm sau
+          actualAssignedUsername = assignedUsername.toString().trim()
+        }
       }
 
       customers.push({
@@ -107,7 +124,7 @@ export async function POST(
         address: address ? address.toString() : null,
         phone: phone ? phone.toString() : null,
         assignedUserId,
-        assignedUsername: assignedUsername ? assignedUsername.toString() : null,
+        assignedUsername: actualAssignedUsername, // Lưu username thực tế từ database (nếu tìm thấy) hoặc từ Excel
         assignedAt: assignedUserId ? new Date() : null, // Lưu thời gian phân giao nếu có
         isCompleted: false,
       })

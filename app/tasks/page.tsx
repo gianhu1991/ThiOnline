@@ -1182,13 +1182,13 @@ export default function TasksPage() {
                   {(() => {
                     const filteredCustomers = customers.filter(customer => {
                       if (!searchTerm.trim()) return true
-                      const search = searchTerm.toLowerCase()
+                      const search = searchTerm.toLowerCase().trim()
                       return (
                         customer.customerName.toLowerCase().includes(search) ||
                         customer.account.toLowerCase().includes(search) ||
                         (customer.phone && customer.phone.toLowerCase().includes(search)) ||
                         (customer.address && customer.address.toLowerCase().includes(search)) ||
-                        (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
+                        (customer.assignedUsername && customer.assignedUsername.toLowerCase().trim().includes(search))
                       )
                     })
                     
@@ -1234,13 +1234,13 @@ export default function TasksPage() {
               {!loadingCustomers && (() => {
                 const filteredCustomers = customers.filter(customer => {
                   if (!searchTerm.trim()) return true
-                  const search = searchTerm.toLowerCase()
+                  const search = searchTerm.toLowerCase().trim()
                   return (
                     customer.customerName.toLowerCase().includes(search) ||
                     customer.account.toLowerCase().includes(search) ||
                     (customer.phone && customer.phone.toLowerCase().includes(search)) ||
                     (customer.address && customer.address.toLowerCase().includes(search)) ||
-                    (customer.assignedUsername && customer.assignedUsername.toLowerCase().includes(search))
+                    (customer.assignedUsername && customer.assignedUsername.toLowerCase().trim().includes(search))
                   )
                 })
                 
