@@ -85,6 +85,9 @@ export async function POST(
       // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH từ TẬP KH ĐÃ ĐƯỢC GÁN CHO USER ĐÓ
       const newlyAssignedCustomerIds = new Set<string>()
       
+      console.log(`[Reassign] Bắt đầu phân giao lại cho ${assignedUsers.length} users, dailyCount=${dailyCount}`)
+      console.log(`[Reassign] Tổng số KH chưa hoàn thành: ${task.customers.length}`)
+      
       for (let userIndex = 0; userIndex < assignedUsers.length; userIndex++) {
         const assignedUser = assignedUsers[userIndex]
         
@@ -92,6 +95,8 @@ export async function POST(
         const userCustomers = task.customers.filter(c => 
           c.assignedUserId === assignedUser.id && !c.isCompleted
         )
+        
+        console.log(`[Reassign] User ${assignedUser.username}: có ${userCustomers.length} KH đã được gán`)
         
         // Lọc KH chưa được phân giao hôm nay (chưa có assignedAt hoặc assignedAt < hôm nay)
         const customersToAssign = userCustomers.filter(c => {
@@ -106,10 +111,14 @@ export async function POST(
           return assignedTime < todayTime
         })
         
+        console.log(`[Reassign] User ${assignedUser.username}: có ${customersToAssign.length} KH chưa được phân giao hôm nay`)
+        
         // Lấy ngẫu nhiên dailyCount KH từ tập KH của user này
         // Shuffle array để lấy ngẫu nhiên
         const shuffled = [...customersToAssign].sort(() => Math.random() - 0.5)
         const batch = shuffled.slice(0, dailyCount)
+        
+        console.log(`[Reassign] User ${assignedUser.username}: sẽ phân giao ${batch.length} KH (yêu cầu: ${dailyCount})`)
         
         if (batch.length > 0) {
           const batchIds = batch.map(c => c.id)
@@ -117,7 +126,7 @@ export async function POST(
           
           // CHỈ cập nhật assignedAt, KHÔNG cập nhật assignedUserId và assignedUsername
           // vì chúng đã đúng từ Excel và phải tuân thủ chính xác như Excel
-          await prisma.taskCustomer.updateMany({
+          const updateResult = await prisma.taskCustomer.updateMany({
             where: {
               id: { in: batchIds },
               assignedUserId: assignedUser.id // Đảm bảo chỉ cập nhật KH đã được gán cho user này
@@ -126,8 +135,14 @@ export async function POST(
               assignedAt: new Date(), // Chỉ cập nhật thời gian phân giao
             }
           })
+          
+          console.log(`[Reassign] User ${assignedUser.username}: đã cập nhật ${updateResult.count} KH`)
+        } else {
+          console.log(`[Reassign] User ${assignedUser.username}: không có KH nào để phân giao`)
         }
       }
+      
+      console.log(`[Reassign] Tổng số KH được phân giao: ${newlyAssignedCustomerIds.size}`)
       
       // Reset assignedAt = null CHỈ cho các KH có assignedAt hôm nay nhưng:
       // 1. KHÔNG được phân giao đúng trong ngày (không có trong todayAssignedCustomerIds)
@@ -155,6 +170,20 @@ export async function POST(
       })
 
       const totalAssigned = newlyAssignedCustomerIds.size
+      
+      if (totalAssigned === 0) {
+        // Kiểm tra xem có KH nào để phân giao không
+        const totalCustomers = task.customers.length
+        const totalAssignedCustomers = task.customers.filter(c => c.assignedUserId !== null).length
+        
+        console.log(`[Reassign] Không có KH nào được phân giao. Tổng KH: ${totalCustomers}, KH đã được gán: ${totalAssignedCustomers}`)
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `Không có khách hàng nào để phân giao. Tất cả khách hàng đã được phân giao hôm nay hoặc chưa được gán cho nhân viên nào.` 
+        })
+      }
+      
       return NextResponse.json({ 
         success: true, 
         message: `Đã phân giao ${totalAssigned} khách hàng cho ${assignedUsers.length} người dùng` 
