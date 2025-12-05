@@ -1229,73 +1229,71 @@ export default function TasksPage() {
                       {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
                     </button>
                   </div>
-                </>
-              )}
-            </div>
-
-            {/* Nội dung cuộn được */}
-            <div className="flex-1 overflow-y-auto p-6 pt-4">
-              {loadingCustomers && customers.length === 0 ? (
-                // Loading state khi đang fetch data lần đầu
-                <div className="flex flex-col items-center justify-center py-20">
-                  <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p className="text-gray-600 text-lg">Đang tải dữ liệu...</p>
                 </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead className="sticky top-0 bg-white z-10 shadow-sm">
-                          <tr>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">STT</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Account</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Tên KH</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Địa chỉ</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Số điện thoại</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">NV thực hiện</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Trạng thái</th>
-                            <th className="border p-2 text-left bg-gray-100 sticky top-0">Thao tác</th>
-                          </tr>
-                        </thead>
+
+                {/* Nội dung cuộn được */}
+                <div className="flex-1 overflow-y-auto p-6 pt-4">
+                  {loadingCustomers && customers.length === 0 ? (
+                    // Loading state khi đang fetch data lần đầu
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <p className="text-gray-600 text-lg">Đang tải dữ liệu...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                            <tr>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">STT</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Account</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Tên KH</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Địa chỉ</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Số điện thoại</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">NV thực hiện</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Trạng thái</th>
+                              <th className="border p-2 text-left bg-gray-100 sticky top-0">Thao tác</th>
+                            </tr>
+                          </thead>
                           <tbody>
                             {customers.length > 0 ? (
                               customers.map((customer) => (
-                        <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
-                          <td className="border p-2">{customer.stt}</td>
-                          <td className="border p-2">{customer.account}</td>
-                          <td className="border p-2 font-medium">{customer.customerName}</td>
-                          <td className="border p-2">{customer.address || '-'}</td>
-                          <td className="border p-2">{customer.phone || '-'}</td>
-                          <td className="border p-2">{customer.assignedUsername || '-'}</td>
-                          <td className="border p-2">
-                            {customer.isCompleted ? (
-                              <span className="text-green-600 font-semibold">Đã hoàn thành</span>
-                            ) : (
-                              <span className="text-orange-600 font-semibold">Chưa hoàn thành</span>
-                            )}
-                          </td>
-                          <td className="border p-2">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => openEditCustomerModal(customer)}
-                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                              >
-                                Sửa
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCustomer(customer.id)}
-                                disabled={deletingCustomer === customer.id}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50"
-                              >
-                                {deletingCustomer === customer.id ? 'Đang xóa...' : 'Xóa'}
-                              </button>
-                            </div>
-                          </td>
-                              </tr>
-                            ))
+                                <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
+                                  <td className="border p-2">{customer.stt}</td>
+                                  <td className="border p-2">{customer.account}</td>
+                                  <td className="border p-2 font-medium">{customer.customerName}</td>
+                                  <td className="border p-2">{customer.address || '-'}</td>
+                                  <td className="border p-2">{customer.phone || '-'}</td>
+                                  <td className="border p-2">{customer.assignedUsername || '-'}</td>
+                                  <td className="border p-2">
+                                    {customer.isCompleted ? (
+                                      <span className="text-green-600 font-semibold">Đã hoàn thành</span>
+                                    ) : (
+                                      <span className="text-orange-600 font-semibold">Chưa hoàn thành</span>
+                                    )}
+                                  </td>
+                                  <td className="border p-2">
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => openEditCustomerModal(customer)}
+                                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                                      >
+                                        Sửa
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteCustomer(customer.id)}
+                                        disabled={deletingCustomer === customer.id}
+                                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                                      >
+                                        {deletingCustomer === customer.id ? 'Đang xóa...' : 'Xóa'}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
                             ) : (
                               <tr>
                                 <td colSpan={8} className="border p-4 text-center text-gray-500">
@@ -1329,9 +1327,9 @@ export default function TasksPage() {
                           </button>
                         </div>
                       )}
-                  </>
-              )}
-            </div>
+                    </>
+                  )}
+                </div>
               </>
             ) : null}
           </div>

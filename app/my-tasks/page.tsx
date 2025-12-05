@@ -222,6 +222,8 @@ export default function MyTasksPage() {
 
             <button
               onClick={() => {
+                setSelectedTask(task) // Set selectedTask ngay để hiển thị tên task trong modal
+                setShowDetailModal(true) // Mở modal ngay
                 setSearchTerm('')
                 setCurrentPage(1)
                 setPageSize(50)
@@ -245,8 +247,8 @@ export default function MyTasksPage() {
       {/* Modal chi tiết khách hàng */}
       {showDetailModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-[95vw] sm:max-w-[98vw] w-full max-h-[95vh] overflow-y-auto">
-            {loadingCustomers && !selectedTask ? (
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-[95vw] sm:max-w-[98vw] w-full max-h-[95vh] overflow-y-auto flex flex-col">
+            {loadingCustomers && customers.length === 0 ? (
               // Loading state khi đang fetch data lần đầu
               <div className="flex flex-col items-center justify-center py-20">
                 <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -257,24 +259,26 @@ export default function MyTasksPage() {
               </div>
             ) : selectedTask ? (
               <>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl sm:text-2xl font-bold">Chi tiết: {selectedTask.name}</h2>
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false)
-                      setSelectedTask(null)
-                      setCustomers([])
-                      setSearchTerm('')
-                      setCurrentPage(1)
-                    }}
-                    className="text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl"
-                  >
-                    ×
-                  </button>
-                </div>
+                {/* Header cố định */}
+                <div className="flex-shrink-0">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold">Chi tiết: {selectedTask.name}</h2>
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false)
+                        setSelectedTask(null)
+                        setCustomers([])
+                        setSearchTerm('')
+                        setCurrentPage(1)
+                      }}
+                      className="text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl"
+                    >
+                      ×
+                    </button>
+                  </div>
 
-            {/* Thông tin xem */}
-            <div className="mb-4">
+                  {/* Thông tin xem */}
+                  <div className="mb-4">
               <div className="text-xs sm:text-sm text-gray-600 mb-2">
                 Đang xem: khách hàng được phân giao
               </div>
@@ -329,115 +333,120 @@ export default function MyTasksPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto" style={{ maxHeight: 'calc(95vh - 300px)', overflowY: 'auto' }}>
-              <table className="w-full border-collapse text-sm min-w-full">
-                <thead className="sticky top-0 bg-gray-100 z-10">
-                  <tr>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">STT</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Account</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Tên KH</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 hidden sm:table-cell">Địa chỉ</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Số điện thoại</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Trạng thái</th>
-                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingCustomers ? (
-                    <>
-                      {/* Skeleton loading rows */}
-                      {[...Array(5)].map((_, index) => (
-                        <tr key={`skeleton-${index}`} className="animate-pulse">
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-4 bg-gray-200 rounded w-12"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-4 bg-gray-200 rounded w-32"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2 hidden sm:table-cell">
-                            <div className="h-4 bg-gray-200 rounded w-40"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-4 bg-gray-200 rounded w-20"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                          </td>
-                          <td className="border p-1.5 sm:p-2">
-                            <div className="h-6 bg-gray-200 rounded w-16"></div>
-                          </td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td colSpan={7} className="border p-4 text-center">
-                          <div className="flex items-center justify-center gap-2 text-gray-500">
-                            <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span className="text-sm">Đang tải dữ liệu...</span>
-                          </div>
-                        </td>
-                      </tr>
-                    </>
-                  ) : customers.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="border p-4 text-center text-gray-500 text-sm">
-                        {searchTerm ? 'Không tìm thấy khách hàng nào' : 'Chưa có khách hàng nào được gán cho bạn.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-gray-50">
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">{customer.stt}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-all">{customer.account}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-medium">{customer.customerName}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm hidden sm:table-cell">{customer.address || '-'}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm whitespace-nowrap">{customer.phone || '-'}</td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
-                          <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
-                        </td>
-                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
-                          <button
-                            onClick={() => handleComplete(customer.id)}
-                            disabled={completing === customer.id || !selectedTask?.isActive}
-                            className="bg-green-600 text-white px-2 sm:px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {completing === customer.id ? 'Đang xử lý...' : 'Thực hiện'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  {/* Nội dung cuộn được */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="overflow-x-auto" style={{ maxHeight: 'calc(95vh - 300px)', overflowY: 'auto' }}>
+                      <table className="w-full border-collapse text-sm min-w-full">
+                        <thead className="sticky top-0 bg-gray-100 z-10">
+                          <tr>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">STT</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Account</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Tên KH</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 hidden sm:table-cell">Địa chỉ</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Số điện thoại</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Trạng thái</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loadingCustomers && customers.length === 0 ? (
+                            <>
+                              {/* Skeleton loading rows */}
+                              {[...Array(5)].map((_, index) => (
+                                <tr key={`skeleton-${index}`} className="animate-pulse">
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2 hidden sm:table-cell">
+                                    <div className="h-4 bg-gray-200 rounded w-40"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                  </td>
+                                  <td className="border p-1.5 sm:p-2">
+                                    <div className="h-6 bg-gray-200 rounded w-16"></div>
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr>
+                                <td colSpan={7} className="border p-4 text-center">
+                                  <div className="flex items-center justify-center gap-2 text-gray-500">
+                                    <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span className="text-sm">Đang tải dữ liệu...</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </>
+                          ) : customers.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="border p-4 text-center text-gray-500 text-sm">
+                                {searchTerm ? 'Không tìm thấy khách hàng nào' : 'Chưa có khách hàng nào được gán cho bạn.'}
+                              </td>
+                            </tr>
+                          ) : (
+                            customers.map((customer) => (
+                              <tr key={customer.id} className="hover:bg-gray-50">
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">{customer.stt}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-all">{customer.account}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-medium">{customer.customerName}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm hidden sm:table-cell">{customer.address || '-'}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm whitespace-nowrap">{customer.phone || '-'}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
+                                  <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
+                                </td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
+                                  <button
+                                    onClick={() => handleComplete(customer.id)}
+                                    disabled={completing === customer.id || !selectedTask?.isActive}
+                                    className="bg-green-600 text-white px-2 sm:px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                                  >
+                                    {completing === customer.id ? 'Đang xử lý...' : 'Thực hiện'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-4 flex flex-wrap justify-center items-center gap-2">
-                <button
-                  onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage - 1, searchTerm, pageSize)}
-                  disabled={currentPage === 1 || loadingCustomers}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-                >
-                  Trước
-                </button>
-                <span className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700">
-                  Trang {currentPage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage + 1, searchTerm, pageSize)}
-                  disabled={currentPage === totalPages || loadingCustomers}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-                >
-                  Sau
-                </button>
-              </div>
-            )}
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-4 flex flex-wrap justify-center items-center gap-2">
+                        <button
+                          onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage - 1, searchTerm, pageSize)}
+                          disabled={currentPage === 1 || loadingCustomers}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                        >
+                          Trước
+                        </button>
+                        <span className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700">
+                          Trang {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage + 1, searchTerm, pageSize)}
+                          disabled={currentPage === totalPages || loadingCustomers}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                        >
+                          Sau
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
           </div>
         </div>
       )}
