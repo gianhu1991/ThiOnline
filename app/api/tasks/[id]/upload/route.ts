@@ -70,10 +70,12 @@ export async function POST(
     const allUsers = await prisma.user.findMany({
       select: { id: true, username: true }
     })
-    const userMap = new Map<string, string>() // username -> userId
+    const userMap = new Map<string, string>() // username (lowercase) -> userId
     allUsers.forEach(user => {
       userMap.set(user.username.toLowerCase(), user.id)
     })
+    
+    console.log(`[Upload] Đã load ${allUsers.length} users: ${allUsers.map(u => u.username).join(', ')}`)
 
     // Xử lý dữ liệu Excel
     // Cấu trúc: STT, account, Tên KH, địa chỉ, số điện thoại, NV thực hiện
@@ -104,6 +106,8 @@ export async function POST(
         const usernameFromExcel = assignedUsername.toString().trim()
         const usernameNormalized = usernameFromExcel.toLowerCase()
         
+        console.log(`[Upload] Tìm user cho KH ${account}: Excel="${usernameFromExcel}" (normalized: "${usernameNormalized}")`)
+        
         // Tìm user bằng cách so sánh case-insensitive
         assignedUserId = userMap.get(usernameNormalized) || null
         
@@ -114,6 +118,7 @@ export async function POST(
           const actualUser = allUsers.find(u => u.id === assignedUserId)
           if (actualUser) {
             actualAssignedUsername = actualUser.username
+            console.log(`[Upload] KH ${account}: Tìm thấy user "${actualUser.username}" (ID: ${assignedUserId})`)
             // Log để debug nếu username từ Excel khác với username trong database
             if (actualUser.username.toLowerCase() !== usernameNormalized) {
               console.warn(`[Upload] Username mismatch: Excel="${usernameFromExcel}" -> DB="${actualUser.username}"`)
@@ -127,6 +132,8 @@ export async function POST(
           // Nếu không tìm thấy user, vẫn lưu giá trị từ Excel để có thể tìm kiếm sau
           actualAssignedUsername = usernameFromExcel
           console.warn(`[Upload] User not found in database: excelUsername="${usernameFromExcel}"`)
+          // Log tất cả users để debug
+          console.log(`[Upload] Available users: ${Array.from(userMap.keys()).join(', ')}`)
         }
       }
 
@@ -134,20 +141,29 @@ export async function POST(
       if (existingCustomer) {
         // So sánh phân giao hiện tại với phân giao trong Excel
         const currentAssignedUserId = existingCustomer.assignedUserId
-        const currentAssignedUsername = existingCustomer.assignedUsername?.toLowerCase().trim() || null
-        const excelAssignedUsername = actualAssignedUsername?.toLowerCase().trim() || null
+        const currentAssignedUsername = existingCustomer.assignedUsername || null
+        const excelAssignedUsername = actualAssignedUsername || null
+        
+        console.log(`[Upload] KH ${account} đã tồn tại:`)
+        console.log(`  - Hiện tại: userId=${currentAssignedUserId}, username="${currentAssignedUsername}"`)
+        console.log(`  - Excel: userId=${assignedUserId}, username="${excelAssignedUsername}"`)
+        
+        // So sánh chính xác (case-sensitive cho username, vì đã được normalize từ database)
+        const userIdChanged = currentAssignedUserId !== assignedUserId
+        const usernameChanged = currentAssignedUsername?.toLowerCase().trim() !== excelAssignedUsername?.toLowerCase().trim()
         
         // Nếu phân giao khác nhau, cần cập nhật theo Excel
-        if (currentAssignedUserId !== assignedUserId || currentAssignedUsername !== excelAssignedUsername) {
+        if (userIdChanged || usernameChanged) {
           customersToUpdate.push({
             id: existingCustomer.id,
             assignedUserId,
             assignedUsername: actualAssignedUsername,
             assignedAt: assignedUserId ? new Date() : null, // Cập nhật thời gian phân giao nếu có
           })
-          console.log(`[Upload] Cần cập nhật phân giao cho KH ${account}: ${currentAssignedUsername || 'null'} -> ${actualAssignedUsername || 'null'}`)
+          console.log(`[Upload] ✓ Cần cập nhật phân giao cho KH ${account}: "${currentAssignedUsername || 'null'}" -> "${actualAssignedUsername || 'null'}"`)
         } else {
           skippedCount++ // KH đã tồn tại và phân giao giống nhau, không cần cập nhật
+          console.log(`[Upload] - Bỏ qua KH ${account}: phân giao không thay đổi`)
         }
       } else {
         // KH mới, thêm vào danh sách tạo mới
@@ -204,30 +220,35 @@ export async function POST(
     // Cập nhật phân giao cho các KH đã tồn tại nhưng có phân giao khác trong Excel
     let updatedCount = 0
     if (customersToUpdate.length > 0) {
-      console.log(`Bắt đầu cập nhật phân giao cho ${customersToUpdate.length} khách hàng...`)
+      console.log(`[Upload] Bắt đầu cập nhật phân giao cho ${customersToUpdate.length} khách hàng...`)
       
-      // Cập nhật theo batch để tránh timeout
-      for (let i = 0; i < customersToUpdate.length; i += BATCH_SIZE) {
-        const batch = customersToUpdate.slice(i, i + BATCH_SIZE)
-        for (const customerUpdate of batch) {
-          try {
-            await prisma.taskCustomer.update({
-              where: { id: customerUpdate.id },
-              data: {
-                assignedUserId: customerUpdate.assignedUserId,
-                assignedUsername: customerUpdate.assignedUsername,
-                assignedAt: customerUpdate.assignedAt,
-              }
-            })
-            updatedCount++
-          } catch (error: any) {
-            console.error(`Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
-          }
+      // Cập nhật từng KH để có thể log chi tiết
+      for (const customerUpdate of customersToUpdate) {
+        try {
+          const beforeUpdate = await prisma.taskCustomer.findUnique({
+            where: { id: customerUpdate.id },
+            select: { account: true, assignedUserId: true, assignedUsername: true }
+          })
+          
+          const updateResult = await prisma.taskCustomer.update({
+            where: { id: customerUpdate.id },
+            data: {
+              assignedUserId: customerUpdate.assignedUserId,
+              assignedUsername: customerUpdate.assignedUsername,
+              assignedAt: customerUpdate.assignedAt,
+            }
+          })
+          
+          console.log(`[Upload] ✓ Đã cập nhật KH ${beforeUpdate?.account}: "${beforeUpdate?.assignedUsername || 'null'}" -> "${customerUpdate.assignedUsername || 'null'}"`)
+          updatedCount++
+        } catch (error: any) {
+          console.error(`[Upload] ✗ Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
         }
-        console.log(`Đã cập nhật batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(customersToUpdate.length / BATCH_SIZE)}: ${batch.length} records`)
       }
       
-      console.log(`Hoàn thành: Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
+      console.log(`[Upload] Hoàn thành: Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
+    } else {
+      console.log(`[Upload] Không có KH nào cần cập nhật phân giao`)
     }
 
     // KHÔNG tự động phân giao khi upload
