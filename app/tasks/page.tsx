@@ -207,8 +207,8 @@ export default function TasksPage() {
     } else {
       setGroupUsers([])
     }
-    // Reset selected users khi đổi nhóm
-    setSelectedUserIds([])
+    // KHÔNG reset selectedUserIds khi đổi nhóm - giữ lại các user đã được gán
+    // Các checkbox sẽ tự động hiển thị đúng trạng thái dựa trên selectedUserIds
   }
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -460,8 +460,11 @@ export default function TasksPage() {
       if (res.ok) {
         const data = await res.json()
         const assignedUserIds = (data.task.assignments || []).map((a: any) => a.user.id)
+        console.log('Assigned user IDs:', assignedUserIds)
+        console.log('Assignments data:', data.task.assignments)
         setSelectedUserIds(assignedUserIds)
       } else {
+        console.error('Failed to fetch task assignments')
         setSelectedUserIds([])
       }
     } catch (error) {
