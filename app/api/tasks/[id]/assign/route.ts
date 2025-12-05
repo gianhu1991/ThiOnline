@@ -95,19 +95,36 @@ export async function POST(
 
       if (unassignedCustomers.length > 0) {
         // Phân giao đều cho các user (round-robin) - tuân theo thứ tự trong Excel (stt)
+        // Nhóm customers theo user để update theo batch (nhanh hơn)
+        const customersByUser = new Map<string, string[]>() // userId -> customerIds[]
+        
         for (let i = 0; i < unassignedCustomers.length; i++) {
           const customer = unassignedCustomers[i]
           const assignedUser = assignedUsers[i % assignedUsers.length]
           
-          await prisma.taskCustomer.update({
-            where: { id: customer.id },
+          if (!customersByUser.has(assignedUser.id)) {
+            customersByUser.set(assignedUser.id, [])
+          }
+          customersByUser.get(assignedUser.id)!.push(customer.id)
+        }
+        
+        // Update theo batch cho mỗi user
+        for (const [userId, customerIds] of customersByUser.entries()) {
+          const assignedUser = assignedUsers.find(u => u.id === userId)
+          if (!assignedUser) continue
+          
+          // Update tất cả customers của user này trong một lần
+          await prisma.taskCustomer.updateMany({
+            where: {
+              id: { in: customerIds }
+            },
             data: {
               assignedUserId: assignedUser.id,
               assignedUsername: assignedUser.username,
               assignedAt: null // Chưa phân giao theo ngày, sẽ được phân giao khi chạy "Phân giao lại"
             }
           })
-          autoAssignedCount++
+          autoAssignedCount += customerIds.length
         }
       }
       
