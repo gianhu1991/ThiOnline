@@ -106,7 +106,9 @@ export async function POST(
     const customersToUpdate = [] // KH đã tồn tại cần cập nhật
     let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
     
-    for (const [accountNormalized, row] of excelDataMap.entries()) {
+    // Convert Map entries to array để tránh lỗi TypeScript
+    const excelDataArray = Array.from(excelDataMap.entries())
+    for (const [accountNormalized, row] of excelDataArray) {
       const stt = row['STT'] || row['stt'] || row['Số thứ tự'] || null
       const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
       const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
