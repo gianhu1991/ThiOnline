@@ -492,14 +492,29 @@ export default function TasksPage() {
     setSelectedTask(tasks.find(t => t.id === taskId) || null)
     setCurrentPage(page)
     setSearchTerm('') // Reset search khi mở modal
-    await fetchCustomersPage(taskId, page)
+    await fetchCustomersPage(taskId, page, '')
   }
 
-  const fetchCustomersPage = async (taskId: string, page: number = 1) => {
+  // Fetch lại khi searchTerm thay đổi (với debounce)
+  useEffect(() => {
+    if (!selectedTask || !showCustomersModal) return
+    
+    const timeoutId = setTimeout(() => {
+      // Reset về trang 1 khi search thay đổi
+      setCurrentPage(1)
+      fetchCustomersPage(selectedTask.id, 1, searchTerm)
+    }, 500) // Debounce 500ms
+
+    return () => clearTimeout(timeoutId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedTask?.id, showCustomersModal])
+
+  const fetchCustomersPage = async (taskId: string, page: number = 1, search: string = '') => {
     setLoadingCustomers(true)
     try {
-      // Load customers với pagination
-      const res = await fetch(`/api/tasks/${taskId}?includeCustomers=true&page=${page}&limit=50`, {
+      // Load customers với pagination và search
+      const searchParam = search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ''
+      const res = await fetch(`/api/tasks/${taskId}?includeCustomers=true&page=${page}&limit=50${searchParam}`, {
         credentials: 'include',
       })
       if (res.ok) {
@@ -562,7 +577,7 @@ export default function TasksPage() {
       setEditingCustomer(null)
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        await fetchCustomersPage(selectedTask.id, currentPage)
+        await fetchCustomersPage(selectedTask.id, currentPage, searchTerm)
       }
       fetchTasks()
     } catch (error: any) {
@@ -594,7 +609,7 @@ export default function TasksPage() {
       alert('Đã xóa khách hàng thành công')
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        await fetchCustomersPage(selectedTask.id, currentPage)
+        await fetchCustomersPage(selectedTask.id, currentPage, searchTerm)
       }
       fetchTasks()
     } catch (error: any) {
@@ -653,7 +668,7 @@ export default function TasksPage() {
       alert(data.message || 'Đã xóa tất cả khách hàng thành công')
       // Refresh danh sách khách hàng
       if (selectedTask) {
-        await fetchCustomersPage(selectedTask.id, currentPage)
+        await fetchCustomersPage(selectedTask.id, currentPage, searchTerm)
       }
       fetchTasks()
     } catch (error: any) {
@@ -1178,33 +1193,18 @@ export default function TasksPage() {
                     />
                   </div>
 
-                  {/* Lọc danh sách khách hàng theo searchTerm */}
-                  {(() => {
-                    const filteredCustomers = customers.filter(customer => {
-                      if (!searchTerm.trim()) return true
-                      const search = searchTerm.toLowerCase().trim()
-                      return (
-                        customer.customerName.toLowerCase().includes(search) ||
-                        customer.account.toLowerCase().includes(search) ||
-                        (customer.phone && customer.phone.toLowerCase().includes(search)) ||
-                        (customer.address && customer.address.toLowerCase().includes(search)) ||
-                        (customer.assignedUsername && customer.assignedUsername.toLowerCase().trim().includes(search))
-                      )
-                    })
-                    
-                    return (
-                      <>
-                        <div className="mb-4 p-3 bg-blue-50 rounded flex justify-between items-center">
-                          <div className="grid grid-cols-3 gap-4 text-sm flex-1">
-                            <div>
-                              <span className="text-gray-600">Tổng số: </span>
-                              <span className="font-bold">{totalCustomers}</span>
-                              {searchTerm && (
-                                <span className="text-gray-500 text-xs ml-1">
-                                  (hiển thị {filteredCustomers.length} trên trang này)
-                                </span>
-                              )}
-                            </div>
+                  {/* Thống kê */}
+                  <div className="mb-4 p-3 bg-blue-50 rounded flex justify-between items-center">
+                    <div className="grid grid-cols-3 gap-4 text-sm flex-1">
+                      <div>
+                        <span className="text-gray-600">Tổng số: </span>
+                        <span className="font-bold">{totalCustomers}</span>
+                        {searchTerm && (
+                          <span className="text-gray-500 text-xs ml-1">
+                            (kết quả tìm kiếm)
+                          </span>
+                        )}
+                      </div>
                             <div>
                               <span className="text-gray-600">Đã hoàn thành: </span>
                               <span className="font-bold text-green-600">{completedCount}</span>
@@ -1231,22 +1231,9 @@ export default function TasksPage() {
 
             {/* Nội dung cuộn được */}
             <div className="flex-1 overflow-y-auto p-6 pt-4">
-              {!loadingCustomers && (() => {
-                const filteredCustomers = customers.filter(customer => {
-                  if (!searchTerm.trim()) return true
-                  const search = searchTerm.toLowerCase().trim()
-                  return (
-                    customer.customerName.toLowerCase().includes(search) ||
-                    customer.account.toLowerCase().includes(search) ||
-                    (customer.phone && customer.phone.toLowerCase().includes(search)) ||
-                    (customer.address && customer.address.toLowerCase().includes(search)) ||
-                    (customer.assignedUsername && customer.assignedUsername.toLowerCase().trim().includes(search))
-                  )
-                })
-                
-                return (
-                  <>
-                    <div className="overflow-x-auto">
+              {!loadingCustomers && (
+                <>
+                  <div className="overflow-x-auto">
                       <table className="w-full border-collapse">
                         <thead className="sticky top-0 bg-white z-10 shadow-sm">
                           <tr>
@@ -1261,8 +1248,8 @@ export default function TasksPage() {
                           </tr>
                         </thead>
                           <tbody>
-                            {filteredCustomers.length > 0 ? (
-                              filteredCustomers.map((customer) => (
+                            {customers.length > 0 ? (
+                              customers.map((customer) => (
                         <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
                           <td className="border p-2">{customer.stt}</td>
                           <td className="border p-2">{customer.account}</td>
@@ -1311,7 +1298,7 @@ export default function TasksPage() {
                       {totalPages > 1 && (
                         <div className="mt-4 flex justify-center items-center gap-2">
                           <button
-                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage - 1)}
+                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage - 1, searchTerm)}
                             disabled={currentPage === 1 || loadingCustomers}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1321,7 +1308,7 @@ export default function TasksPage() {
                             Trang {currentPage} / {totalPages}
                           </span>
                           <button
-                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage + 1)}
+                            onClick={() => selectedTask && fetchCustomersPage(selectedTask.id, currentPage + 1, searchTerm)}
                             disabled={currentPage === totalPages || loadingCustomers}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           >

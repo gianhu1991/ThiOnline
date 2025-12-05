@@ -21,6 +21,23 @@ export async function GET(
     // Phân trang: mỗi trang 50 khách hàng
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
+    const search = searchParams.get('search') || '' // Thêm parameter search
+    
+    // Xây dựng điều kiện where cho search
+    let customerWhere: any = {
+      taskId: params.id
+    }
+    
+    if (search.trim()) {
+      const searchTerm = search.trim()
+      customerWhere.OR = [
+        { customerName: { contains: searchTerm, mode: 'insensitive' } },
+        { account: { contains: searchTerm, mode: 'insensitive' } },
+        { phone: { contains: searchTerm, mode: 'insensitive' } },
+        { address: { contains: searchTerm, mode: 'insensitive' } },
+        { assignedUsername: { contains: searchTerm, mode: 'insensitive' } }
+      ]
+    }
     
     const task = await prisma.task.findUnique({
       where: { id: params.id },
@@ -28,6 +45,7 @@ export async function GET(
         // Chỉ load customers nếu được yêu cầu (khi mở modal xem danh sách)
         ...(includeCustomers && {
           customers: {
+            where: customerWhere, // Thêm điều kiện search
             orderBy: { stt: 'asc' },
             skip: skip,
             take: limit,
@@ -63,11 +81,12 @@ export async function GET(
     let pendingCount = 0
     
     if (includeCustomers) {
+      // Đếm tổng số customers (có thể có search filter)
       customerCount = await prisma.taskCustomer.count({
-        where: { taskId: params.id }
+        where: customerWhere
       })
       
-      // Lấy thống kê completed và pending
+      // Lấy thống kê completed và pending (không áp dụng search filter cho thống kê)
       const [completed, pending] = await Promise.all([
         prisma.taskCustomer.count({
           where: { 
