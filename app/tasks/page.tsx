@@ -487,7 +487,8 @@ export default function TasksPage() {
     setLoadingCustomers(true)
     setSearchTerm('') // Reset search khi mở modal
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+      // Chỉ load customers khi mở modal (tối ưu: không load khi không cần)
+      const res = await fetch(`/api/tasks/${taskId}?includeCustomers=true`, {
         credentials: 'include',
       })
       if (res.ok) {

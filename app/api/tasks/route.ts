@@ -11,9 +11,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Chỉ admin mới được truy cập' }, { status: 403 })
     }
 
+    // Lấy danh sách tasks với thống kê trong một query duy nhất (tối ưu hơn)
     const tasks = await prisma.task.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+        startDate: true,
+        endDate: true,
+        dailyAssignmentCount: true,
+        createdBy: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             customers: true,
@@ -23,24 +34,48 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Thêm thống kê số lượng KH đã/chưa hoàn thành
-    const tasksWithStats = await Promise.all(
-      tasks.map(async (task) => {
-        const completedCount = await prisma.taskCustomer.count({
-          where: { taskId: task.id, isCompleted: true }
-        })
-        const totalCount = await prisma.taskCustomer.count({
-          where: { taskId: task.id }
-        })
-        
-        return {
-          ...task,
-          completedCount,
-          totalCount,
-          pendingCount: totalCount - completedCount
-        }
-      })
-    )
+    // Lấy thống kê cho tất cả tasks trong một query duy nhất (tối ưu hơn nhiều)
+    const taskIds = tasks.map(t => t.id)
+    
+    // Sử dụng groupBy để lấy thống kê cho tất cả tasks cùng lúc
+    const stats = await prisma.taskCustomer.groupBy({
+      by: ['taskId', 'isCompleted'],
+      where: {
+        taskId: { in: taskIds }
+      },
+      _count: {
+        id: true
+      }
+    })
+
+    // Tạo map để tra cứu nhanh
+    const statsMap = new Map<string, { completed: number, total: number }>()
+    
+    // Khởi tạo map với 0 cho tất cả tasks
+    taskIds.forEach(id => {
+      statsMap.set(id, { completed: 0, total: 0 })
+    })
+    
+    // Cập nhật stats từ kết quả groupBy
+    stats.forEach(stat => {
+      const current = statsMap.get(stat.taskId) || { completed: 0, total: 0 }
+      current.total += stat._count.id
+      if (stat.isCompleted) {
+        current.completed += stat._count.id
+      }
+      statsMap.set(stat.taskId, current)
+    })
+
+    // Kết hợp tasks với stats
+    const tasksWithStats = tasks.map(task => {
+      const taskStats = statsMap.get(task.id) || { completed: 0, total: 0 }
+      return {
+        ...task,
+        completedCount: taskStats.completed,
+        totalCount: taskStats.total,
+        pendingCount: taskStats.total - taskStats.completed
+      }
+    })
 
     return NextResponse.json({ tasks: tasksWithStats })
   } catch (error: any) {
