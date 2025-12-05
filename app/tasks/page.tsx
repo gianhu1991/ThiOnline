@@ -301,7 +301,15 @@ export default function TasksPage() {
       }
 
       const data = await res.json()
-      alert(data.message || 'Upload thành công')
+      // Hiển thị thông báo chi tiết
+      let message = data.message || 'Upload thành công'
+      if (data.added !== undefined && data.skipped !== undefined) {
+        message = `Đã thêm ${data.added} khách hàng mới`
+        if (data.skipped > 0) {
+          message += `\nBỏ qua ${data.skipped} khách hàng đã tồn tại (trùng account)`
+        }
+      }
+      alert(message)
       setShowUploadModal(false)
       setUploadFile(null)
       setUploadTaskId(null)
