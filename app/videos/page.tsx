@@ -317,6 +317,20 @@ export default function VideosPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+        <div className="text-center">
+          <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex justify-between items-center">
@@ -353,17 +367,7 @@ export default function VideosPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="text-gray-600">Đang tải...</p>
-          </div>
-        </div>
-      ) : videos.length === 0 ? (
+      {videos.length === 0 ? (
         <div className="py-12 text-center">
           <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -377,10 +381,10 @@ export default function VideosPage() {
             const thumbnail = video.thumbnail || getYouTubeThumbnail(video.url)
             const isYouTube = video.url ? (video.url.includes('youtube.com') || video.url.includes('youtu.be')) : false
             return (
-              <div key={video.id} className="group cursor-pointer">
-                <Link href={`/videos/${video.id}`} className="block">
+              <div key={video.id} className="group cursor-pointer flex flex-col h-full">
+                <Link href={`/videos/${video.id}`} className="block flex-1 flex flex-col">
                   {/* Thumbnail Container - YouTube style */}
-                  <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden mb-3">
+                  <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden mb-3 flex-shrink-0">
                     {thumbnail ? (
                       <img
                         src={thumbnail}
@@ -422,11 +426,11 @@ export default function VideosPage() {
                   </div>
 
                   {/* Video Info */}
-                  <div className="px-1">
-                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                  <div className="px-1 flex-1 flex flex-col">
+                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
                       {video.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
                       <span>{(video.viewCount || 0).toLocaleString('vi-VN')} lượt xem</span>
                       {video.category && (
                         <>
@@ -436,7 +440,7 @@ export default function VideosPage() {
                       )}
                     </div>
                     {video.uploadedBy && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-gray-500 mt-auto">
                         {video.uploadedBy}
                       </div>
                     )}
@@ -445,7 +449,7 @@ export default function VideosPage() {
 
                 {/* Edit and Delete Buttons - Only for admin */}
                 {userRole === 'admin' && (
-                  <div className="mt-2 px-1 flex gap-2">
+                  <div className="mt-2 px-1 flex gap-2 flex-shrink-0">
                     <button
                       type="button"
                       onClick={(e) => {
