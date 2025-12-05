@@ -42,7 +42,15 @@ export default function MyTasksPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null)
   const [completing, setCompleting] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'all' | 'today'>('today') // Mặc định là 'today'
+  
+  // State cho search và pagination
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCustomers, setTotalCustomers] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
 
   useEffect(() => {
     fetchMyTasks()
@@ -70,10 +78,11 @@ export default function MyTasksPage() {
     }
   }
 
-  const fetchTaskCustomers = async (taskId: string, view: 'all' | 'today' = 'today') => {
-    setLoadingTaskId(taskId)
+  const fetchTaskCustomers = async (taskId: string, page: number = 1, search: string = '', limit: number = 50) => {
+    setLoadingCustomers(true)
     try {
-      const res = await fetch(`/api/tasks/${taskId}/my-customers?view=${view}`, {
+      const searchParam = search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ''
+      const res = await fetch(`/api/tasks/${taskId}/my-customers?page=${page}&limit=${limit}${searchParam}`, {
         credentials: 'include',
       })
 
@@ -85,19 +94,33 @@ export default function MyTasksPage() {
       const data = await res.json()
       setCustomers(data.customers || [])
       setSelectedTask(data.task)
-      setViewMode(view)
-      setShowDetailModal(true)
+      setCurrentPage(data.pagination?.page || 1)
+      setTotalPages(data.pagination?.totalPages || 1)
+      setTotalCustomers(data.stats?.total || 0)
+      setCompletedCount(data.stats?.completed || 0)
+      
+      if (!showDetailModal) {
+        setShowDetailModal(true)
+      }
     } catch (error: any) {
       alert(error.message || 'Lỗi khi tải danh sách khách hàng')
     } finally {
+      setLoadingCustomers(false)
       setLoadingTaskId(null)
     }
   }
 
-  const handleViewModeChange = async (newView: 'all' | 'today') => {
-    if (!selectedTask) return
-    await fetchTaskCustomers(selectedTask.id, newView)
-  }
+  // Debounce search
+  useEffect(() => {
+    if (!selectedTask || !showDetailModal) return
+
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1) // Reset to page 1 on new search
+      fetchTaskCustomers(selectedTask.id, 1, searchTerm, pageSize)
+    }, 500) // Debounce 500ms
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, selectedTask?.id, showDetailModal, pageSize])
 
   const handleComplete = async (customerId: string) => {
     if (!selectedTask) return
@@ -120,12 +143,10 @@ export default function MyTasksPage() {
         throw new Error(errorData.error || 'Lỗi khi đánh dấu hoàn thành')
       }
 
-      // Cập nhật trạng thái trong danh sách
-      setCustomers(customers.map(c => 
-        c.id === customerId 
-          ? { ...c, isCompleted: true, completedAt: new Date().toISOString() }
-          : c
-      ))
+      // Reload danh sách để cập nhật (KH đã hoàn thành sẽ không hiển thị nữa)
+      if (selectedTask) {
+        await fetchTaskCustomers(selectedTask.id, currentPage, searchTerm, pageSize)
+      }
 
       // Cập nhật thống kê
       fetchMyTasks()
@@ -197,7 +218,12 @@ export default function MyTasksPage() {
             </div>
 
             <button
-              onClick={() => fetchTaskCustomers(task.id)}
+              onClick={() => {
+                setSearchTerm('')
+                setCurrentPage(1)
+                setPageSize(50)
+                fetchTaskCustomers(task.id, 1, '', 50)
+              }}
               disabled={loadingTaskId === task.id || !task.isActive}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -224,7 +250,8 @@ export default function MyTasksPage() {
                   setShowDetailModal(false)
                   setSelectedTask(null)
                   setCustomers([])
-                  setViewMode('today')
+                  setSearchTerm('')
+                  setCurrentPage(1)
                 }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -232,91 +259,135 @@ export default function MyTasksPage() {
               </button>
             </div>
 
-            {/* Tùy chọn xem */}
-            <div className="mb-4 flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                {viewMode === 'today' ? 'Đang xem: Khách hàng phân giao theo ngày' : 'Đang xem: Tất cả khách hàng'}
+            {/* Thông tin xem */}
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 mb-2">
+                Đang xem: Khách hàng phân giao theo ngày
               </div>
-              <button
-                onClick={() => handleViewModeChange(viewMode === 'today' ? 'all' : 'today')}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-              >
-                {viewMode === 'today' ? 'Xem toàn bộ' : 'Xem theo ngày'}
-              </button>
+              
+              {/* Search box */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+
+              {/* Thống kê */}
+              <div className="p-3 bg-blue-50 rounded">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Tổng số: </span>
+                    <span className="font-bold">{totalCustomers}</span>
+                    {searchTerm && <span className="text-xs text-gray-500"> (kết quả tìm kiếm)</span>}
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Đã hoàn thành: </span>
+                    <span className="font-bold text-green-600">{completedCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Chưa hoàn thành: </span>
+                    <span className="font-bold text-orange-600">{totalCustomers}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tùy chọn số lượng mỗi trang */}
+              <div className="mb-4 flex items-center gap-2 text-sm">
+                <label className="text-gray-600">Hiển thị:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(parseInt(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+                <span className="text-gray-600">mỗi trang</span>
+              </div>
             </div>
 
-            <div className="mb-4 p-3 bg-blue-50 rounded">
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Tổng số: </span>
-                  <span className="font-bold">{customers.length}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Đã hoàn thành: </span>
-                  <span className="font-bold text-green-600">{customers.filter(c => c.isCompleted).length}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Chưa hoàn thành: </span>
-                  <span className="font-bold text-orange-600">{customers.filter(c => !c.isCompleted).length}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
               <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border p-2 text-left text-xs font-semibold">STT</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Account</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Tên KH</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Địa chỉ</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Số điện thoại</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Trạng thái</th>
-                    <th className="border p-2 text-left text-xs font-semibold">Thao tác</th>
+                <thead className="sticky top-0 bg-gray-100 z-10">
+                  <tr>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">STT</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Account</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Tên KH</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Địa chỉ</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Số điện thoại</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Trạng thái</th>
+                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className={customer.isCompleted ? 'bg-green-50' : ''}>
-                      <td className="border p-2 text-sm">{customer.stt}</td>
-                      <td className="border p-2 text-sm">{customer.account}</td>
-                      <td className="border p-2 text-sm font-medium">{customer.customerName}</td>
-                      <td className="border p-2 text-sm">{customer.address || '-'}</td>
-                      <td className="border p-2 text-sm">{customer.phone || '-'}</td>
-                      <td className="border p-2 text-sm">
-                        {customer.isCompleted ? (
-                          <span className="text-green-600 font-semibold text-xs">Đã hoàn thành</span>
-                        ) : (
-                          <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
-                        )}
-                        {customer.completedAt && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {format(new Date(customer.completedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                          </div>
-                        )}
+                  {loadingCustomers ? (
+                    <tr>
+                      <td colSpan={7} className="border p-4 text-center text-gray-500">
+                        Đang tải...
                       </td>
-                      <td className="border p-2 text-sm">
-                        {!customer.isCompleted ? (
+                    </tr>
+                  ) : customers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="border p-4 text-center text-gray-500">
+                        {searchTerm ? 'Không tìm thấy khách hàng nào' : 'Chưa có khách hàng nào được gán cho bạn.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    customers.map((customer) => (
+                      <tr key={customer.id}>
+                        <td className="border p-2 text-sm">{customer.stt}</td>
+                        <td className="border p-2 text-sm">{customer.account}</td>
+                        <td className="border p-2 text-sm font-medium">{customer.customerName}</td>
+                        <td className="border p-2 text-sm">{customer.address || '-'}</td>
+                        <td className="border p-2 text-sm">{customer.phone || '-'}</td>
+                        <td className="border p-2 text-sm">
+                          <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
+                        </td>
+                        <td className="border p-2 text-sm">
                           <button
                             onClick={() => handleComplete(customer.id)}
-                            disabled={completing === customer.id || !selectedTask.isActive}
+                            disabled={completing === customer.id || !selectedTask?.isActive}
                             className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
                           >
                             {completing === customer.id ? 'Đang xử lý...' : 'Thực hiện'}
                           </button>
-                        ) : (
-                          <span className="text-green-600 text-xs">✓ Hoàn thành</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
-            {customers.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                Chưa có khách hàng nào được gán cho bạn.
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage - 1, searchTerm, pageSize)}
+                  disabled={currentPage === 1 || loadingCustomers}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Trước
+                </button>
+                <span className="px-4 py-2 text-sm text-gray-700">
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage + 1, searchTerm, pageSize)}
+                  disabled={currentPage === totalPages || loadingCustomers}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Sau
+                </button>
               </div>
             )}
           </div>
