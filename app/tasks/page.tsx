@@ -1222,11 +1222,6 @@ export default function TasksPage() {
                             {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
                           </button>
                         </div>
-                      </>
-                    )
-                  })()}
-                </>
-              )}
             </div>
 
             {/* Nội dung cuộn được */}
@@ -1317,8 +1312,7 @@ export default function TasksPage() {
                         </div>
                       )}
                   </>
-                )
-              })()}
+              )}
             </div>
           </div>
         </div>
