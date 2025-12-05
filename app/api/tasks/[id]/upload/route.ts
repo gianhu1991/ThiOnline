@@ -93,10 +93,14 @@ export async function POST(
       }
 
       // Tìm user từ cache (không cần query database)
+      // QUAN TRỌNG: Phải tìm chính xác username từ Excel, không được nhầm lẫn
       let assignedUserId: string | null = null
       let actualAssignedUsername: string | null = null
       if (assignedUsername) {
-        const usernameNormalized = assignedUsername.toString().toLowerCase().trim()
+        const usernameFromExcel = assignedUsername.toString().trim()
+        const usernameNormalized = usernameFromExcel.toLowerCase()
+        
+        // Tìm user bằng cách so sánh case-insensitive
         assignedUserId = userMap.get(usernameNormalized) || null
         
         // Nếu tìm thấy user, lấy username thực tế từ database (không phải từ Excel)
@@ -106,13 +110,19 @@ export async function POST(
           const actualUser = allUsers.find(u => u.id === assignedUserId)
           if (actualUser) {
             actualAssignedUsername = actualUser.username
+            // Log để debug nếu username từ Excel khác với username trong database
+            if (actualUser.username.toLowerCase() !== usernameNormalized) {
+              console.warn(`[Upload] Username mismatch: Excel="${usernameFromExcel}" -> DB="${actualUser.username}"`)
+            }
           } else {
             // Fallback: dùng giá trị từ Excel nếu không tìm thấy
-            actualAssignedUsername = assignedUsername.toString().trim()
+            actualAssignedUsername = usernameFromExcel
+            console.warn(`[Upload] User ID found but user not in allUsers: userId=${assignedUserId}, excelUsername="${usernameFromExcel}"`)
           }
         } else {
           // Nếu không tìm thấy user, vẫn lưu giá trị từ Excel để có thể tìm kiếm sau
-          actualAssignedUsername = assignedUsername.toString().trim()
+          actualAssignedUsername = usernameFromExcel
+          console.warn(`[Upload] User not found in database: excelUsername="${usernameFromExcel}"`)
         }
       }
 
@@ -133,16 +143,21 @@ export async function POST(
       existingAccounts.add(accountNormalized)
     }
 
-    // Lưu danh sách account của KH mới để query lại sau (chỉ các KH không có assignedUserId)
-    const newUnassignedAccounts = customers
-      .filter(c => !c.assignedUserId)
-      .map(c => c.account.toLowerCase().trim())
-
     // Lưu vào database theo batch để tránh timeout (500 records mỗi batch)
     const BATCH_SIZE = 500
     let addedCount = 0
     
     console.log(`Bắt đầu lưu ${customers.length} khách hàng theo batch (${BATCH_SIZE} records/batch)...`)
+    
+    // Thống kê phân giao từ Excel
+    const assignmentStats = new Map<string, number>() // username -> count
+    customers.forEach(c => {
+      if (c.assignedUsername) {
+        const count = assignmentStats.get(c.assignedUsername) || 0
+        assignmentStats.set(c.assignedUsername, count + 1)
+      }
+    })
+    console.log('[Upload] Thống kê phân giao từ Excel:', Array.from(assignmentStats.entries()).map(([user, count]) => `${user}: ${count}`).join(', '))
     
     for (let i = 0; i < customers.length; i += BATCH_SIZE) {
       const batch = customers.slice(i, i + BATCH_SIZE)
@@ -163,61 +178,21 @@ export async function POST(
     
     console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
 
-    // Tự động phân giao các KH mới không có assignedUserId cho các user đã được gán nhiệm vụ
-    let autoAssignedCount = 0
-    if (newUnassignedAccounts.length > 0) {
-      // Lấy danh sách user đã được gán nhiệm vụ
-      const taskAssignments = await prisma.taskAssignment.findMany({
-        where: { taskId: params.id },
-        include: {
-          user: {
-            select: { id: true, username: true }
-          }
-        }
-      })
-
-      if (taskAssignments.length > 0) {
-        // Lấy tất cả KH không có assignedUserId và filter theo danh sách account mới
-        const allUnassignedCustomers = await prisma.taskCustomer.findMany({
-          where: {
-            taskId: params.id,
-            assignedUserId: null,
-            isCompleted: false
-          },
-          orderBy: { stt: 'asc' }
-        })
-        
-        // Filter chỉ lấy các KH mới vừa upload (so sánh account case-insensitive)
-        const unassignedCustomers = allUnassignedCustomers.filter(c => 
-          newUnassignedAccounts.includes(c.account.toLowerCase().trim())
-        )
-
-        if (unassignedCustomers.length > 0) {
-          const assignedUsers = taskAssignments.map(a => a.user)
-          
-          // Phân giao đều cho các user (round-robin)
-          for (let i = 0; i < unassignedCustomers.length; i++) {
-            const customer = unassignedCustomers[i]
-            const assignedUser = assignedUsers[i % assignedUsers.length]
-            
-            await prisma.taskCustomer.update({
-              where: { id: customer.id },
-              data: {
-                assignedUserId: assignedUser.id,
-                assignedUsername: assignedUser.username,
-                assignedAt: null // Chưa phân giao theo ngày, sẽ được phân giao khi chạy "Phân giao lại"
-              }
-            })
-            autoAssignedCount++
-          }
-        }
-      }
-    }
+    // KHÔNG tự động phân giao khi upload
+    // Phân giao trong Excel là nguồn gốc và duy nhất
+    // Nếu Excel có gán thì giữ nguyên, nếu không có gán thì để null
+    // Admin phải sử dụng chức năng "Phân giao lại" để phân giao KH chưa được gán
+    const autoAssignedCount = 0
 
     // Tạo thông báo chi tiết
     let message = `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
-    if (autoAssignedCount > 0) {
-      message += `. Đã tự động phân giao ${autoAssignedCount} khách hàng cho các nhân viên đã được gán nhiệm vụ`
+    const assignedCount = customers.filter(c => c.assignedUserId).length
+    const unassignedCount = customers.filter(c => !c.assignedUserId).length
+    if (assignedCount > 0) {
+      message += `. Đã phân giao ${assignedCount} khách hàng theo file Excel`
+    }
+    if (unassignedCount > 0) {
+      message += `. ${unassignedCount} khách hàng chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
     }
     if (skippedCount > 0) {
       message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại (trùng account)`
