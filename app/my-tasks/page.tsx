@@ -262,7 +262,7 @@ export default function MyTasksPage() {
             {/* Thông tin xem */}
             <div className="mb-4">
               <div className="text-xs sm:text-sm text-gray-600 mb-2">
-                Đang xem: Khách hàng phân giao theo ngày
+                Đang xem: khách hàng được phân giao
               </div>
               
               {/* Search box */}
