@@ -93,8 +93,8 @@ export async function POST(
       }
 
       // Tìm user từ cache (không cần query database)
-      let assignedUserId = null
-      let actualAssignedUsername = null
+      let assignedUserId: string | null = null
+      let actualAssignedUsername: string | null = null
       if (assignedUsername) {
         const usernameNormalized = assignedUsername.toString().toLowerCase().trim()
         assignedUserId = userMap.get(usernameNormalized) || null
