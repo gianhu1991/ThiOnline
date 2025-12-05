@@ -117,6 +117,7 @@ export default function TasksPage() {
   const [updatingCustomer, setUpdatingCustomer] = useState(false)
   const [deletingCustomer, setDeletingCustomer] = useState<string | null>(null)
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
+  const [deletingAllCustomers, setDeletingAllCustomers] = useState(false)
 
   useEffect(() => {
     fetchTasks()

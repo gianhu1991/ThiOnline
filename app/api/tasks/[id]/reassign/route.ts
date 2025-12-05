@@ -70,21 +70,6 @@ export async function POST(
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       
-      // Lọc KH chưa được phân giao hôm nay
-      // KH được phân giao hôm nay = KH có assignedAt >= today AND assignedAt < tomorrow
-      // Chỉ lấy KH được phân giao TRƯỚC hôm nay (không phải hôm nay) hoặc chưa có assignedAt
-      const customersToAssign = task.customers.filter(c => {
-        if (!c.assignedAt) return true // Chưa được phân giao bao giờ
-        
-        const assignedDate = new Date(c.assignedAt)
-        assignedDate.setHours(0, 0, 0, 0)
-        const assignedTime = assignedDate.getTime()
-        const todayTime = today.getTime()
-        
-        // Chỉ lấy KH được phân giao TRƯỚC hôm nay (không phải hôm nay)
-        return assignedTime < todayTime
-      })
-      
       const assignedUsers = task.assignments.map(a => a.user)
       
       // Lưu danh sách KH đã được phân giao hôm nay (để không reset chúng)
@@ -97,13 +82,34 @@ export async function POST(
       })
       todayAssignedCustomers.forEach(c => todayAssignedCustomerIds.add(c.id))
       
-      // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH
-      let customerIndex = 0
+      // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH từ TẬP KH ĐÃ ĐƯỢC GÁN CHO USER ĐÓ
       const newlyAssignedCustomerIds = new Set<string>()
       
       for (let userIndex = 0; userIndex < assignedUsers.length; userIndex++) {
         const assignedUser = assignedUsers[userIndex]
-        const batch = customersToAssign.slice(customerIndex, customerIndex + dailyCount)
+        
+        // Chỉ lấy các KH đã được gán cho user này (assignedUserId = user.id)
+        const userCustomers = task.customers.filter(c => 
+          c.assignedUserId === assignedUser.id && !c.isCompleted
+        )
+        
+        // Lọc KH chưa được phân giao hôm nay (chưa có assignedAt hoặc assignedAt < hôm nay)
+        const customersToAssign = userCustomers.filter(c => {
+          if (!c.assignedAt) return true // Chưa được phân giao bao giờ
+          
+          const assignedDate = new Date(c.assignedAt)
+          assignedDate.setHours(0, 0, 0, 0)
+          const assignedTime = assignedDate.getTime()
+          const todayTime = today.getTime()
+          
+          // Chỉ lấy KH được phân giao TRƯỚC hôm nay (không phải hôm nay)
+          return assignedTime < todayTime
+        })
+        
+        // Lấy ngẫu nhiên dailyCount KH từ tập KH của user này
+        // Shuffle array để lấy ngẫu nhiên
+        const shuffled = [...customersToAssign].sort(() => Math.random() - 0.5)
+        const batch = shuffled.slice(0, dailyCount)
         
         if (batch.length > 0) {
           const batchIds = batch.map(c => c.id)
@@ -120,8 +126,6 @@ export async function POST(
             }
           })
         }
-        
-        customerIndex += dailyCount
       }
       
       // Reset assignedAt = null CHỈ cho các KH có assignedAt hôm nay nhưng:
@@ -149,7 +153,7 @@ export async function POST(
         }
       })
 
-      const totalAssigned = Math.min(customersToAssign.length, assignedUsers.length * dailyCount)
+      const totalAssigned = newlyAssignedCustomerIds.size
       return NextResponse.json({ 
         success: true, 
         message: `Đã phân giao ${totalAssigned} khách hàng cho ${assignedUsers.length} người dùng` 
