@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     
     // Đảm bảo mỗi exam đều có _count với giá trị mặc định nếu không có
     if (fullData && Array.isArray(exams)) {
-      exams = exams.map(exam => ({
+      exams = exams.map((exam: any) => ({
         ...exam,
         _count: exam._count || { examResults: 0 }
       }))
