@@ -102,9 +102,8 @@ export async function POST(
     console.log(`[Upload] Đã loại bỏ trùng lặp: ${data.length} dòng -> ${excelDataMap.size} KH duy nhất`)
     
     // Bước 2: Xử lý từng KH (đã loại bỏ trùng lặp)
-    const customers = [] // KH mới cần tạo
-    const customersToUpdate = [] // KH đã tồn tại cần cập nhật
-    let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
+    const customers = [] // KH mới cần tạo (chỉ những KH chưa tồn tại trong DB)
+    let skippedCount = 0 // Đếm số KH bị bỏ qua (đã tồn tại trong DB)
     
     // Convert Map entries to array để tránh lỗi TypeScript
     const excelDataArray = Array.from(excelDataMap.entries())
@@ -162,43 +161,10 @@ export async function POST(
         }
       }
 
-      // Nếu KH đã tồn tại, cập nhật tất cả thông tin từ Excel
+      // Nếu KH đã tồn tại trong database, BỎ QUA (không cập nhật, không tạo mới)
       if (existingCustomer) {
-        // Chuẩn bị dữ liệu cập nhật
-        const updateData: any = {
-          stt: stt ? parseInt(stt.toString()) : existingCustomer.stt || 0,
-          customerName: customerName.toString(),
-          address: address ? address.toString() : null,
-          phone: phone ? phone.toString() : null,
-          assignedUserId,
-          assignedUsername: actualAssignedUsername,
-          assignedAt: assignedUserId ? new Date() : null,
-        }
-        
-        // Kiểm tra xem có thay đổi gì không
-        const currentAssignedUserId = existingCustomer.assignedUserId
-        const currentAssignedUsername = existingCustomer.assignedUsername || null
-        const excelAssignedUsername = actualAssignedUsername || null
-        
-        console.log(`[Upload] KH ${account} đã tồn tại:`)
-        console.log(`  - Hiện tại: userId=${currentAssignedUserId}, username="${currentAssignedUsername}"`)
-        console.log(`  - Excel: userId=${assignedUserId}, username="${excelAssignedUsername}"`)
-        
-        // So sánh để xem có thay đổi không
-        const userIdChanged = currentAssignedUserId !== assignedUserId
-        const usernameChanged = currentAssignedUsername?.toLowerCase().trim() !== excelAssignedUsername?.toLowerCase().trim()
-        
-        // Luôn cập nhật để đảm bảo dữ liệu từ Excel là nguồn gốc
-        customersToUpdate.push({
-          id: existingCustomer.id,
-          ...updateData
-        })
-        
-        if (userIdChanged || usernameChanged) {
-          console.log(`[Upload] ✓ Cần cập nhật phân giao cho KH ${account}: "${currentAssignedUsername || 'null'}" -> "${actualAssignedUsername || 'null'}"`)
-        } else {
-          console.log(`[Upload] ✓ Cập nhật thông tin KH ${account} (phân giao không thay đổi)`)
-        }
+        skippedCount++ // KH đã tồn tại, bỏ qua
+        console.log(`[Upload] - Bỏ qua KH ${account}: đã tồn tại trong database (trùng account)`)
       } else {
         // KH mới, thêm vào danh sách tạo mới
         customers.push({
@@ -251,38 +217,6 @@ export async function POST(
     
     console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
 
-    // Cập nhật tất cả thông tin cho các KH đã tồn tại
-    let updatedCount = 0
-    if (customersToUpdate.length > 0) {
-      console.log(`[Upload] Bắt đầu cập nhật ${customersToUpdate.length} khách hàng...`)
-      
-      // Cập nhật từng KH để có thể log chi tiết
-      for (const customerUpdate of customersToUpdate) {
-        try {
-          const { id, ...updateData } = customerUpdate
-          
-          const beforeUpdate = await prisma.taskCustomer.findUnique({
-            where: { id },
-            select: { account: true, customerName: true, assignedUsername: true }
-          })
-          
-          await prisma.taskCustomer.update({
-            where: { id },
-            data: updateData
-          })
-          
-          console.log(`[Upload] ✓ Đã cập nhật KH ${beforeUpdate?.account}: "${beforeUpdate?.customerName}" (phân giao: "${beforeUpdate?.assignedUsername || 'null'}" -> "${updateData.assignedUsername || 'null'}")`)
-          updatedCount++
-        } catch (error: any) {
-          console.error(`[Upload] ✗ Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
-        }
-      }
-      
-      console.log(`[Upload] Hoàn thành: Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
-    } else {
-      console.log(`[Upload] Không có KH nào cần cập nhật`)
-    }
-
     // KHÔNG tự động phân giao khi upload
     // Phân giao trong Excel là nguồn gốc và duy nhất
     // Nếu Excel có gán thì giữ nguyên, nếu không có gán thì để null
@@ -291,9 +225,6 @@ export async function POST(
 
     // Tạo thông báo chi tiết
     let message = `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
-    if (updatedCount > 0) {
-      message += `. Đã cập nhật phân giao cho ${updatedCount} khách hàng theo file Excel`
-    }
     const assignedCount = customers.filter(c => c.assignedUserId).length
     const unassignedCount = customers.filter(c => !c.assignedUserId).length
     if (assignedCount > 0) {
@@ -303,17 +234,15 @@ export async function POST(
       message += `. ${unassignedCount} khách hàng mới chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
     }
     if (skippedCount > 0) {
-      message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại và phân giao không thay đổi`
+      message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại trong database (trùng account)`
     }
     
     return NextResponse.json({ 
       success: true, 
       message,
       added: addedCount,
-      updated: updatedCount,
-      autoAssigned: autoAssignedCount,
       skipped: skippedCount,
-      total: addedCount + updatedCount + skippedCount
+      total: addedCount + skippedCount
     })
   } catch (error: any) {
     console.error('Error uploading file:', error)
