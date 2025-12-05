@@ -256,7 +256,7 @@ export default function MyTasksPage() {
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-[95vw] sm:max-w-[98vw] w-full max-h-[95vh] overflow-y-auto flex flex-col">
             {loadingCustomers && customers.length === 0 ? (
               // Loading state khi đang fetch data lần đầu
-              <div className="flex items-center justify-center py-20">
+              <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="text-center">
                   <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
