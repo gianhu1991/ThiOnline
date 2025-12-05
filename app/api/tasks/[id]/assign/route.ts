@@ -62,31 +62,39 @@ export async function POST(
     )
 
     // Tự động phân giao các KH chưa được gán cho các user đã được gán nhiệm vụ
+    // Logic: TUÂN THEO PHÂN GIAO TRONG FILE EXCEL
+    // 1. Nếu KH đã được gán trong Excel (assignedUserId != null) -> GIỮ NGUYÊN, không phân giao lại
+    // 2. Nếu KH chưa được gán trong Excel (assignedUserId = null) -> phân giao đều cho các user đã được gán task
+    // 3. Phân giao trong Excel là nguồn gốc, không được thay đổi
     let autoAssignedCount = 0
-    const unassignedCustomers = await prisma.taskCustomer.findMany({
-      where: {
-        taskId: params.id,
-        assignedUserId: null,
-        isCompleted: false
-      },
-      orderBy: { stt: 'asc' }
+    
+    // Lấy tất cả user đã được gán nhiệm vụ (bao gồm cả user mới gán)
+    const allTaskAssignments = await prisma.taskAssignment.findMany({
+      where: { taskId: params.id },
+      include: {
+        user: {
+          select: { id: true, username: true }
+        }
+      }
     })
 
-    if (unassignedCustomers.length > 0) {
-      // Lấy tất cả user đã được gán nhiệm vụ (bao gồm cả user mới gán)
-      const allTaskAssignments = await prisma.taskAssignment.findMany({
-        where: { taskId: params.id },
-        include: {
-          user: {
-            select: { id: true, username: true }
-          }
-        }
+    if (allTaskAssignments.length > 0) {
+      const assignedUserIds = new Set(allTaskAssignments.map(a => a.user.id))
+      const assignedUsers = allTaskAssignments.map(a => a.user)
+      
+      // CHỈ lấy các KH chưa được gán trong Excel (assignedUserId = null)
+      // KH đã được gán trong Excel (assignedUserId != null) sẽ được GIỮ NGUYÊN
+      const unassignedCustomers = await prisma.taskCustomer.findMany({
+        where: {
+          taskId: params.id,
+          assignedUserId: null, // CHỈ phân giao KH chưa được gán trong Excel
+          isCompleted: false
+        },
+        orderBy: { stt: 'asc' } // Tuân theo thứ tự trong Excel
       })
 
-      if (allTaskAssignments.length > 0) {
-        const assignedUsers = allTaskAssignments.map(a => a.user)
-        
-        // Phân giao đều cho các user (round-robin)
+      if (unassignedCustomers.length > 0) {
+        // Phân giao đều cho các user (round-robin) - tuân theo thứ tự trong Excel (stt)
         for (let i = 0; i < unassignedCustomers.length; i++) {
           const customer = unassignedCustomers[i]
           const assignedUser = assignedUsers[i % assignedUsers.length]
@@ -102,6 +110,10 @@ export async function POST(
           autoAssignedCount++
         }
       }
+      
+      // KH đã được gán trong Excel (assignedUserId != null) sẽ được GIỮ NGUYÊN
+      // Khi user được gán task, họ sẽ thấy các KH đã được gán cho họ trong Excel
+      // Không cần làm gì thêm - phân giao trong Excel là nguồn gốc
     }
 
     // Tạo thông báo chi tiết
