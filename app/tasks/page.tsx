@@ -1339,7 +1339,6 @@ export default function TasksPage() {
                   )}
                 </div>
               </>
-            ) : null}
             </div>
           ) : null}
         </div>
