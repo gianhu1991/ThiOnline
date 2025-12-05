@@ -46,7 +46,7 @@ export default function Navigation() {
 
   if (loading) {
     return (
-      <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
+      <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-[100]">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="text-lg md:text-xl font-bold whitespace-nowrap">
@@ -59,7 +59,7 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-[100]">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between gap-4">
           {isAuthenticated && username ? (
