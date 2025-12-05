@@ -608,6 +608,39 @@ export default function TasksPage() {
     }
   }
 
+  const handleDeleteAllCustomers = async () => {
+    if (!selectedTask) return
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ ${customers.length} khách hàng trong nhiệm vụ này không? Hành động này không thể hoàn tác!`)) {
+      return
+    }
+
+    setDeletingAllCustomers(true)
+    try {
+      const res = await fetch(`/api/tasks/${selectedTask.id}/customers/delete-all`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Lỗi khi xóa khách hàng')
+      }
+
+      const data = await res.json()
+      alert(data.message || 'Đã xóa tất cả khách hàng thành công')
+      // Refresh danh sách khách hàng
+      if (selectedTask) {
+        openCustomersModal(selectedTask.id)
+      }
+      fetchTasks()
+    } catch (error: any) {
+      alert(error.message || 'Lỗi khi xóa khách hàng')
+    } finally {
+      setDeletingAllCustomers(false)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -1088,17 +1121,26 @@ export default function TasksPage() {
           <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
-              <button
-                onClick={() => {
-                  setShowCustomersModal(false)
-                  setCustomers([])
-                  setSelectedTask(null)
-                  setSearchTerm('') // Reset search khi đóng modal
-                }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={handleDeleteAllCustomers}
+                  disabled={deletingAllCustomers || customers.length === 0}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCustomersModal(false)
+                    setCustomers([])
+                    setSelectedTask(null)
+                    setSearchTerm('') // Reset search khi đóng modal
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {loadingCustomers ? (

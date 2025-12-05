@@ -87,19 +87,27 @@ export async function POST(
       
       const assignedUsers = task.assignments.map(a => a.user)
       
-      // Reset assignedAt = null cho các KH chưa được phân giao hôm nay (để tránh hiển thị nhầm)
-      // Chỉ reset cho KH có assignedAt hôm nay nhưng chưa được phân giao trong lần này
+      // Lưu danh sách KH đã được phân giao hôm nay (để không reset chúng)
       const todayAssignedCustomerIds = new Set<string>()
+      const todayAssignedCustomers = task.customers.filter(c => {
+        if (!c.assignedAt || c.isCompleted) return false
+        const assignedDate = new Date(c.assignedAt)
+        assignedDate.setHours(0, 0, 0, 0)
+        return assignedDate.getTime() === today.getTime()
+      })
+      todayAssignedCustomers.forEach(c => todayAssignedCustomerIds.add(c.id))
       
       // Phân giao đều cho các user được gán: mỗi user nhận dailyCount KH
       let customerIndex = 0
+      const newlyAssignedCustomerIds = new Set<string>()
+      
       for (let userIndex = 0; userIndex < assignedUsers.length; userIndex++) {
         const assignedUser = assignedUsers[userIndex]
         const batch = customersToAssign.slice(customerIndex, customerIndex + dailyCount)
         
         if (batch.length > 0) {
           const batchIds = batch.map(c => c.id)
-          batchIds.forEach(id => todayAssignedCustomerIds.add(id))
+          batchIds.forEach(id => newlyAssignedCustomerIds.add(id))
           
           await prisma.taskCustomer.updateMany({
             where: {
@@ -116,8 +124,10 @@ export async function POST(
         customerIndex += dailyCount
       }
       
-      // Reset assignedAt = null cho các KH có assignedAt hôm nay nhưng không được phân giao trong lần này
-      // (Để tránh hiển thị nhầm các KH từ migration)
+      // Reset assignedAt = null CHỈ cho các KH có assignedAt hôm nay nhưng:
+      // 1. KHÔNG được phân giao đúng trong ngày (không có trong todayAssignedCustomerIds)
+      // 2. KHÔNG được phân giao mới trong lần này (không có trong newlyAssignedCustomerIds)
+      // (Để tránh hiển thị nhầm các KH từ migration hoặc phân giao sai)
       await prisma.taskCustomer.updateMany({
         where: {
           taskId: params.id,
@@ -127,7 +137,7 @@ export async function POST(
             lt: tomorrow
           },
           id: {
-            notIn: Array.from(todayAssignedCustomerIds)
+            notIn: Array.from(new Set([...todayAssignedCustomerIds, ...newlyAssignedCustomerIds]))
           }
         },
         data: {
