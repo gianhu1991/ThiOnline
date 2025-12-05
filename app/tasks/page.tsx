@@ -1139,7 +1139,7 @@ export default function TasksPage() {
       {/* Modal xem danh sách khách hàng */}
       {showCustomersModal && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-[95vw] lg:max-w-7xl max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-lg w-full max-w-[98vw] lg:max-w-[95vw] xl:max-w-[90vw] max-h-[90vh] flex flex-col">
             {/* Header cố định */}
             <div className="flex-shrink-0 p-4 md:p-6 pb-4 border-b">
               <div className="flex justify-between items-center mb-4">
