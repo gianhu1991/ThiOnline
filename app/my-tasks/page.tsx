@@ -241,10 +241,10 @@ export default function MyTasksPage() {
 
       {/* Modal chi tiết khách hàng */}
       {showDetailModal && selectedTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-7xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Chi tiết: {selectedTask.name}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Chi tiết: {selectedTask.name}</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false)
@@ -253,7 +253,7 @@ export default function MyTasksPage() {
                   setSearchTerm('')
                   setCurrentPage(1)
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl"
               >
                 ×
               </button>
@@ -261,24 +261,24 @@ export default function MyTasksPage() {
 
             {/* Thông tin xem */}
             <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-2">
+              <div className="text-xs sm:text-sm text-gray-600 mb-2">
                 Đang xem: Khách hàng phân giao theo ngày
               </div>
               
               {/* Search box */}
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <input
                   type="text"
                   placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full border rounded px-3 py-2 text-sm"
+                  className="w-full border rounded px-2 sm:px-3 py-1.5 sm:py-2 text-sm"
                 />
               </div>
 
               {/* Thống kê */}
-              <div className="p-3 bg-blue-50 rounded">
-                <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="p-2 sm:p-3 bg-blue-50 rounded mb-3 sm:mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
                   <div>
                     <span className="text-gray-600">Tổng số: </span>
                     <span className="font-bold">{totalCustomers}</span>
@@ -296,7 +296,7 @@ export default function MyTasksPage() {
               </div>
 
               {/* Tùy chọn số lượng mỗi trang */}
-              <div className="mb-4 flex items-center gap-2 text-sm">
+              <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                 <label className="text-gray-600">Hiển thị:</label>
                 <select
                   value={pageSize}
@@ -304,7 +304,7 @@ export default function MyTasksPage() {
                     setPageSize(parseInt(e.target.value))
                     setCurrentPage(1)
                   }}
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 text-sm"
                 >
                   <option value="25">25</option>
                   <option value="50">50</option>
@@ -315,48 +315,48 @@ export default function MyTasksPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-              <table className="w-full border-collapse text-sm">
+            <div className="overflow-x-auto" style={{ maxHeight: 'calc(95vh - 300px)', overflowY: 'auto' }}>
+              <table className="w-full border-collapse text-sm min-w-full">
                 <thead className="sticky top-0 bg-gray-100 z-10">
                   <tr>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">STT</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Account</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Tên KH</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Địa chỉ</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Số điện thoại</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Trạng thái</th>
-                    <th className="border p-2 text-left text-xs font-semibold bg-gray-100">Thao tác</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">STT</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Account</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Tên KH</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 hidden sm:table-cell">Địa chỉ</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Số điện thoại</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Trạng thái</th>
+                    <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingCustomers ? (
                     <tr>
-                      <td colSpan={7} className="border p-4 text-center text-gray-500">
+                      <td colSpan={7} className="border p-4 text-center text-gray-500 text-sm">
                         Đang tải...
                       </td>
                     </tr>
                   ) : customers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="border p-4 text-center text-gray-500">
+                      <td colSpan={7} className="border p-4 text-center text-gray-500 text-sm">
                         {searchTerm ? 'Không tìm thấy khách hàng nào' : 'Chưa có khách hàng nào được gán cho bạn.'}
                       </td>
                     </tr>
                   ) : (
                     customers.map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="border p-2 text-sm">{customer.stt}</td>
-                        <td className="border p-2 text-sm">{customer.account}</td>
-                        <td className="border p-2 text-sm font-medium">{customer.customerName}</td>
-                        <td className="border p-2 text-sm">{customer.address || '-'}</td>
-                        <td className="border p-2 text-sm">{customer.phone || '-'}</td>
-                        <td className="border p-2 text-sm">
+                      <tr key={customer.id} className="hover:bg-gray-50">
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">{customer.stt}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-mono break-all">{customer.account}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-medium">{customer.customerName}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm hidden sm:table-cell">{customer.address || '-'}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm whitespace-nowrap">{customer.phone || '-'}</td>
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
                           <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
                         </td>
-                        <td className="border p-2 text-sm">
+                        <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
                           <button
                             onClick={() => handleComplete(customer.id)}
                             disabled={completing === customer.id || !selectedTask?.isActive}
-                            className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                            className="bg-green-600 text-white px-2 sm:px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
                           >
                             {completing === customer.id ? 'Đang xử lý...' : 'Thực hiện'}
                           </button>
@@ -370,21 +370,21 @@ export default function MyTasksPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-4 flex justify-center items-center gap-2">
+              <div className="mt-4 flex flex-wrap justify-center items-center gap-2">
                 <button
                   onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage - 1, searchTerm, pageSize)}
                   disabled={currentPage === 1 || loadingCustomers}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Trước
                 </button>
-                <span className="px-4 py-2 text-sm text-gray-700">
+                <span className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700">
                   Trang {currentPage} / {totalPages}
                 </span>
                 <button
                   onClick={() => selectedTask && fetchTaskCustomers(selectedTask.id, currentPage + 1, searchTerm, pageSize)}
                   disabled={currentPage === totalPages || loadingCustomers}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Sau
                 </button>
