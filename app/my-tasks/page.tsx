@@ -279,62 +279,63 @@ export default function MyTasksPage() {
 
                   {/* Thông tin xem */}
                   <div className="mb-4">
-              <div className="text-xs sm:text-sm text-gray-600 mb-2">
-                Đang xem: khách hàng được phân giao
-              </div>
-              
-              {/* Search box */}
-              <div className="mb-3 sm:mb-4">
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full border rounded px-2 sm:px-3 py-1.5 sm:py-2 text-sm"
-                />
-              </div>
+                    <div className="text-xs sm:text-sm text-gray-600 mb-2">
+                      Đang xem: khách hàng được phân giao
+                    </div>
+                    
+                    {/* Search box */}
+                    <div className="mb-3 sm:mb-4">
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo tên, account, số điện thoại, địa chỉ..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full border rounded px-2 sm:px-3 py-1.5 sm:py-2 text-sm"
+                      />
+                    </div>
 
-              {/* Thống kê */}
-              <div className="p-2 sm:p-3 bg-blue-50 rounded mb-3 sm:mb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-gray-600">Tổng số: </span>
-                    <span className="font-bold">{totalCustomers}</span>
-                    {searchTerm && <span className="text-xs text-gray-500"> (kết quả tìm kiếm)</span>}
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Đã hoàn thành: </span>
-                    <span className="font-bold text-green-600">{completedCount}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Chưa hoàn thành: </span>
-                    <span className="font-bold text-orange-600">{totalCustomers}</span>
+                    {/* Thống kê */}
+                    <div className="p-2 sm:p-3 bg-blue-50 rounded mb-3 sm:mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
+                        <div>
+                          <span className="text-gray-600">Tổng số: </span>
+                          <span className="font-bold">{totalCustomers}</span>
+                          {searchTerm && <span className="text-xs text-gray-500"> (kết quả tìm kiếm)</span>}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Đã hoàn thành: </span>
+                          <span className="font-bold text-green-600">{completedCount}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Chưa hoàn thành: </span>
+                          <span className="font-bold text-orange-600">{totalCustomers}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tùy chọn số lượng mỗi trang */}
+                    <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                      <label className="text-gray-600">Hiển thị:</label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(parseInt(e.target.value))
+                          setCurrentPage(1)
+                        }}
+                        className="border rounded px-2 py-1 text-sm"
+                      >
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                      </select>
+                      <span className="text-gray-600">mỗi trang</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Tùy chọn số lượng mỗi trang */}
-              <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                <label className="text-gray-600">Hiển thị:</label>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(parseInt(e.target.value))
-                    setCurrentPage(1)
-                  }}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                </select>
-                <span className="text-gray-600">mỗi trang</span>
-              </div>
-            </div>
-
-                  {/* Nội dung cuộn được */}
-                  <div className="flex-1 overflow-y-auto">
+                {/* Nội dung cuộn được */}
+                <div className="flex-1 overflow-y-auto">
                     <div className="overflow-x-auto" style={{ maxHeight: 'calc(95vh - 300px)', overflowY: 'auto' }}>
                       <table className="w-full border-collapse text-sm min-w-full">
                         <thead className="sticky top-0 bg-gray-100 z-10">
