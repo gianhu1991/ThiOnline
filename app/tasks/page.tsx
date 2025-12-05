@@ -1280,11 +1280,10 @@ export default function TasksPage() {
                           </tbody>
                         </table>
                       </div>
-                    </>
-                  )
-                })()}
-              </>
-            )}
+                  </>
+                )
+              })()}
+            </div>
           </div>
         </div>
       )}
