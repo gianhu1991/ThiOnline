@@ -492,6 +492,9 @@ export default function TasksPage() {
     setSelectedTask(tasks.find(t => t.id === taskId) || null)
     setCurrentPage(page)
     setSearchTerm('') // Reset search khi mở modal
+    setCustomers([])
+    // Mở modal ngay để hiển thị loading
+    setShowCustomersModal(true)
     await fetchCustomersPage(taskId, page, '')
   }
 
@@ -526,9 +529,6 @@ export default function TasksPage() {
           setCompletedCount(data.pagination.completed || 0)
           setPendingCount(data.pagination.pending || 0)
           setCurrentPage(data.pagination.page)
-        }
-        if (page === 1) {
-          setShowCustomersModal(true)
         }
       } else {
         alert('Lỗi khi tải danh sách khách hàng')
@@ -1153,35 +1153,42 @@ export default function TasksPage() {
       )}
 
       {/* Modal xem danh sách khách hàng */}
-      {showCustomersModal && selectedTask && (
+      {showCustomersModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-[98vw] lg:max-w-[95vw] xl:max-w-[90vw] max-h-[90vh] flex flex-col">
-            {/* Header cố định */}
-            <div className="flex-shrink-0 p-4 md:p-6 pb-4 border-b">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl md:text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
-                <button
-                  onClick={() => {
-                    setShowCustomersModal(false)
-                    setCustomers([])
-                    setSelectedTask(null)
-                    setSearchTerm('') // Reset search khi đóng modal
-                    setCurrentPage(1)
-                    setTotalPages(1)
-                    setTotalCustomers(0)
-                    setCompletedCount(0)
-                    setPendingCount(0)
-                  }}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
+            {loadingCustomers && !selectedTask ? (
+              // Loading state khi đang fetch data lần đầu
+              <div className="flex flex-col items-center justify-center py-20">
+                <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-gray-600 text-lg">Đang tải dữ liệu...</p>
               </div>
+            ) : selectedTask ? (
+              <>
+                {/* Header cố định */}
+                <div className="flex-shrink-0 p-4 md:p-6 pb-4 border-b">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl md:text-2xl font-bold">Danh sách khách hàng: {selectedTask.name}</h2>
+                    <button
+                      onClick={() => {
+                        setShowCustomersModal(false)
+                        setCustomers([])
+                        setSelectedTask(null)
+                        setSearchTerm('') // Reset search khi đóng modal
+                        setCurrentPage(1)
+                        setTotalPages(1)
+                        setTotalCustomers(0)
+                        setCompletedCount(0)
+                        setPendingCount(0)
+                      }}
+                      className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                      ×
+                    </button>
+                  </div>
 
-              {loadingCustomers ? (
-                <div className="text-center py-8">Đang tải...</div>
-              ) : (
-                <>
                   {/* Ô tìm kiếm */}
                   <div className="mb-4">
                     <input
@@ -1205,30 +1212,39 @@ export default function TasksPage() {
                           </span>
                         )}
                       </div>
-                            <div>
-                              <span className="text-gray-600">Đã hoàn thành: </span>
-                              <span className="font-bold text-green-600">{completedCount}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Chưa hoàn thành: </span>
-                              <span className="font-bold text-orange-600">{pendingCount}</span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={handleDeleteAllCustomers}
-                            disabled={deletingAllCustomers || totalCustomers === 0}
-                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ml-4"
-                          >
-                            {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
-                          </button>
-                        </div>
+                      <div>
+                        <span className="text-gray-600">Đã hoàn thành: </span>
+                        <span className="font-bold text-green-600">{completedCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Chưa hoàn thành: </span>
+                        <span className="font-bold text-orange-600">{pendingCount}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleDeleteAllCustomers}
+                      disabled={deletingAllCustomers || totalCustomers === 0}
+                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ml-4"
+                    >
+                      {deletingAllCustomers ? 'Đang xóa...' : 'Xóa tất cả'}
+                    </button>
+                  </div>
                 </>
               )}
             </div>
 
             {/* Nội dung cuộn được */}
             <div className="flex-1 overflow-y-auto p-6 pt-4">
-              {!loadingCustomers && (
+              {loadingCustomers && customers.length === 0 ? (
+                // Loading state khi đang fetch data lần đầu
+                <div className="flex flex-col items-center justify-center py-20">
+                  <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-gray-600 text-lg">Đang tải dữ liệu...</p>
+                </div>
+              ) : (
                 <>
                   <div className="overflow-x-auto">
                       <table className="w-full border-collapse">
@@ -1316,6 +1332,8 @@ export default function TasksPage() {
                   </>
               )}
             </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}
