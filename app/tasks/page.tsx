@@ -1164,7 +1164,7 @@ export default function TasksPage() {
 
       {/* Modal xem danh sách khách hàng */}
       {showCustomersModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90] pt-16 sm:pt-20 p-4">
           {loadingCustomers && !selectedTask ? (
             // Loading state khi đang fetch data lần đầu - không có khung trắng
             <div className="text-center">
@@ -1175,7 +1175,7 @@ export default function TasksPage() {
               <p className="text-gray-100">Đang tải...</p>
             </div>
           ) : selectedTask ? (
-            <div className="bg-white rounded-lg w-full max-w-[98vw] lg:max-w-[95vw] xl:max-w-[90vw] max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-lg w-full max-w-[98vw] lg:max-w-[95vw] xl:max-w-[90vw] max-h-[calc(100vh-8rem)] flex flex-col">
               <>
                 {/* Header cố định */}
                 <div className="flex-shrink-0 p-4 md:p-6 pb-4 border-b">
