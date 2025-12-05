@@ -17,22 +17,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const fullData = searchParams.get('full') === 'true'
     
-    const exams = await prisma.exam.findMany({
-      // Chỉ select fields cần thiết nếu không cần full data (tối ưu cho dropdown)
-      ...(fullData ? {
+    // Tách thành 2 query riêng để TypeScript hiểu đúng kiểu
+    let exams
+    if (fullData) {
+      exams = await prisma.exam.findMany({
         include: {
           _count: {
             select: { examResults: true }
           }
-        }
-      } : {
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    } else {
+      // Chỉ select fields cần thiết nếu không cần full data (tối ưu cho dropdown)
+      exams = await prisma.exam.findMany({
         select: {
           id: true,
           title: true,
-        }
-      }),
-      orderBy: { createdAt: 'desc' },
-    })
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    }
     
     console.log('[GET /api/exams] Số bài thi trả về:', exams.length)
     console.log('[GET /api/exams] Danh sách bài thi:', exams.map(e => ({ id: e.id, title: e.title })))
