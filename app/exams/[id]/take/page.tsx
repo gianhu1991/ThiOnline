@@ -24,6 +24,7 @@ interface ExamData {
   attemptNumber: number
 }
 
+
 export default function TakeExamPage() {
   const router = useRouter()
   const params = useParams()

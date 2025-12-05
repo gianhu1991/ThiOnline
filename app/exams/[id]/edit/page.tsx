@@ -19,6 +19,7 @@ interface Exam {
   maxAttempts: number
 }
 
+
 export default function EditExamPage() {
   const router = useRouter()
   const params = useParams()

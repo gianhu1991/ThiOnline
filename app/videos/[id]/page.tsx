@@ -16,6 +16,7 @@ interface Video {
   createdAt: string
 }
 
+
 export default function VideoDetailPage() {
   const params = useParams()
   const router = useRouter()

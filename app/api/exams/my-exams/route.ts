@@ -37,6 +37,14 @@ export async function GET(request: NextRequest) {
     const availableExams = assignments
       .map(a => a.exam)
       .filter(exam => {
+        // Loại bỏ exam null hoặc undefined
+        if (!exam) return false
+        
+        // Đảm bảo _count luôn có giá trị
+        if (!exam._count) {
+          exam._count = { examResults: 0 }
+        }
+        
         // Kiểm tra isActive
         if (!exam.isActive) return false
         

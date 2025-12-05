@@ -16,6 +16,7 @@ interface Document {
   createdAt: string
 }
 
+
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)

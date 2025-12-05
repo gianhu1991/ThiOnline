@@ -17,10 +17,11 @@ interface Exam {
   isPublic: boolean
   maxAttempts: number
   createdAt: string
-  _count: {
+  _count?: {
     examResults: number
   }
 }
+
 
 export default function MyExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
@@ -54,7 +55,14 @@ export default function MyExamsPage() {
       
       // Đảm bảo data là array
       if (Array.isArray(data)) {
-        setExams(data)
+        // Normalize data: đảm bảo mỗi exam đều có _count
+        const normalizedExams = data
+          .filter(exam => exam != null) // Loại bỏ null/undefined
+          .map(exam => ({
+            ...exam,
+            _count: exam._count || { examResults: 0 }
+          }))
+        setExams(normalizedExams)
       } else {
         console.error('API trả về dữ liệu không phải array:', data)
         setExams([])
@@ -166,7 +174,7 @@ export default function MyExamsPage() {
                         <span className="font-medium">Số lần làm:</span> {exam.maxAttempts}
                       </div>
                       <div>
-                        <span className="font-medium">Đã có:</span> {exam._count.examResults} kết quả
+                        <span className="font-medium">Đã có:</span> {exam._count?.examResults || 0} kết quả
                       </div>
                     </div>
                   </div>

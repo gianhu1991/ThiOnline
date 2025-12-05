@@ -8,6 +8,7 @@ interface Question {
   id: string
 }
 
+
 export default function CreateExamPage() {
   const router = useRouter()
   const [questions, setQuestions] = useState<Question[]>([])

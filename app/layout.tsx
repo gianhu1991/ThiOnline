@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'TTVT Nho Quan- Phần mềm đào tạo kỹ thuật',
   description: 'Hệ thống thi trắc nghiệm trực tuyến với đầy đủ tính năng quản lý ngân hàng câu hỏi, tạo bài thi và làm bài thi',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

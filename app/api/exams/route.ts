@@ -42,6 +42,14 @@ export async function GET(request: NextRequest) {
     console.log('[GET /api/exams] Số bài thi trả về:', exams.length)
     console.log('[GET /api/exams] Danh sách bài thi:', exams.map(e => ({ id: e.id, title: e.title })))
     
+    // Đảm bảo mỗi exam đều có _count với giá trị mặc định nếu không có
+    if (fullData && Array.isArray(exams)) {
+      exams = exams.map(exam => ({
+        ...exam,
+        _count: exam._count || { examResults: 0 }
+      }))
+    }
+    
     return NextResponse.json(exams, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

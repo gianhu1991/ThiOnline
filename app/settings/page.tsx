@@ -9,6 +9,7 @@ import LoginBackgroundForm from '@/components/settings/LoginBackgroundForm'
 
 type SettingsTab = 'password' | 'category' | 'user' | 'group' | 'background'
 
+
 export default function SettingsPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<SettingsTab>('password')

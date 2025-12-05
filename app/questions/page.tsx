@@ -12,6 +12,7 @@ interface Question {
   createdAt: string
 }
 
+
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)

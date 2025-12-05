@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
+
 export default function DebugDBPage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)

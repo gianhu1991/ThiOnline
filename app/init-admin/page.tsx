@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+
 export default function InitAdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)

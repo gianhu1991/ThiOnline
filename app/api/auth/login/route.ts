@@ -37,13 +37,15 @@ export async function POST(request: NextRequest) {
 
         const response = NextResponse.json({ 
           success: true, 
+          token: token, // Trả về token cho mobile app
           user: { 
             username: user.username,
-            role: userFromDb?.role || 'user'
+            role: userFromDb?.role || 'user',
+            id: userFromDb?.id || user.id
           } 
         })
     
-    // Set cookie
+    // Set cookie (cho web app)
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

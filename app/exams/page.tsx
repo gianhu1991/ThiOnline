@@ -17,7 +17,7 @@ interface Exam {
   isPublic: boolean
   maxAttempts: number
   createdAt: string
-  _count: {
+  _count?: {
     examResults: number
   }
 }
@@ -45,6 +45,7 @@ interface SelectedUser {
   maxAttempts: number | null
 }
 
+
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +70,7 @@ export default function ExamsPage() {
       setError(null)
       const timestamp = Date.now()
       const random = Math.random()
-      const res = await fetch(`/api/exams?t=${timestamp}&r=${random}`, {
+      const res = await fetch(`/api/exams?full=true&t=${timestamp}&r=${random}`, {
         cache: 'no-store',
         credentials: 'include',
         headers: {
@@ -87,7 +88,14 @@ export default function ExamsPage() {
       
       // Đảm bảo data là array
       if (Array.isArray(data)) {
-        setExams(data)
+        // Normalize data: đảm bảo mỗi exam đều có _count
+        const normalizedExams = data
+          .filter(exam => exam != null) // Loại bỏ null/undefined
+          .map(exam => ({
+            ...exam,
+            _count: exam._count || { examResults: 0 }
+          }))
+        setExams(normalizedExams)
       } else {
         console.error('API trả về dữ liệu không phải array:', data)
         setExams([])
@@ -467,7 +475,7 @@ export default function ExamsPage() {
                         <span className="font-medium">Số lần làm:</span> {exam.maxAttempts}
                       </div>
                       <div>
-                        <span className="font-medium">Đã có:</span> {exam._count.examResults} kết quả
+                        <span className="font-medium">Đã có:</span> {exam._count?.examResults || 0} kết quả
                       </div>
                     </div>
                   </div>

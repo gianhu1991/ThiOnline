@@ -31,6 +31,7 @@ interface ExamInfo {
   maxAttempts: number
 }
 
+
 export default function ExamResultPage() {
   const searchParams = useSearchParams()
   const router = useRouter()

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+
 export default function Home() {
   const router = useRouter()
   const [stats, setStats] = useState({ questions: 0, exams: 0, results: 0 })

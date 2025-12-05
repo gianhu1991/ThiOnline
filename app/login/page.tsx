@@ -1,6 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import LoginForm from './LoginForm'
 
+
+// Generate static params for static export
+export function generateStaticParams() {
+  return []
+}
+
 export default async function LoginPage() {
   // Fetch background data từ server trước khi render
   let backgroundUrl: string | null = null

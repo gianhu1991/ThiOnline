@@ -18,6 +18,7 @@ interface ExamResult {
   completedAt: string
 }
 
+
 export default function ExamResultsPage() {
   const router = useRouter()
   const params = useParams()
