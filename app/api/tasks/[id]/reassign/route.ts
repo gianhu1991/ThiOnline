@@ -115,14 +115,15 @@ export async function POST(
           const batchIds = batch.map(c => c.id)
           batchIds.forEach(id => newlyAssignedCustomerIds.add(id))
           
+          // CHỈ cập nhật assignedAt, KHÔNG cập nhật assignedUserId và assignedUsername
+          // vì chúng đã đúng từ Excel và phải tuân thủ chính xác như Excel
           await prisma.taskCustomer.updateMany({
             where: {
-              id: { in: batchIds }
+              id: { in: batchIds },
+              assignedUserId: assignedUser.id // Đảm bảo chỉ cập nhật KH đã được gán cho user này
             },
             data: {
-              assignedUserId: assignedUser.id,
-              assignedUsername: assignedUser.username,
-              assignedAt: new Date(), // Lưu thời gian phân giao mới
+              assignedAt: new Date(), // Chỉ cập nhật thời gian phân giao
             }
           })
         }

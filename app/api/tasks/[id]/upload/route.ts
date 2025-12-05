@@ -49,14 +49,22 @@ export async function POST(
       return NextResponse.json({ error: 'File Excel không có dữ liệu' }, { status: 400 })
     }
 
-    // Lấy danh sách khách hàng hiện có để kiểm tra trùng lặp
+    // Lấy danh sách khách hàng hiện có để kiểm tra trùng lặp và cập nhật phân giao
     const existingCustomers = await prisma.taskCustomer.findMany({
       where: { taskId: params.id },
-      select: { account: true }
+      select: { 
+        id: true,
+        account: true,
+        assignedUserId: true,
+        assignedUsername: true
+      }
     })
     
-    // Tạo Set để kiểm tra nhanh trùng lặp (theo account)
-    const existingAccounts = new Set(existingCustomers.map(c => c.account.toLowerCase().trim()))
+    // Tạo Map để tra cứu nhanh (account -> customer)
+    const existingCustomersMap = new Map<string, typeof existingCustomers[0]>()
+    existingCustomers.forEach(c => {
+      existingCustomersMap.set(c.account.toLowerCase().trim(), c)
+    })
 
     // Lấy tất cả users một lần để cache (tránh query nhiều lần)
     const allUsers = await prisma.user.findMany({
@@ -69,8 +77,9 @@ export async function POST(
 
     // Xử lý dữ liệu Excel
     // Cấu trúc: STT, account, Tên KH, địa chỉ, số điện thoại, NV thực hiện
-    const customers = []
-    let skippedCount = 0 // Đếm số KH bị bỏ qua do trùng lặp
+    const customers = [] // KH mới cần tạo
+    const customersToUpdate = [] // KH đã tồn tại cần cập nhật phân giao
+    let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
     
     for (const row of data as any[]) {
       const stt = row['STT'] || row['stt'] || row['Số thứ tự'] || null
@@ -85,12 +94,7 @@ export async function POST(
       }
 
       const accountNormalized = account.toString().toLowerCase().trim()
-      
-      // Kiểm tra trùng lặp theo account
-      if (existingAccounts.has(accountNormalized)) {
-        skippedCount++
-        continue // Bỏ qua KH đã tồn tại
-      }
+      const existingCustomer = existingCustomersMap.get(accountNormalized)
 
       // Tìm user từ cache (không cần query database)
       // QUAN TRỌNG: Phải tìm chính xác username từ Excel, không được nhầm lẫn
@@ -126,21 +130,40 @@ export async function POST(
         }
       }
 
-      customers.push({
-        taskId: params.id,
-        stt: stt ? parseInt(stt.toString()) : 0,
-        account: account.toString(),
-        customerName: customerName.toString(),
-        address: address ? address.toString() : null,
-        phone: phone ? phone.toString() : null,
-        assignedUserId,
-        assignedUsername: actualAssignedUsername, // Lưu username thực tế từ database (nếu tìm thấy) hoặc từ Excel
-        assignedAt: assignedUserId ? new Date() : null, // Lưu thời gian phân giao nếu có
-        isCompleted: false,
-      })
-      
-      // Thêm vào Set để tránh trùng trong cùng một lần upload
-      existingAccounts.add(accountNormalized)
+      // Nếu KH đã tồn tại, kiểm tra xem có cần cập nhật phân giao không
+      if (existingCustomer) {
+        // So sánh phân giao hiện tại với phân giao trong Excel
+        const currentAssignedUserId = existingCustomer.assignedUserId
+        const currentAssignedUsername = existingCustomer.assignedUsername?.toLowerCase().trim() || null
+        const excelAssignedUsername = actualAssignedUsername?.toLowerCase().trim() || null
+        
+        // Nếu phân giao khác nhau, cần cập nhật theo Excel
+        if (currentAssignedUserId !== assignedUserId || currentAssignedUsername !== excelAssignedUsername) {
+          customersToUpdate.push({
+            id: existingCustomer.id,
+            assignedUserId,
+            assignedUsername: actualAssignedUsername,
+            assignedAt: assignedUserId ? new Date() : null, // Cập nhật thời gian phân giao nếu có
+          })
+          console.log(`[Upload] Cần cập nhật phân giao cho KH ${account}: ${currentAssignedUsername || 'null'} -> ${actualAssignedUsername || 'null'}`)
+        } else {
+          skippedCount++ // KH đã tồn tại và phân giao giống nhau, không cần cập nhật
+        }
+      } else {
+        // KH mới, thêm vào danh sách tạo mới
+        customers.push({
+          taskId: params.id,
+          stt: stt ? parseInt(stt.toString()) : 0,
+          account: account.toString(),
+          customerName: customerName.toString(),
+          address: address ? address.toString() : null,
+          phone: phone ? phone.toString() : null,
+          assignedUserId,
+          assignedUsername: actualAssignedUsername, // Lưu username thực tế từ database (nếu tìm thấy) hoặc từ Excel
+          assignedAt: assignedUserId ? new Date() : null, // Lưu thời gian phân giao nếu có
+          isCompleted: false,
+        })
+      }
     }
 
     // Lưu vào database theo batch để tránh timeout (500 records mỗi batch)
@@ -178,6 +201,35 @@ export async function POST(
     
     console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
 
+    // Cập nhật phân giao cho các KH đã tồn tại nhưng có phân giao khác trong Excel
+    let updatedCount = 0
+    if (customersToUpdate.length > 0) {
+      console.log(`Bắt đầu cập nhật phân giao cho ${customersToUpdate.length} khách hàng...`)
+      
+      // Cập nhật theo batch để tránh timeout
+      for (let i = 0; i < customersToUpdate.length; i += BATCH_SIZE) {
+        const batch = customersToUpdate.slice(i, i + BATCH_SIZE)
+        for (const customerUpdate of batch) {
+          try {
+            await prisma.taskCustomer.update({
+              where: { id: customerUpdate.id },
+              data: {
+                assignedUserId: customerUpdate.assignedUserId,
+                assignedUsername: customerUpdate.assignedUsername,
+                assignedAt: customerUpdate.assignedAt,
+              }
+            })
+            updatedCount++
+          } catch (error: any) {
+            console.error(`Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
+          }
+        }
+        console.log(`Đã cập nhật batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(customersToUpdate.length / BATCH_SIZE)}: ${batch.length} records`)
+      }
+      
+      console.log(`Hoàn thành: Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
+    }
+
     // KHÔNG tự động phân giao khi upload
     // Phân giao trong Excel là nguồn gốc và duy nhất
     // Nếu Excel có gán thì giữ nguyên, nếu không có gán thì để null
@@ -186,25 +238,29 @@ export async function POST(
 
     // Tạo thông báo chi tiết
     let message = `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
+    if (updatedCount > 0) {
+      message += `. Đã cập nhật phân giao cho ${updatedCount} khách hàng theo file Excel`
+    }
     const assignedCount = customers.filter(c => c.assignedUserId).length
     const unassignedCount = customers.filter(c => !c.assignedUserId).length
     if (assignedCount > 0) {
-      message += `. Đã phân giao ${assignedCount} khách hàng theo file Excel`
+      message += `. Đã phân giao ${assignedCount} khách hàng mới theo file Excel`
     }
     if (unassignedCount > 0) {
-      message += `. ${unassignedCount} khách hàng chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
+      message += `. ${unassignedCount} khách hàng mới chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
     }
     if (skippedCount > 0) {
-      message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại (trùng account)`
+      message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại và phân giao không thay đổi`
     }
     
     return NextResponse.json({ 
       success: true, 
       message,
       added: addedCount,
+      updated: updatedCount,
       autoAssigned: autoAssignedCount,
       skipped: skippedCount,
-      total: addedCount + skippedCount
+      total: addedCount + updatedCount + skippedCount
     })
   } catch (error: any) {
     console.error('Error uploading file:', error)
