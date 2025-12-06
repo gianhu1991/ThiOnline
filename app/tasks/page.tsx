@@ -1419,17 +1419,17 @@ export default function TasksPage() {
               </div>
 
               {/* Nội dung bảng */}
-              <div className="flex-1 overflow-y-auto p-6 pt-4">
+              <div className="flex-1 overflow-hidden flex flex-col p-6 pt-4">
                 {summaryData.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <div className="flex-1 overflow-y-auto overflow-x-auto">
                     <table className="w-full border-collapse">
-                      <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                      <thead className="sticky top-0 z-10">
                         <tr>
-                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">STT</th>
-                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Tên NV</th>
-                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Số lượng KH phân giao</th>
-                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Đã thực hiện</th>
-                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Chưa thực hiện</th>
+                          <th className="border p-3 text-left bg-gray-100 font-semibold">STT</th>
+                          <th className="border p-3 text-left bg-gray-100 font-semibold">Tên NV</th>
+                          <th className="border p-3 text-left bg-gray-100 font-semibold">Số lượng KH phân giao</th>
+                          <th className="border p-3 text-left bg-gray-100 font-semibold">Đã thực hiện</th>
+                          <th className="border p-3 text-left bg-gray-100 font-semibold">Chưa thực hiện</th>
                         </tr>
                       </thead>
                       <tbody>
