@@ -66,10 +66,16 @@ export async function GET(
 
     // Xử lý date nếu có (lưu dạng string YYYY-MM-DD để so sánh)
     const selectedDateStr = dateParam || null
+    
+    // Debug: log date parameter
+    if (selectedDateStr) {
+      console.log('[Summary] Filtering by date:', selectedDateStr)
+    }
 
     // Tạo dữ liệu tổng hợp theo user
     const summaryMap = new Map<string, { total: number; completed: number; pending: number }>()
     
+    let debugCount = 0
     task.customers.forEach(customer => {
       const username = customer.assignedUsername || 'Chưa gán'
       if (!summaryMap.has(username)) {
@@ -83,13 +89,31 @@ export async function GET(
         if (selectedDateStr && customer.completedAt) {
           // So sánh string date (YYYY-MM-DD) để tránh timezone issues
           const completedDate = new Date(customer.completedAt)
-          // Lấy year, month, day từ date object (sử dụng local time)
+          
+          // Thử cả UTC và local time để đảm bảo so sánh đúng
+          // Thường thì database lưu ở UTC, nhưng khi query ra sẽ tự convert về local
+          // Nên ta thử local time trước
           const year = completedDate.getFullYear()
           const month = String(completedDate.getMonth() + 1).padStart(2, '0')
           const day = String(completedDate.getDate()).padStart(2, '0')
-          const completedDateStr = `${year}-${month}-${day}`
+          const completedDateStrLocal = `${year}-${month}-${day}`
           
-          if (completedDateStr === selectedDateStr) {
+          // Cũng thử UTC
+          const yearUTC = completedDate.getUTCFullYear()
+          const monthUTC = String(completedDate.getUTCMonth() + 1).padStart(2, '0')
+          const dayUTC = String(completedDate.getUTCDate()).padStart(2, '0')
+          const completedDateStrUTC = `${yearUTC}-${monthUTC}-${dayUTC}`
+          
+          // Debug: log first few matches
+          if (debugCount < 5) {
+            console.log(`[Summary] Customer completed: ${customer.completedAt}`)
+            console.log(`  -> Local: ${completedDateStrLocal}, UTC: ${completedDateStrUTC}, selected: ${selectedDateStr}`)
+            console.log(`  -> Local match: ${completedDateStrLocal === selectedDateStr}, UTC match: ${completedDateStrUTC === selectedDateStr}`)
+            debugCount++
+          }
+          
+          // So sánh với cả local và UTC (một trong hai khớp là được)
+          if (completedDateStrLocal === selectedDateStr || completedDateStrUTC === selectedDateStr) {
             stats.completed++
           }
         } else if (!selectedDateStr) {
