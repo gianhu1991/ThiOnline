@@ -64,15 +64,8 @@ export async function GET(
       return usernameToFullName.get(username) || username
     }
 
-    // Xử lý date nếu có
-    let dateFilter: { gte: Date; lt: Date } | null = null
-    if (dateParam) {
-      const selectedDate = new Date(dateParam)
-      selectedDate.setHours(0, 0, 0, 0)
-      const nextDate = new Date(selectedDate)
-      nextDate.setDate(nextDate.getDate() + 1)
-      dateFilter = { gte: selectedDate, lt: nextDate }
-    }
+    // Xử lý date nếu có (lưu dạng string YYYY-MM-DD để so sánh)
+    const selectedDateStr = dateParam || null
 
     // Tạo dữ liệu tổng hợp theo user
     const summaryMap = new Map<string, { total: number; completed: number; pending: number }>()
@@ -87,12 +80,19 @@ export async function GET(
       
       if (customer.isCompleted) {
         // Nếu có date filter, chỉ tính KH hoàn thành trong ngày đó
-        if (dateFilter && customer.completedAt) {
+        if (selectedDateStr && customer.completedAt) {
+          // So sánh string date (YYYY-MM-DD) để tránh timezone issues
           const completedDate = new Date(customer.completedAt)
-          if (completedDate >= dateFilter.gte && completedDate < dateFilter.lt) {
+          // Lấy year, month, day từ date object (sử dụng local time)
+          const year = completedDate.getFullYear()
+          const month = String(completedDate.getMonth() + 1).padStart(2, '0')
+          const day = String(completedDate.getDate()).padStart(2, '0')
+          const completedDateStr = `${year}-${month}-${day}`
+          
+          if (completedDateStr === selectedDateStr) {
             stats.completed++
           }
-        } else if (!dateFilter) {
+        } else if (!selectedDateStr) {
           // Không có date filter, tính tất cả KH đã hoàn thành
           stats.completed++
         }
