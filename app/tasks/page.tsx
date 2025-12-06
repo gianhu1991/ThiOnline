@@ -116,6 +116,7 @@ export default function TasksPage() {
   const [summaryTaskName, setSummaryTaskName] = useState('')
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null)
+  const [summaryDate, setSummaryDate] = useState<string>('')
 
   // State cho sửa khách hàng
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
@@ -451,11 +452,15 @@ export default function TasksPage() {
     }
   }
 
-  const fetchSummary = async (taskId: string) => {
+  const fetchSummary = async (taskId: string, date?: string) => {
     try {
       setLoadingSummary(true)
       setSummaryTaskId(taskId)
-      const res = await fetch(`/api/tasks/${taskId}/summary`, {
+      const url = date 
+        ? `/api/tasks/${taskId}/summary?date=${encodeURIComponent(date)}`
+        : `/api/tasks/${taskId}/summary`
+      
+      const res = await fetch(url, {
         credentials: 'include',
       })
 
@@ -467,12 +472,22 @@ export default function TasksPage() {
       const data = await res.json()
       setSummaryData(data.summary || [])
       setSummaryTaskName(data.taskName || '')
+      if (!date) {
+        setSummaryDate('')
+      }
       setShowSummaryModal(true)
     } catch (error: any) {
       alert(error.message || 'Lỗi khi lấy dữ liệu tổng hợp')
     } finally {
       setLoadingSummary(false)
       setSummaryTaskId(null)
+    }
+  }
+
+  const handleSummaryDateChange = (date: string) => {
+    setSummaryDate(date)
+    if (summaryTaskId) {
+      fetchSummary(summaryTaskId, date)
     }
   }
 
@@ -1410,11 +1425,30 @@ export default function TasksPage() {
                       setShowSummaryModal(false)
                       setSummaryData([])
                       setSummaryTaskName('')
+                      setSummaryDate('')
                     }}
                     className="text-gray-500 hover:text-gray-700 text-2xl"
                   >
                     ×
                   </button>
+                </div>
+                {/* Date picker */}
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-semibold text-gray-700">Xem theo ngày:</label>
+                  <input
+                    type="date"
+                    value={summaryDate}
+                    onChange={(e) => handleSummaryDateChange(e.target.value)}
+                    className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {summaryDate && (
+                    <button
+                      onClick={() => handleSummaryDateChange('')}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Xem tất cả
+                    </button>
+                  )}
                 </div>
               </div>
 

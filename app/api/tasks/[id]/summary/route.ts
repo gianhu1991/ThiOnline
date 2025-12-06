@@ -14,6 +14,11 @@ export async function GET(
       return NextResponse.json({ error: 'Chỉ admin mới được xem kết quả' }, { status: 403 })
     }
 
+    // Lấy query parameter date (format: YYYY-MM-DD)
+    const { searchParams } = new URL(request.url)
+    const dateParam = searchParams.get('date')
+
+    // Lấy tất cả customers của task (không lọc theo date ở đây)
     const task = await prisma.task.findUnique({
       where: { id: params.id },
       include: {
@@ -59,6 +64,16 @@ export async function GET(
       return usernameToFullName.get(username) || username
     }
 
+    // Xử lý date nếu có
+    let dateFilter: { gte: Date; lt: Date } | null = null
+    if (dateParam) {
+      const selectedDate = new Date(dateParam)
+      selectedDate.setHours(0, 0, 0, 0)
+      const nextDate = new Date(selectedDate)
+      nextDate.setDate(nextDate.getDate() + 1)
+      dateFilter = { gte: selectedDate, lt: nextDate }
+    }
+
     // Tạo dữ liệu tổng hợp theo user
     const summaryMap = new Map<string, { total: number; completed: number; pending: number }>()
     
@@ -68,12 +83,28 @@ export async function GET(
         summaryMap.set(username, { total: 0, completed: 0, pending: 0 })
       }
       const stats = summaryMap.get(username)!
-      stats.total++
+      stats.total++ // Tổng số KH phân giao
+      
       if (customer.isCompleted) {
-        stats.completed++
-      } else {
-        stats.pending++
+        // Nếu có date filter, chỉ tính KH hoàn thành trong ngày đó
+        if (dateFilter && customer.completedAt) {
+          const completedDate = new Date(customer.completedAt)
+          if (completedDate >= dateFilter.gte && completedDate < dateFilter.lt) {
+            stats.completed++
+          }
+        } else if (!dateFilter) {
+          // Không có date filter, tính tất cả KH đã hoàn thành
+          stats.completed++
+        }
       }
+    })
+    
+    // Tính pending = total - tổng số đã hoàn thành (không phụ thuộc ngày)
+    summaryMap.forEach((stats, username) => {
+      const totalCompleted = task.customers.filter(c => 
+        (c.assignedUsername || 'Chưa gán') === username && c.isCompleted
+      ).length
+      stats.pending = stats.total - totalCompleted
     })
 
     // Chuyển Map thành mảng và sắp xếp theo tên user
