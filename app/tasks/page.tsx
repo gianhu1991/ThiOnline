@@ -110,6 +110,13 @@ export default function TasksPage() {
   const [completedCount, setCompletedCount] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
 
+  // State cho xem kết quả tổng hợp
+  const [showSummaryModal, setShowSummaryModal] = useState(false)
+  const [summaryData, setSummaryData] = useState<any[]>([])
+  const [summaryTaskName, setSummaryTaskName] = useState('')
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [summaryTaskId, setSummaryTaskId] = useState<string | null>(null)
+
   // State cho sửa khách hàng
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
@@ -441,6 +448,31 @@ export default function TasksPage() {
     } catch (error: any) {
       console.error('Error exporting file:', error)
       alert(error.message || 'Lỗi khi xuất file')
+    }
+  }
+
+  const fetchSummary = async (taskId: string) => {
+    try {
+      setLoadingSummary(true)
+      setSummaryTaskId(taskId)
+      const res = await fetch(`/api/tasks/${taskId}/summary`, {
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Lỗi khi lấy dữ liệu tổng hợp')
+      }
+
+      const data = await res.json()
+      setSummaryData(data.summary || [])
+      setSummaryTaskName(data.taskName || '')
+      setShowSummaryModal(true)
+    } catch (error: any) {
+      alert(error.message || 'Lỗi khi lấy dữ liệu tổng hợp')
+    } finally {
+      setLoadingSummary(false)
+      setSummaryTaskId(null)
     }
   }
 
@@ -788,6 +820,13 @@ export default function TasksPage() {
                 className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-sm"
               >
                 Phân giao lại
+              </button>
+              <button
+                onClick={() => fetchSummary(task.id)}
+                disabled={loadingSummary && summaryTaskId === task.id}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                Xem KQ
               </button>
               <button
                 onClick={() => handleExport(task.id)}
@@ -1346,6 +1385,78 @@ export default function TasksPage() {
               </>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* Modal xem kết quả tổng hợp */}
+      {showSummaryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[90] pt-16 sm:pt-20 p-4">
+          {loadingSummary ? (
+            <div className="text-center">
+              <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-gray-100">Đang tải...</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg w-full max-w-[98vw] lg:max-w-[95vw] xl:max-w-[90vw] max-h-[calc(100vh-8rem)] flex flex-col">
+              {/* Header */}
+              <div className="flex-shrink-0 p-4 md:p-6 pb-4 border-b">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl md:text-2xl font-bold">Kết quả thực hiện: {summaryTaskName}</h2>
+                  <button
+                    onClick={() => {
+                      setShowSummaryModal(false)
+                      setSummaryData([])
+                      setSummaryTaskName('')
+                    }}
+                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* Nội dung bảng */}
+              <div className="flex-1 overflow-y-auto p-6 pt-4">
+                {summaryData.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                        <tr>
+                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">STT</th>
+                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Tên NV</th>
+                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Số lượng KH phân giao</th>
+                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Đã thực hiện</th>
+                          <th className="border p-3 text-left bg-gray-100 sticky top-0 font-semibold">Chưa thực hiện</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryData.map((row, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="border p-3 text-center">{row.STT}</td>
+                            <td className="border p-3 font-medium">{row['Tên NV']}</td>
+                            <td className="border p-3 text-center">{row['Số lượng KH phân giao']}</td>
+                            <td className="border p-3 text-center">
+                              <span className="text-green-600 font-semibold">{row['Đã thực hiện']}</span>
+                            </td>
+                            <td className="border p-3 text-center">
+                              <span className="text-orange-600 font-semibold">{row['Chưa thực hiện']}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    Chưa có dữ liệu tổng hợp
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
