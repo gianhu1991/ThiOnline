@@ -13,11 +13,16 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[Upload] Bắt đầu upload file Excel cho task:', params.id)
+    
     const user = await getJWT(request)
     
     if (!user || user.role !== 'admin') {
+      console.log('[Upload] Lỗi: Không phải admin')
       return NextResponse.json({ error: 'Chỉ admin mới được upload file' }, { status: 403 })
     }
+
+    console.log('[Upload] User:', user.username)
 
     // Kiểm tra nhiệm vụ tồn tại
     const task = await prisma.task.findUnique({
@@ -25,31 +30,43 @@ export async function POST(
     })
 
     if (!task) {
+      console.log('[Upload] Lỗi: Không tìm thấy nhiệm vụ')
       return NextResponse.json({ error: 'Không tìm thấy nhiệm vụ' }, { status: 404 })
     }
+
+    console.log('[Upload] Task found:', task.name)
 
     const formData = await request.formData()
     const file = formData.get('file') as File
 
     if (!file) {
+      console.log('[Upload] Lỗi: Không có file')
       return NextResponse.json({ error: 'Không có file được tải lên' }, { status: 400 })
     }
 
+    console.log('[Upload] File name:', file.name, 'Size:', file.size)
+
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      console.log('[Upload] Lỗi: File không phải Excel')
       return NextResponse.json({ error: 'File phải là Excel (.xlsx hoặc .xls)' }, { status: 400 })
     }
 
+    console.log('[Upload] Đang đọc file Excel...')
     const buffer = Buffer.from(await file.arrayBuffer())
     const workbook = XLSX.read(buffer, { type: 'buffer' })
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
     const data = XLSX.utils.sheet_to_json(worksheet)
 
+    console.log('[Upload] Đã đọc file, số dòng:', data.length)
+
     if (data.length === 0) {
+      console.log('[Upload] Lỗi: File không có dữ liệu')
       return NextResponse.json({ error: 'File Excel không có dữ liệu' }, { status: 400 })
     }
 
     // Lấy danh sách khách hàng hiện có để kiểm tra trùng lặp và cập nhật
+    console.log('[Upload] Đang lấy danh sách KH hiện có...')
     const existingCustomers = await prisma.taskCustomer.findMany({
       where: { taskId: params.id },
       select: { 
@@ -63,6 +80,8 @@ export async function POST(
         assignedUsername: true
       }
     })
+    
+    console.log('[Upload] Số KH hiện có trong DB:', existingCustomers.length)
     
     // Tạo Map để tra cứu nhanh (account -> customer)
     const existingCustomersMap = new Map<string, typeof existingCustomers[0]>()
@@ -85,12 +104,15 @@ export async function POST(
     // Cấu trúc: STT, account, Tên KH, địa chỉ, số điện thoại, NV thực hiện
     
     // Bước 1: Loại bỏ trùng lặp trong file Excel (nếu có nhiều dòng cùng account, chỉ lấy dòng cuối cùng)
+    console.log('[Upload] Bước 1: Loại bỏ trùng lặp trong file Excel...')
     const excelDataMap = new Map<string, any>() // account -> row data
+    let invalidRows = 0
     for (const row of data as any[]) {
       const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
       const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
       
       if (!account || !customerName) {
+        invalidRows++
         continue // Bỏ qua dòng không hợp lệ
       }
       
@@ -99,16 +121,23 @@ export async function POST(
       excelDataMap.set(accountNormalized, row)
     }
     
-    console.log(`[Upload] Đã loại bỏ trùng lặp: ${data.length} dòng -> ${excelDataMap.size} KH duy nhất`)
+    console.log(`[Upload] Đã loại bỏ trùng lặp: ${data.length} dòng -> ${excelDataMap.size} KH duy nhất (${invalidRows} dòng không hợp lệ)`)
     
     // Bước 2: Xử lý từng KH (đã loại bỏ trùng lặp)
+    console.log('[Upload] Bước 2: Xử lý từng KH...')
     const customers = [] // KH mới cần tạo (chỉ những KH chưa tồn tại trong DB)
     const customersToUpdate = [] // KH cần cập nhật (đã tồn tại trong DB)
-    let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
     
     // Convert Map entries to array để tránh lỗi TypeScript
     const excelDataArray = Array.from(excelDataMap.entries())
-    for (const [accountNormalized, row] of excelDataArray) {
+    console.log(`[Upload] Số KH cần xử lý: ${excelDataArray.length}`)
+    
+    for (let idx = 0; idx < excelDataArray.length; idx++) {
+      const [accountNormalized, row] = excelDataArray[idx]
+      
+      if (idx < 5 || idx % 100 === 0) {
+        console.log(`[Upload] Đang xử lý KH ${idx + 1}/${excelDataArray.length}: ${accountNormalized}`)
+      }
       const stt = row['STT'] || row['stt'] || row['Số thứ tự'] || null
       const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
       const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
@@ -216,9 +245,15 @@ export async function POST(
     }
 
     // Cập nhật các KH đã tồn tại
+    console.log(`[Upload] Bước 3: Cập nhật ${customersToUpdate.length} KH đã tồn tại...`)
     let updatedCount = 0
-    for (const customerUpdate of customersToUpdate) {
+    for (let idx = 0; idx < customersToUpdate.length; idx++) {
+      const customerUpdate = customersToUpdate[idx]
       try {
+        if (idx < 5 || idx % 50 === 0) {
+          console.log(`[Upload] Đang cập nhật KH ${idx + 1}/${customersToUpdate.length}: ${customerUpdate.id}`)
+        }
+        
         const { id, ...rest } = customerUpdate
         // Loại bỏ undefined values để tránh lỗi Prisma
         const updateData: any = {}
@@ -236,17 +271,19 @@ export async function POST(
         })
         updatedCount++
       } catch (error: any) {
-        console.error(`Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
-        console.error('Update data:', customerUpdate)
+        console.error(`[Upload] Lỗi khi cập nhật KH ${customerUpdate.id}:`, error.message)
+        console.error('[Upload] Update data:', JSON.stringify(customerUpdate, null, 2))
+        console.error('[Upload] Error stack:', error.stack)
       }
     }
-    console.log(`Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
+    console.log(`[Upload] Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
 
     // Lưu vào database theo batch để tránh timeout (500 records mỗi batch)
+    console.log(`[Upload] Bước 4: Lưu ${customers.length} KH mới...`)
     const BATCH_SIZE = 500
     let addedCount = 0
     
-    console.log(`Bắt đầu lưu ${customers.length} khách hàng mới theo batch (${BATCH_SIZE} records/batch)...`)
+    console.log(`[Upload] Bắt đầu lưu ${customers.length} khách hàng mới theo batch (${BATCH_SIZE} records/batch)...`)
     
     // Thống kê phân giao từ Excel
     const assignmentStats = new Map<string, number>() // username -> count
@@ -290,6 +327,10 @@ export async function POST(
     const autoAssignedCount = 0
 
     // Tạo thông báo chi tiết
+    console.log('[Upload] Tổng kết:')
+    console.log(`[Upload] - KH mới: ${addedCount}/${customers.length}`)
+    console.log(`[Upload] - KH cập nhật: ${updatedCount}/${customersToUpdate.length}`)
+    
     let message = ''
     if (addedCount > 0) {
       message += `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
@@ -310,20 +351,20 @@ export async function POST(
     if (unassignedCount > 0) {
       message += `. ${unassignedCount} khách hàng chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
     }
-    if (skippedCount > 0) {
-      message += `. Bỏ qua ${skippedCount} khách hàng không có thay đổi`
-    }
+    
+    console.log('[Upload] Hoàn thành upload thành công')
     
     return NextResponse.json({ 
       success: true, 
       message,
       added: addedCount,
       updated: updatedCount,
-      skipped: skippedCount,
-      total: addedCount + updatedCount + skippedCount
+      total: addedCount + updatedCount
     })
   } catch (error: any) {
-    console.error('Error uploading file:', error)
+    console.error('[Upload] Lỗi khi upload file:', error.message)
+    console.error('[Upload] Error stack:', error.stack)
+    console.error('[Upload] Error details:', JSON.stringify(error, null, 2))
     return NextResponse.json({ error: 'Lỗi khi upload file: ' + error.message }, { status: 500 })
   }
 }
