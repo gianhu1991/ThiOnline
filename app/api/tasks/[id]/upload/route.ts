@@ -162,63 +162,42 @@ export async function POST(
         }
       }
 
-      // Nếu KH đã tồn tại trong database, cập nhật thông tin
+      // Nếu KH đã tồn tại trong database, LUÔN cập nhật thông tin từ Excel
       if (existingCustomer) {
-        // Kiểm tra xem có thay đổi không (đặc biệt là NV thực hiện)
+        // Luôn cập nhật thông tin từ Excel, không kiểm tra thay đổi
         const sttValue = stt ? parseInt(stt.toString()) : existingCustomer.stt
         const addressValue = address ? address.toString() : null
         const phoneValue = phone ? phone.toString() : null
         
-        // So sánh với xử lý null/undefined
-        const assignedUsernameChanged = (actualAssignedUsername || null) !== (existingCustomer.assignedUsername || null)
-        const assignedUserIdChanged = (assignedUserId || null) !== (existingCustomer.assignedUserId || null)
-        const sttChanged = stt && sttValue !== existingCustomer.stt
-        const addressChanged = address && (addressValue || null) !== (existingCustomer.address || null)
-        const phoneChanged = phone && (phoneValue || null) !== (existingCustomer.phone || null)
-        const customerNameChanged = customerName.toString() !== existingCustomer.customerName
-        
-        const hasChanges = 
-          assignedUsernameChanged ||
-          assignedUserIdChanged ||
-          sttChanged ||
-          addressChanged ||
-          phoneChanged ||
-          customerNameChanged
-        
-        if (hasChanges) {
-          // Xác định assignedAt:
-          // - Nếu có assignedUserId mới (gán mới hoặc thay đổi), set assignedAt = new Date()
-          // - Nếu bỏ gán (từ có user -> null), set assignedAt = null
-          // - Nếu không thay đổi assignedUserId, không cập nhật assignedAt (giữ nguyên)
-          const updateData: any = {
-            stt: sttValue,
-            customerName: customerName.toString(),
-            address: addressValue,
-            phone: phoneValue,
-            assignedUserId,
-            assignedUsername: actualAssignedUsername,
-          }
-          
-          // Chỉ cập nhật assignedAt nếu có thay đổi về assignedUserId
-          if (assignedUserId !== existingCustomer.assignedUserId) {
-            if (assignedUserId) {
-              // Gán mới hoặc thay đổi user -> cập nhật thời gian
-              updateData.assignedAt = new Date()
-            } else {
-              // Bỏ gán -> reset thời gian
-              updateData.assignedAt = null
-            }
-          }
-          
-          customersToUpdate.push({
-            id: existingCustomer.id,
-            ...updateData
-          })
-          console.log(`[Upload] - Cập nhật KH ${account}: NV thực hiện từ "${existingCustomer.assignedUsername}" -> "${actualAssignedUsername}"`)
-        } else {
-          skippedCount++ // KH đã tồn tại và không có thay đổi, bỏ qua
-          console.log(`[Upload] - Bỏ qua KH ${account}: đã tồn tại và không có thay đổi`)
+        // Xác định assignedAt:
+        // - Nếu có assignedUserId mới (gán mới hoặc thay đổi), set assignedAt = new Date()
+        // - Nếu bỏ gán (từ có user -> null), set assignedAt = null
+        // - Nếu không thay đổi assignedUserId, không cập nhật assignedAt (giữ nguyên)
+        const updateData: any = {
+          stt: sttValue,
+          customerName: customerName.toString(),
+          address: addressValue,
+          phone: phoneValue,
+          assignedUserId,
+          assignedUsername: actualAssignedUsername,
         }
+        
+        // Chỉ cập nhật assignedAt nếu có thay đổi về assignedUserId
+        if (assignedUserId !== existingCustomer.assignedUserId) {
+          if (assignedUserId) {
+            // Gán mới hoặc thay đổi user -> cập nhật thời gian
+            updateData.assignedAt = new Date()
+          } else {
+            // Bỏ gán -> reset thời gian
+            updateData.assignedAt = null
+          }
+        }
+        
+        customersToUpdate.push({
+          id: existingCustomer.id,
+          ...updateData
+        })
+        console.log(`[Upload] - Cập nhật KH ${account}: NV thực hiện từ "${existingCustomer.assignedUsername || 'null'}" -> "${actualAssignedUsername || 'null'}"`)
       } else {
         // KH mới, thêm vào danh sách tạo mới
         customers.push({
