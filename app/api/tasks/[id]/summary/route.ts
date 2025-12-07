@@ -18,40 +18,11 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const dateParam = searchParams.get('date')
 
-    // Xây dựng điều kiện where cho customers nếu có date filter
-    const customerWhere: any = {
-      taskId: params.id
-    }
-
-    // Nếu có date filter, lọc customers hoàn thành trong ngày đó
-    if (dateParam) {
-      // Parse date từ YYYY-MM-DD
-      const [year, month, day] = dateParam.split('-').map(Number)
-      
-      // Tạo date range: từ 00:00:00 đến 23:59:59 của ngày được chọn
-      // Thử cả UTC và local timezone để đảm bảo bắt được tất cả records
-      // UTC (cho Vercel/server)
-      const startDateUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-      const endDateUTC = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
-      
-      // Local timezone (cho development)
-      const startDateLocal = new Date(year, month - 1, day, 0, 0, 0, 0)
-      const endDateLocal = new Date(year, month - 1, day, 23, 59, 59, 999)
-      
-      // Sử dụng UTC (Vercel thường chạy ở UTC)
-      customerWhere.isCompleted = true
-      customerWhere.completedAt = {
-        gte: startDateUTC,
-        lte: endDateUTC
-      }
-    }
-
-    // Lấy customers của task (có filter theo date nếu có)
+    // Lấy TẤT CẢ customers của task (không filter ở database level)
     const task = await prisma.task.findUnique({
       where: { id: params.id },
       include: {
         customers: {
-          where: customerWhere,
           orderBy: { stt: 'asc' }
         }
       }
@@ -122,13 +93,58 @@ export async function GET(
       }
     })
     
-    // Tính số KH hoàn thành trong ngày được chọn (từ task.customers đã được filter)
-    task.customers.forEach(customer => {
-      const username = customer.assignedUsername || 'Chưa gán'
-      if (summaryMap.has(username) && customer.isCompleted) {
-        summaryMap.get(username)!.completed++
-      }
-    })
+    // Tính số KH hoàn thành trong ngày được chọn
+    if (dateParam) {
+      console.log('[Summary] Filtering by date:', dateParam)
+      let matchCount = 0
+      let checkedCount = 0
+      
+      task.customers.forEach(customer => {
+        const username = customer.assignedUsername || 'Chưa gán'
+        if (summaryMap.has(username) && customer.isCompleted && customer.completedAt) {
+          checkedCount++
+          const completedDate = new Date(customer.completedAt)
+          
+          // Convert completedAt về YYYY-MM-DD string để so sánh
+          // Sử dụng local timezone của server (thường là UTC trên Vercel)
+          // Nhưng để đảm bảo, ta sẽ thử cả UTC và local
+          const completedYearUTC = completedDate.getUTCFullYear()
+          const completedMonthUTC = completedDate.getUTCMonth() + 1
+          const completedDayUTC = completedDate.getUTCDate()
+          const completedDateStrUTC = `${completedYearUTC}-${String(completedMonthUTC).padStart(2, '0')}-${String(completedDayUTC).padStart(2, '0')}`
+          
+          const completedYearLocal = completedDate.getFullYear()
+          const completedMonthLocal = completedDate.getMonth() + 1
+          const completedDayLocal = completedDate.getDate()
+          const completedDateStrLocal = `${completedYearLocal}-${String(completedMonthLocal).padStart(2, '0')}-${String(completedDayLocal).padStart(2, '0')}`
+          
+          // Debug: log first few
+          if (checkedCount <= 5) {
+            console.log(`[Summary] Customer completedAt: ${customer.completedAt}`)
+            console.log(`  -> UTC: ${completedDateStrUTC}, Local: ${completedDateStrLocal}, Selected: ${dateParam}`)
+          }
+          
+          // So sánh với date được chọn (một trong hai khớp là được)
+          if (completedDateStrUTC === dateParam || completedDateStrLocal === dateParam) {
+            summaryMap.get(username)!.completed++
+            matchCount++
+            if (matchCount <= 3) {
+              console.log(`[Summary] Match found: ${username}, date: ${completedDateStrUTC}/${completedDateStrLocal}`)
+            }
+          }
+        }
+      })
+      
+      console.log(`[Summary] Total checked: ${checkedCount}, Matches: ${matchCount}`)
+    } else {
+      // Không có date filter: tính tất cả KH đã hoàn thành
+      task.customers.forEach(customer => {
+        const username = customer.assignedUsername || 'Chưa gán'
+        if (summaryMap.has(username) && customer.isCompleted) {
+          summaryMap.get(username)!.completed++
+        }
+      })
+    }
     
     // Nếu không có date filter, tính completed từ allCustomers
     if (!dateParam) {
