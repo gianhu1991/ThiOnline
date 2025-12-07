@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import * as XLSX from 'xlsx'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
 
 // Xuất file Excel kết quả thực hiện nhiệm vụ (Admin)
 export async function GET(
@@ -107,6 +109,9 @@ export async function GET(
       'Số điện thoại': customer.phone || '',
       'NV thực hiện': getDisplayName(customer.assignedUsername),
       'Trạng thái': customer.isCompleted ? 'Đã thực hiện' : 'Chưa thực hiện',
+      'Thời gian TH': customer.completedAt 
+        ? format(new Date(customer.completedAt), 'dd/MM/yyyy HH:mm', { locale: vi })
+        : '',
     }))
 
     // Tạo workbook
@@ -133,6 +138,7 @@ export async function GET(
       { wch: 15 }, // Số điện thoại
       { wch: 30 }, // NV thực hiện
       { wch: 15 }, // Trạng thái
+      { wch: 20 }, // Thời gian TH
     ]
     XLSX.utils.book_append_sheet(workbook, detailWorksheet, 'Chi tiết')
 
