@@ -103,7 +103,8 @@ export async function POST(
     
     // Bước 2: Xử lý từng KH (đã loại bỏ trùng lặp)
     const customers = [] // KH mới cần tạo (chỉ những KH chưa tồn tại trong DB)
-    let skippedCount = 0 // Đếm số KH bị bỏ qua (đã tồn tại trong DB)
+    const customersToUpdate = [] // KH cần cập nhật (đã tồn tại trong DB)
+    let skippedCount = 0 // Đếm số KH bị bỏ qua (không có thay đổi)
     
     // Convert Map entries to array để tránh lỗi TypeScript
     const excelDataArray = Array.from(excelDataMap.entries())
@@ -161,10 +162,50 @@ export async function POST(
         }
       }
 
-      // Nếu KH đã tồn tại trong database, BỎ QUA (không cập nhật, không tạo mới)
+      // Nếu KH đã tồn tại trong database, cập nhật thông tin
       if (existingCustomer) {
-        skippedCount++ // KH đã tồn tại, bỏ qua
-        console.log(`[Upload] - Bỏ qua KH ${account}: đã tồn tại trong database (trùng account)`)
+        // Kiểm tra xem có thay đổi không (đặc biệt là NV thực hiện)
+        const hasChanges = 
+          (actualAssignedUsername !== existingCustomer.assignedUsername) ||
+          (assignedUserId !== existingCustomer.assignedUserId) ||
+          (stt && parseInt(stt.toString()) !== existingCustomer.stt) ||
+          (address && address.toString() !== (existingCustomer.address || '')) ||
+          (phone && phone.toString() !== (existingCustomer.phone || ''))
+        
+        if (hasChanges) {
+          // Xác định assignedAt:
+          // - Nếu có assignedUserId mới (gán mới hoặc thay đổi), set assignedAt = new Date()
+          // - Nếu bỏ gán (từ có user -> null), set assignedAt = null
+          // - Nếu không thay đổi assignedUserId, không cập nhật assignedAt (giữ nguyên)
+          const updateData: any = {
+            stt: stt ? parseInt(stt.toString()) : existingCustomer.stt,
+            customerName: customerName.toString(),
+            address: address ? address.toString() : existingCustomer.address,
+            phone: phone ? phone.toString() : existingCustomer.phone,
+            assignedUserId,
+            assignedUsername: actualAssignedUsername,
+          }
+          
+          // Chỉ cập nhật assignedAt nếu có thay đổi về assignedUserId
+          if (assignedUserId !== existingCustomer.assignedUserId) {
+            if (assignedUserId) {
+              // Gán mới hoặc thay đổi user -> cập nhật thời gian
+              updateData.assignedAt = new Date()
+            } else {
+              // Bỏ gán -> reset thời gian
+              updateData.assignedAt = null
+            }
+          }
+          
+          customersToUpdate.push({
+            id: existingCustomer.id,
+            ...updateData
+          })
+          console.log(`[Upload] - Cập nhật KH ${account}: NV thực hiện từ "${existingCustomer.assignedUsername}" -> "${actualAssignedUsername}"`)
+        } else {
+          skippedCount++ // KH đã tồn tại và không có thay đổi, bỏ qua
+          console.log(`[Upload] - Bỏ qua KH ${account}: đã tồn tại và không có thay đổi`)
+        }
       } else {
         // KH mới, thêm vào danh sách tạo mới
         customers.push({
@@ -182,15 +223,37 @@ export async function POST(
       }
     }
 
+    // Cập nhật các KH đã tồn tại
+    let updatedCount = 0
+    for (const customerUpdate of customersToUpdate) {
+      try {
+        const { id, ...updateData } = customerUpdate
+        await prisma.taskCustomer.update({
+          where: { id },
+          data: updateData
+        })
+        updatedCount++
+      } catch (error: any) {
+        console.error(`Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
+      }
+    }
+    console.log(`Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
+
     // Lưu vào database theo batch để tránh timeout (500 records mỗi batch)
     const BATCH_SIZE = 500
     let addedCount = 0
     
-    console.log(`Bắt đầu lưu ${customers.length} khách hàng theo batch (${BATCH_SIZE} records/batch)...`)
+    console.log(`Bắt đầu lưu ${customers.length} khách hàng mới theo batch (${BATCH_SIZE} records/batch)...`)
     
     // Thống kê phân giao từ Excel
     const assignmentStats = new Map<string, number>() // username -> count
     customers.forEach(c => {
+      if (c.assignedUsername) {
+        const count = assignmentStats.get(c.assignedUsername) || 0
+        assignmentStats.set(c.assignedUsername, count + 1)
+      }
+    })
+    customersToUpdate.forEach(c => {
       if (c.assignedUsername) {
         const count = assignmentStats.get(c.assignedUsername) || 0
         assignmentStats.set(c.assignedUsername, count + 1)
@@ -215,7 +278,7 @@ export async function POST(
       }
     }
     
-    console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng`)
+    console.log(`Hoàn thành: Đã thêm ${addedCount}/${customers.length} khách hàng mới, cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
 
     // KHÔNG tự động phân giao khi upload
     // Phân giao trong Excel là nguồn gốc và duy nhất
@@ -224,25 +287,37 @@ export async function POST(
     const autoAssignedCount = 0
 
     // Tạo thông báo chi tiết
-    let message = `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
-    const assignedCount = customers.filter(c => c.assignedUserId).length
-    const unassignedCount = customers.filter(c => !c.assignedUserId).length
+    let message = ''
+    if (addedCount > 0) {
+      message += `Đã thêm ${addedCount} khách hàng mới vào nhiệm vụ`
+    }
+    if (updatedCount > 0) {
+      if (message) message += '. '
+      message += `Đã cập nhật ${updatedCount} khách hàng (thay đổi NV thực hiện hoặc thông tin khác)`
+    }
+    if (addedCount === 0 && updatedCount === 0) {
+      message = 'Không có thay đổi nào'
+    }
+    
+    const assignedCount = customers.filter(c => c.assignedUserId).length + customersToUpdate.filter(c => c.assignedUserId).length
+    const unassignedCount = customers.filter(c => !c.assignedUserId).length + customersToUpdate.filter(c => !c.assignedUserId).length
     if (assignedCount > 0) {
-      message += `. Đã phân giao ${assignedCount} khách hàng mới theo file Excel`
+      message += `. Đã phân giao ${assignedCount} khách hàng theo file Excel`
     }
     if (unassignedCount > 0) {
-      message += `. ${unassignedCount} khách hàng mới chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
+      message += `. ${unassignedCount} khách hàng chưa được phân giao (cần dùng chức năng "Phân giao lại" để phân giao)`
     }
     if (skippedCount > 0) {
-      message += `. Bỏ qua ${skippedCount} khách hàng đã tồn tại trong database (trùng account)`
+      message += `. Bỏ qua ${skippedCount} khách hàng không có thay đổi`
     }
     
     return NextResponse.json({ 
       success: true, 
       message,
       added: addedCount,
+      updated: updatedCount,
       skipped: skippedCount,
-      total: addedCount + skippedCount
+      total: addedCount + updatedCount + skippedCount
     })
   } catch (error: any) {
     console.error('Error uploading file:', error)
