@@ -487,8 +487,9 @@ export default function ExamsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button
                       onClick={() => handleToggleStatus(exam.id, exam.isActive)}
                       className={`${exam.isActive ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2`}
                       title={exam.isActive ? 'Tắt bài thi' : 'Mở bài thi'}
@@ -585,13 +586,12 @@ export default function ExamsPage() {
                       </svg>
                       Xuất KQ
                     </button>
-                    <button
-                      onClick={() => handleDelete(exam.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                    >
-                      Xóa
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleDelete(exam.id)}
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                  >
+                    Xóa
+                  </button>
                 </div>
               </div>
             )
