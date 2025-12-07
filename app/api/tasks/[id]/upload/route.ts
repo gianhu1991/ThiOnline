@@ -135,9 +135,11 @@ export async function POST(
     for (let idx = 0; idx < excelDataArray.length; idx++) {
       const [accountNormalized, row] = excelDataArray[idx]
       
-      if (idx < 5 || idx % 100 === 0) {
-        console.log(`[Upload] Đang xử lý KH ${idx + 1}/${excelDataArray.length}: ${accountNormalized}`)
+      // Chỉ log mỗi 500 records để giảm overhead
+      if (idx === 0 || (idx + 1) % 500 === 0 || idx === excelDataArray.length - 1) {
+        console.log(`[Upload] Đang xử lý KH ${idx + 1}/${excelDataArray.length}...`)
       }
+      
       const stt = row['STT'] || row['stt'] || row['Số thứ tự'] || null
       const account = row['account'] || row['Account'] || row['ACCOUNT'] || ''
       const customerName = row['Tên KH'] || row['Tên khách hàng'] || row['Tên KH'] || row['customerName'] || ''
@@ -160,8 +162,6 @@ export async function POST(
         const usernameFromExcel = assignedUsername.toString().trim()
         const usernameNormalized = usernameFromExcel.toLowerCase()
         
-        console.log(`[Upload] Tìm user cho KH ${account}: Excel="${usernameFromExcel}" (normalized: "${usernameNormalized}")`)
-        
         // Tìm user bằng cách so sánh case-insensitive
         assignedUserId = userMap.get(usernameNormalized) || null
         
@@ -172,22 +172,13 @@ export async function POST(
           const actualUser = allUsers.find(u => u.id === assignedUserId)
           if (actualUser) {
             actualAssignedUsername = actualUser.username
-            console.log(`[Upload] KH ${account}: Tìm thấy user "${actualUser.username}" (ID: ${assignedUserId})`)
-            // Log để debug nếu username từ Excel khác với username trong database
-            if (actualUser.username.toLowerCase() !== usernameNormalized) {
-              console.warn(`[Upload] Username mismatch: Excel="${usernameFromExcel}" -> DB="${actualUser.username}"`)
-            }
           } else {
             // Fallback: dùng giá trị từ Excel nếu không tìm thấy
             actualAssignedUsername = usernameFromExcel
-            console.warn(`[Upload] User ID found but user not in allUsers: userId=${assignedUserId}, excelUsername="${usernameFromExcel}"`)
           }
         } else {
           // Nếu không tìm thấy user, vẫn lưu giá trị từ Excel để có thể tìm kiếm sau
           actualAssignedUsername = usernameFromExcel
-          console.warn(`[Upload] User not found in database: excelUsername="${usernameFromExcel}"`)
-          // Log tất cả users để debug
-          console.log(`[Upload] Available users: ${Array.from(userMap.keys()).join(', ')}`)
         }
       }
 
@@ -226,7 +217,6 @@ export async function POST(
           id: existingCustomer.id,
           ...updateData
         })
-        console.log(`[Upload] - Cập nhật KH ${account}: NV thực hiện từ "${existingCustomer.assignedUsername || 'null'}" -> "${actualAssignedUsername || 'null'}"`)
       } else {
         // KH mới, thêm vào danh sách tạo mới
         customers.push({
@@ -244,36 +234,55 @@ export async function POST(
       }
     }
 
-    // Cập nhật các KH đã tồn tại
+    // Cập nhật các KH đã tồn tại - dùng batch updates để tăng tốc
     console.log(`[Upload] Bước 3: Cập nhật ${customersToUpdate.length} KH đã tồn tại...`)
     let updatedCount = 0
-    for (let idx = 0; idx < customersToUpdate.length; idx++) {
-      const customerUpdate = customersToUpdate[idx]
-      try {
-        if (idx < 5 || idx % 50 === 0) {
-          console.log(`[Upload] Đang cập nhật KH ${idx + 1}/${customersToUpdate.length}: ${customerUpdate.id}`)
-        }
+    
+    // Dùng batch updates với concurrency limit để tránh quá tải database
+    const UPDATE_BATCH_SIZE = 50 // Cập nhật 50 records mỗi batch
+    const CONCURRENT_BATCHES = 5 // Chạy 5 batches song song
+    
+    for (let i = 0; i < customersToUpdate.length; i += UPDATE_BATCH_SIZE * CONCURRENT_BATCHES) {
+      const batchGroup = customersToUpdate.slice(i, i + UPDATE_BATCH_SIZE * CONCURRENT_BATCHES)
+      
+      // Chia thành các batch nhỏ hơn và chạy song song
+      const batches: Promise<void>[] = []
+      for (let j = 0; j < batchGroup.length; j += UPDATE_BATCH_SIZE) {
+        const batch = batchGroup.slice(j, j + UPDATE_BATCH_SIZE)
         
-        const { id, ...rest } = customerUpdate
-        // Loại bỏ undefined values để tránh lỗi Prisma
-        const updateData: any = {}
-        if (rest.stt !== undefined) updateData.stt = rest.stt
-        if (rest.customerName !== undefined) updateData.customerName = rest.customerName
-        if (rest.address !== undefined) updateData.address = rest.address
-        if (rest.phone !== undefined) updateData.phone = rest.phone
-        if (rest.assignedUserId !== undefined) updateData.assignedUserId = rest.assignedUserId
-        if (rest.assignedUsername !== undefined) updateData.assignedUsername = rest.assignedUsername
-        if (rest.assignedAt !== undefined) updateData.assignedAt = rest.assignedAt
+        const batchPromise = Promise.all(
+          batch.map(async (customerUpdate) => {
+            try {
+              const { id, ...rest } = customerUpdate
+              // Loại bỏ undefined values để tránh lỗi Prisma
+              const updateData: any = {}
+              if (rest.stt !== undefined) updateData.stt = rest.stt
+              if (rest.customerName !== undefined) updateData.customerName = rest.customerName
+              if (rest.address !== undefined) updateData.address = rest.address
+              if (rest.phone !== undefined) updateData.phone = rest.phone
+              if (rest.assignedUserId !== undefined) updateData.assignedUserId = rest.assignedUserId
+              if (rest.assignedUsername !== undefined) updateData.assignedUsername = rest.assignedUsername
+              if (rest.assignedAt !== undefined) updateData.assignedAt = rest.assignedAt
+              
+              await prisma.taskCustomer.update({
+                where: { id },
+                data: updateData
+              })
+              updatedCount++
+            } catch (error: any) {
+              console.error(`[Upload] Lỗi khi cập nhật KH ${customerUpdate.id}:`, error.message)
+            }
+          })
+        ).then(() => {}) // Convert to Promise<void>
         
-        await prisma.taskCustomer.update({
-          where: { id },
-          data: updateData
-        })
-        updatedCount++
-      } catch (error: any) {
-        console.error(`[Upload] Lỗi khi cập nhật KH ${customerUpdate.id}:`, error.message)
-        console.error('[Upload] Update data:', JSON.stringify(customerUpdate, null, 2))
-        console.error('[Upload] Error stack:', error.stack)
+        batches.push(batchPromise)
+      }
+      
+      // Chờ tất cả batches trong group hoàn thành
+      await Promise.all(batches)
+      
+      if ((i + UPDATE_BATCH_SIZE * CONCURRENT_BATCHES) % 500 === 0 || i + UPDATE_BATCH_SIZE * CONCURRENT_BATCHES >= customersToUpdate.length) {
+        console.log(`[Upload] Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng...`)
       }
     }
     console.log(`[Upload] Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)

@@ -82,6 +82,7 @@ export default function TasksPage() {
   const [uploadTaskId, setUploadTaskId] = useState<string | null>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string>('')
 
   // State cho gán nhiệm vụ
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -301,10 +302,12 @@ export default function TasksPage() {
     if (!uploadTaskId || !uploadFile) return
 
     setUploading(true)
+    setUploadProgress('Đang đọc file Excel...')
     try {
       const formData = new FormData()
       formData.append('file', uploadFile)
 
+      setUploadProgress('Đang xử lý dữ liệu...')
       const res = await fetch(`/api/tasks/${uploadTaskId}/upload`, {
         method: 'POST',
         credentials: 'include',
@@ -316,21 +319,36 @@ export default function TasksPage() {
         throw new Error(errorData.error || 'Lỗi khi upload file')
       }
 
+      setUploadProgress('Đang lưu vào database...')
       const data = await res.json()
+      
       // Hiển thị thông báo chi tiết
       let message = data.message || 'Upload thành công'
-      if (data.added !== undefined && data.skipped !== undefined) {
-        message = `Đã thêm ${data.added} khách hàng mới`
-        if (data.skipped > 0) {
-          message += `\nBỏ qua ${data.skipped} khách hàng đã tồn tại (trùng account)`
+      if (data.added !== undefined && data.updated !== undefined) {
+        message = ''
+        if (data.added > 0) {
+          message += `Đã thêm ${data.added} khách hàng mới`
+        }
+        if (data.updated > 0) {
+          if (message) message += '. '
+          message += `Đã cập nhật ${data.updated} khách hàng`
+        }
+        if (!message) {
+          message = 'Không có thay đổi nào'
         }
       }
-      alert(message)
-      setShowUploadModal(false)
-      setUploadFile(null)
-      setUploadTaskId(null)
-      fetchTasks()
+      
+      setUploadProgress('Hoàn thành!')
+      setTimeout(() => {
+        alert(message)
+        setShowUploadModal(false)
+        setUploadFile(null)
+        setUploadTaskId(null)
+        setUploadProgress('')
+        fetchTasks()
+      }, 500)
     } catch (error: any) {
+      setUploadProgress('')
       alert(error.message || 'Lỗi khi upload file')
     } finally {
       setUploading(false)
@@ -1042,22 +1060,44 @@ export default function TasksPage() {
                   required
                 />
               </div>
+              {uploading && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800">{uploadProgress || 'Đang xử lý...'}</p>
+                      <p className="text-xs text-blue-600 mt-1">Vui lòng đợi, quá trình này có thể mất vài phút...</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={uploading || !uploadFile}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {uploading ? 'Đang upload...' : 'Upload'}
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    'Upload'
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setShowUploadModal(false)
-                    setUploadFile(null)
-                    setUploadTaskId(null)
+                    if (!uploading) {
+                      setShowUploadModal(false)
+                      setUploadFile(null)
+                      setUploadTaskId(null)
+                      setUploadProgress('')
+                    }
                   }}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  disabled={uploading}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Hủy
                 </button>
