@@ -165,12 +165,25 @@ export async function POST(
       // Nếu KH đã tồn tại trong database, cập nhật thông tin
       if (existingCustomer) {
         // Kiểm tra xem có thay đổi không (đặc biệt là NV thực hiện)
+        const sttValue = stt ? parseInt(stt.toString()) : existingCustomer.stt
+        const addressValue = address ? address.toString() : null
+        const phoneValue = phone ? phone.toString() : null
+        
+        // So sánh với xử lý null/undefined
+        const assignedUsernameChanged = (actualAssignedUsername || null) !== (existingCustomer.assignedUsername || null)
+        const assignedUserIdChanged = (assignedUserId || null) !== (existingCustomer.assignedUserId || null)
+        const sttChanged = stt && sttValue !== existingCustomer.stt
+        const addressChanged = address && (addressValue || null) !== (existingCustomer.address || null)
+        const phoneChanged = phone && (phoneValue || null) !== (existingCustomer.phone || null)
+        const customerNameChanged = customerName.toString() !== existingCustomer.customerName
+        
         const hasChanges = 
-          (actualAssignedUsername !== existingCustomer.assignedUsername) ||
-          (assignedUserId !== existingCustomer.assignedUserId) ||
-          (stt && parseInt(stt.toString()) !== existingCustomer.stt) ||
-          (address && address.toString() !== (existingCustomer.address || '')) ||
-          (phone && phone.toString() !== (existingCustomer.phone || ''))
+          assignedUsernameChanged ||
+          assignedUserIdChanged ||
+          sttChanged ||
+          addressChanged ||
+          phoneChanged ||
+          customerNameChanged
         
         if (hasChanges) {
           // Xác định assignedAt:
@@ -178,10 +191,10 @@ export async function POST(
           // - Nếu bỏ gán (từ có user -> null), set assignedAt = null
           // - Nếu không thay đổi assignedUserId, không cập nhật assignedAt (giữ nguyên)
           const updateData: any = {
-            stt: stt ? parseInt(stt.toString()) : existingCustomer.stt,
+            stt: sttValue,
             customerName: customerName.toString(),
-            address: address ? address.toString() : existingCustomer.address,
-            phone: phone ? phone.toString() : existingCustomer.phone,
+            address: addressValue,
+            phone: phoneValue,
             assignedUserId,
             assignedUsername: actualAssignedUsername,
           }
@@ -227,7 +240,17 @@ export async function POST(
     let updatedCount = 0
     for (const customerUpdate of customersToUpdate) {
       try {
-        const { id, ...updateData } = customerUpdate
+        const { id, ...rest } = customerUpdate
+        // Loại bỏ undefined values để tránh lỗi Prisma
+        const updateData: any = {}
+        if (rest.stt !== undefined) updateData.stt = rest.stt
+        if (rest.customerName !== undefined) updateData.customerName = rest.customerName
+        if (rest.address !== undefined) updateData.address = rest.address
+        if (rest.phone !== undefined) updateData.phone = rest.phone
+        if (rest.assignedUserId !== undefined) updateData.assignedUserId = rest.assignedUserId
+        if (rest.assignedUsername !== undefined) updateData.assignedUsername = rest.assignedUsername
+        if (rest.assignedAt !== undefined) updateData.assignedAt = rest.assignedAt
+        
         await prisma.taskCustomer.update({
           where: { id },
           data: updateData
@@ -235,6 +258,7 @@ export async function POST(
         updatedCount++
       } catch (error: any) {
         console.error(`Lỗi khi cập nhật KH ${customerUpdate.id}:`, error)
+        console.error('Update data:', customerUpdate)
       }
     }
     console.log(`Đã cập nhật ${updatedCount}/${customersToUpdate.length} khách hàng`)
