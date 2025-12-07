@@ -149,7 +149,7 @@ export async function POST(
         continue // Bỏ qua dòng không hợp lệ
       }
 
-      const accountNormalized = account.toString().toLowerCase().trim()
+      // accountNormalized đã được lấy từ excelDataArray ở dòng 136, không cần định nghĩa lại
       const existingCustomer = existingCustomersMap.get(accountNormalized)
 
       // Tìm user từ cache (không cần query database)
