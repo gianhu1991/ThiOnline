@@ -107,8 +107,9 @@ export async function GET(
       // User chọn ngày theo timezone của họ (UTC+7 cho VN)
       // Ngày 5/12 00:00:00 VN = 4/12 17:00:00 UTC
       // Ngày 5/12 23:59:59 VN = 5/12 16:59:59 UTC
-      const startDate = new Date(Date.UTC(year, month - 1, day - 1, 17, 0, 0, 0))
-      const endDate = new Date(Date.UTC(year, month - 1, day, 16, 59, 59, 999))
+      // Nhưng để đảm bảo, ta mở rộng range một chút
+      const startDate = new Date(Date.UTC(year, month - 1, day - 1, 16, 0, 0, 0)) // 16:00 UTC ngày trước
+      const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999)) // 23:59 UTC ngày được chọn
       
       // Query customers hoàn thành trong date range này
       const completedInDate = await prisma.taskCustomer.groupBy({

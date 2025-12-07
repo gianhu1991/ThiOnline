@@ -460,6 +460,8 @@ export default function TasksPage() {
         ? `/api/tasks/${taskId}/summary?date=${encodeURIComponent(date)}`
         : `/api/tasks/${taskId}/summary`
       
+      console.log('Fetching summary:', { taskId, date, url })
+      
       const res = await fetch(url, {
         credentials: 'include',
       })
@@ -470,6 +472,7 @@ export default function TasksPage() {
       }
 
       const data = await res.json()
+      console.log('Summary response:', { date, data })
       setSummaryData(data.summary || [])
       setSummaryTaskName(data.taskName || '')
       if (!date) {
