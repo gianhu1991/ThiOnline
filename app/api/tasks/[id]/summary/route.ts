@@ -95,67 +95,44 @@ export async function GET(
     
     // Tính số KH hoàn thành trong ngày được chọn
     if (dateParam) {
-      console.log('[Summary] Date parameter received:', dateParam)
+      // Reset completed count về 0 cho tất cả users trước khi tính lại
+      summaryMap.forEach((stats) => {
+        stats.completed = 0
+      })
       
-      // Lấy tất cả customers đã hoàn thành
-      const allCompletedCustomers = await prisma.taskCustomer.findMany({
+      // Parse date từ YYYY-MM-DD
+      const [year, month, day] = dateParam.split('-').map(Number)
+      
+      // Tạo date range: từ 00:00:00 đến 23:59:59 của ngày được chọn
+      // User chọn ngày theo timezone của họ (UTC+7 cho VN)
+      // Ngày 5/12 00:00:00 VN = 4/12 17:00:00 UTC
+      // Ngày 5/12 23:59:59 VN = 5/12 16:59:59 UTC
+      const startDate = new Date(Date.UTC(year, month - 1, day - 1, 17, 0, 0, 0))
+      const endDate = new Date(Date.UTC(year, month - 1, day, 16, 59, 59, 999))
+      
+      // Query customers hoàn thành trong date range này
+      const completedInDate = await prisma.taskCustomer.groupBy({
+        by: ['assignedUsername'],
         where: {
           taskId: params.id,
           isCompleted: true,
-          completedAt: { not: null }
-        },
-        select: {
-          assignedUsername: true,
-          completedAt: true
-        }
-      })
-      
-      console.log('[Summary] Total completed customers:', allCompletedCustomers.length)
-      
-      let matchCount = 0
-      
-      // Filter theo ngày: format completedAt về YYYY-MM-DD và so sánh
-      allCompletedCustomers.forEach((customer, index) => {
-        if (!customer.completedAt) return
-        
-        // Format completedAt về YYYY-MM-DD
-        // Thử cả UTC và UTC+7
-        const completedDate = new Date(customer.completedAt)
-        
-        // Format theo UTC
-        const utcYear = completedDate.getUTCFullYear()
-        const utcMonth = completedDate.getUTCMonth() + 1
-        const utcDay = completedDate.getUTCDate()
-        const utcDateStr = `${utcYear}-${String(utcMonth).padStart(2, '0')}-${String(utcDay).padStart(2, '0')}`
-        
-        // Format theo UTC+7 (VN timezone)
-        const vnTime = new Date(completedDate.getTime() + 7 * 60 * 60 * 1000)
-        const vnYear = vnTime.getUTCFullYear()
-        const vnMonth = vnTime.getUTCMonth() + 1
-        const vnDay = vnTime.getUTCDate()
-        const vnDateStr = `${vnYear}-${String(vnMonth).padStart(2, '0')}-${String(vnDay).padStart(2, '0')}`
-        
-        // Log first 5 để debug
-        if (index < 5) {
-          console.log(`[Summary] Customer ${index + 1}: completedAt=${customer.completedAt}, UTC=${utcDateStr}, VN=${vnDateStr}, Selected=${dateParam}`)
-        }
-        
-        // So sánh với date được chọn (thử cả UTC và VN)
-        const isMatch = utcDateStr === dateParam || vnDateStr === dateParam
-        
-        if (isMatch) {
-          const username = customer.assignedUsername || 'Chưa gán'
-          if (summaryMap.has(username)) {
-            summaryMap.get(username)!.completed++
-            matchCount++
-            if (matchCount <= 3) {
-              console.log(`[Summary] Match ${matchCount}: ${username}, date: ${utcDateStr}/${vnDateStr}`)
-            }
+          completedAt: {
+            gte: startDate,
+            lte: endDate
           }
+        },
+        _count: {
+          id: true
         }
       })
       
-      console.log(`[Summary] Total matches found: ${matchCount}`)
+      // Cập nhật completed count cho từng user
+      completedInDate.forEach(item => {
+        const username = item.assignedUsername || 'Chưa gán'
+        if (summaryMap.has(username)) {
+          summaryMap.get(username)!.completed = item._count.id
+        }
+      })
     } else {
       // Không có date filter: tính tất cả KH đã hoàn thành
       task.customers.forEach(customer => {
@@ -206,9 +183,17 @@ export async function GET(
         ...item
       }))
 
+    // Thêm debug info vào response để xem trong browser
+    const debugInfo = dateParam ? {
+      dateParam,
+      totalCompleted: allCustomers.filter(c => c.isCompleted).length,
+      filteredCompleted: summaryData.reduce((sum, item) => sum + item['Đã thực hiện'], 0)
+    } : null
+
     return NextResponse.json({
       taskName: task.name,
-      summary: summaryData
+      summary: summaryData,
+      ...(debugInfo && { debug: debugInfo })
     })
   } catch (error: any) {
     console.error('Error fetching summary:', error)
