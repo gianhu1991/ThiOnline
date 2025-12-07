@@ -119,13 +119,13 @@ export async function GET(
     
     // Định nghĩa style chung
     const defaultFont = { name: 'Times New Roman', size: 12 }
-    const headerStyle = {
+    const headerStyle: Partial<ExcelJS.Style> = {
       font: { ...defaultFont, bold: true },
-      alignment: { horizontal: 'center', vertical: 'middle' }
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const }
     }
-    const cellStyle = {
+    const cellStyle: Partial<ExcelJS.Style> = {
       font: defaultFont,
-      alignment: { vertical: 'middle' }
+      alignment: { vertical: 'middle' as const }
     }
     
     // Sheet 1: Tổng hợp
