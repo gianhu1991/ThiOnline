@@ -455,7 +455,7 @@ export default function TasksPage() {
   const fetchSummary = async (taskId: string, date?: string) => {
     try {
       setLoadingSummary(true)
-      setSummaryTaskId(taskId)
+      setSummaryTaskId(taskId) // Lưu taskId để dùng khi chọn ngày
       const url = date 
         ? `/api/tasks/${taskId}/summary?date=${encodeURIComponent(date)}`
         : `/api/tasks/${taskId}/summary`
@@ -483,7 +483,7 @@ export default function TasksPage() {
       alert(error.message || 'Lỗi khi lấy dữ liệu tổng hợp')
     } finally {
       setLoadingSummary(false)
-      setSummaryTaskId(null)
+      // KHÔNG reset summaryTaskId về null - cần giữ lại để dùng khi chọn ngày
     }
   }
 
@@ -1429,6 +1429,7 @@ export default function TasksPage() {
                       setSummaryData([])
                       setSummaryTaskName('')
                       setSummaryDate('')
+                      setSummaryTaskId(null) // Reset khi đóng modal
                     }}
                     className="text-gray-500 hover:text-gray-700 text-2xl"
                   >
