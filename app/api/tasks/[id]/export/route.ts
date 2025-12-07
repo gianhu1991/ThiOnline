@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -114,36 +114,77 @@ export async function GET(
         : '',
     }))
 
-    // Tạo workbook
-    const workbook = XLSX.utils.book_new()
+    // Tạo workbook với ExcelJS
+    const workbook = new ExcelJS.Workbook()
+    
+    // Định nghĩa style chung
+    const defaultFont = { name: 'Times New Roman', size: 12 }
+    const headerStyle = {
+      font: { ...defaultFont, bold: true },
+      alignment: { horizontal: 'center', vertical: 'middle' }
+    }
+    const cellStyle = {
+      font: defaultFont,
+      alignment: { vertical: 'middle' }
+    }
     
     // Sheet 1: Tổng hợp
-    const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData)
-    summaryWorksheet['!cols'] = [
-      { wch: 5 },  // STT
-      { wch: 30 }, // Tên NV
-      { wch: 18 }, // Số lượng KH phân giao
-      { wch: 15 }, // Đã thực hiện
-      { wch: 15 }, // Chưa thực hiện
+    const summarySheet = workbook.addWorksheet('Tổng hợp')
+    
+    // Đặt độ rộng cột
+    summarySheet.columns = [
+      { width: 5 },   // STT
+      { width: 30 },  // Tên NV
+      { width: 18 },  // Số lượng KH phân giao
+      { width: 15 },  // Đã thực hiện
+      { width: 15 },  // Chưa thực hiện
     ]
-    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Tổng hợp')
+    
+    // Thêm header row
+    const summaryHeaderRow = summarySheet.addRow(Object.keys(summaryData[0] || {}))
+    summaryHeaderRow.eachCell((cell) => {
+      cell.style = headerStyle
+    })
+    
+    // Thêm dữ liệu
+    summaryData.forEach(row => {
+      const dataRow = summarySheet.addRow(Object.values(row))
+      dataRow.eachCell((cell) => {
+        cell.style = cellStyle
+      })
+    })
     
     // Sheet 2: Chi tiết
-    const detailWorksheet = XLSX.utils.json_to_sheet(detailData)
-    detailWorksheet['!cols'] = [
-      { wch: 5 },  // STT
-      { wch: 20 }, // Account
-      { wch: 30 }, // Tên KH
-      { wch: 40 }, // Địa chỉ
-      { wch: 15 }, // Số điện thoại
-      { wch: 30 }, // NV thực hiện
-      { wch: 15 }, // Trạng thái
-      { wch: 20 }, // Thời gian TH
+    const detailSheet = workbook.addWorksheet('Chi tiết')
+    
+    // Đặt độ rộng cột
+    detailSheet.columns = [
+      { width: 5 },   // STT
+      { width: 20 },  // Account
+      { width: 30 },  // Tên KH
+      { width: 40 },  // Địa chỉ
+      { width: 15 },  // Số điện thoại
+      { width: 30 },  // NV thực hiện
+      { width: 15 },  // Trạng thái
+      { width: 20 },  // Thời gian TH
     ]
-    XLSX.utils.book_append_sheet(workbook, detailWorksheet, 'Chi tiết')
+    
+    // Thêm header row
+    const detailHeaderRow = detailSheet.addRow(Object.keys(detailData[0] || {}))
+    detailHeaderRow.eachCell((cell) => {
+      cell.style = headerStyle
+    })
+    
+    // Thêm dữ liệu
+    detailData.forEach(row => {
+      const dataRow = detailSheet.addRow(Object.values(row))
+      dataRow.eachCell((cell) => {
+        cell.style = cellStyle
+      })
+    })
 
     // Tạo buffer
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+    const buffer = await workbook.xlsx.writeBuffer()
 
     // Tạo tên file an toàn (loại bỏ ký tự đặc biệt)
     const safeTaskName = task.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-').substring(0, 50)
