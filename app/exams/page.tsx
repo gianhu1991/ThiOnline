@@ -491,7 +491,7 @@ export default function ExamsPage() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button
                       onClick={() => handleToggleStatus(exam.id, exam.isActive)}
-                      className={`${exam.isActive ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2`}
+                      className={`${exam.isActive ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2 text-sm`}
                       title={exam.isActive ? 'Tắt bài thi' : 'Mở bài thi'}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -505,7 +505,7 @@ export default function ExamsPage() {
                     </button>
                     <button
                       onClick={() => handleTogglePublic(exam.id, exam.isPublic)}
-                      className={`${exam.isPublic ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2`}
+                      className={`${exam.isPublic ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2 text-sm`}
                       title={exam.isPublic ? 'Đặt riêng tư (chỉ user được gán)' : 'Đặt công khai (chia sẻ link)'}
                     >
                       {exam.isPublic ? (
@@ -522,7 +522,7 @@ export default function ExamsPage() {
                     </button>
                     <button
                       onClick={() => handleOpenAssignModal(exam.id)}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-center flex items-center justify-center gap-2"
+                      className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-center flex items-center justify-center gap-2 text-sm"
                       title="Gán bài thi cho người dùng"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,7 +532,7 @@ export default function ExamsPage() {
                     </button>
                     <Link
                       href={`/exams/${exam.id}/edit`}
-                      className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-center flex items-center justify-center gap-2"
+                      className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-center flex items-center justify-center gap-2 text-sm"
                       title="Chỉnh sửa bài thi"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -556,7 +556,7 @@ export default function ExamsPage() {
                           alert('Đã copy link chia sẻ bài thi!')
                         })
                       }}
-                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-center flex items-center justify-center gap-2"
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-center flex items-center justify-center gap-2 text-sm"
                       title="Copy link chia sẻ bài thi"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -566,19 +566,19 @@ export default function ExamsPage() {
                     </button>
                     <Link
                       href={`/exams/${exam.id}/take`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-center"
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-center text-sm"
                     >
                       Làm bài
                     </Link>
                     <Link
                       href={`/exams/${exam.id}/results`}
-                      className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-center"
+                      className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-center text-sm"
                     >
                       Xem kết quả
                     </Link>
                     <button
                       onClick={() => handleExportResults(exam.id)}
-                      className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 text-center flex items-center justify-center gap-2"
+                      className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 text-center flex items-center justify-center gap-2 text-sm"
                       title="Xuất kết quả ra file Excel"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,7 +588,7 @@ export default function ExamsPage() {
                     </button>
                   <button
                     onClick={() => handleDelete(exam.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
                   >
                     Xóa
                   </button>
