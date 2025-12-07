@@ -95,47 +95,32 @@ export async function GET(
     
     // Tính số KH hoàn thành trong ngày được chọn
     if (dateParam) {
-      console.log('[Summary] Filtering by date:', dateParam)
-      let matchCount = 0
-      let checkedCount = 0
+      // Parse date từ YYYY-MM-DD (ngày user chọn, theo timezone local của user - UTC+7 cho VN)
+      const [year, month, day] = dateParam.split('-').map(Number)
       
       task.customers.forEach(customer => {
         const username = customer.assignedUsername || 'Chưa gán'
         if (summaryMap.has(username) && customer.isCompleted && customer.completedAt) {
-          checkedCount++
-          const completedDate = new Date(customer.completedAt)
+          // completedAt được lưu ở UTC trong database
+          // User chọn ngày theo timezone của họ (UTC+7 cho VN)
+          // Ta cần convert completedAt từ UTC về UTC+7 để lấy ngày
+          const completedDateUTC = new Date(customer.completedAt)
           
-          // Convert completedAt về YYYY-MM-DD string để so sánh
-          // Sử dụng local timezone của server (thường là UTC trên Vercel)
-          // Nhưng để đảm bảo, ta sẽ thử cả UTC và local
-          const completedYearUTC = completedDate.getUTCFullYear()
-          const completedMonthUTC = completedDate.getUTCMonth() + 1
-          const completedDayUTC = completedDate.getUTCDate()
-          const completedDateStrUTC = `${completedYearUTC}-${String(completedMonthUTC).padStart(2, '0')}-${String(completedDayUTC).padStart(2, '0')}`
+          // Convert UTC sang UTC+7 (giờ Việt Nam)
+          // Thêm 7 giờ (7 * 60 * 60 * 1000 milliseconds)
+          const completedDateVN = new Date(completedDateUTC.getTime() + 7 * 60 * 60 * 1000)
           
-          const completedYearLocal = completedDate.getFullYear()
-          const completedMonthLocal = completedDate.getMonth() + 1
-          const completedDayLocal = completedDate.getDate()
-          const completedDateStrLocal = `${completedYearLocal}-${String(completedMonthLocal).padStart(2, '0')}-${String(completedDayLocal).padStart(2, '0')}`
+          // Lấy date components từ giờ VN
+          const completedYear = completedDateVN.getUTCFullYear()
+          const completedMonth = completedDateVN.getUTCMonth() + 1
+          const completedDay = completedDateVN.getUTCDate()
           
-          // Debug: log first few
-          if (checkedCount <= 5) {
-            console.log(`[Summary] Customer completedAt: ${customer.completedAt}`)
-            console.log(`  -> UTC: ${completedDateStrUTC}, Local: ${completedDateStrLocal}, Selected: ${dateParam}`)
-          }
-          
-          // So sánh với date được chọn (một trong hai khớp là được)
-          if (completedDateStrUTC === dateParam || completedDateStrLocal === dateParam) {
+          // So sánh với date được chọn
+          if (completedYear === year && completedMonth === month && completedDay === day) {
             summaryMap.get(username)!.completed++
-            matchCount++
-            if (matchCount <= 3) {
-              console.log(`[Summary] Match found: ${username}, date: ${completedDateStrUTC}/${completedDateStrLocal}`)
-            }
           }
         }
       })
-      
-      console.log(`[Summary] Total checked: ${checkedCount}, Matches: ${matchCount}`)
     } else {
       // Không có date filter: tính tất cả KH đã hoàn thành
       task.customers.forEach(customer => {
