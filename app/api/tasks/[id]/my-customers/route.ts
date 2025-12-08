@@ -59,28 +59,12 @@ export async function GET(
     const skip = (page - 1) * limit
 
     // Xây dựng điều kiện where
+    // Lấy TẤT CẢ KH được gán cho user này (không phân biệt ngày phân giao)
     // CHỈ lấy KH chưa hoàn thành (isCompleted = false)
-    // CHỈ lấy KH được phân giao hôm nay HOẶC chưa được phân giao theo ngày (assignedAt = null)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
     const whereCondition: any = {
       taskId: params.id,
       assignedUserId: userFromDb.id,
-      isCompleted: false, // CHỈ lấy KH chưa hoàn thành
-      OR: [
-        {
-          assignedAt: {
-            gte: today,
-            lt: tomorrow
-          }
-        },
-        {
-          assignedAt: null // KH chưa được phân giao theo ngày - luôn hiển thị
-        }
-      ]
+      isCompleted: false // CHỈ lấy KH chưa hoàn thành
     }
 
     // Thêm điều kiện tìm kiếm nếu có
