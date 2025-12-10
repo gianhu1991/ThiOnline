@@ -350,7 +350,7 @@ export default function MyTasksPage() {
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">STT</th>
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Account</th>
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Tên KH</th>
-                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 min-w-[200px] sm:min-w-[250px]">Địa chỉ</th>
+                            <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 min-w-[300px] sm:min-w-[400px]">Địa chỉ</th>
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Số điện thoại</th>
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Trạng thái</th>
                             <th className="border p-1.5 sm:p-2 text-left text-xs font-semibold bg-gray-100 whitespace-nowrap">Thao tác</th>
@@ -409,7 +409,7 @@ export default function MyTasksPage() {
                                 <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">{customer.stt}</td>
                                 <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-all">{customer.account}</td>
                                 <td className="border p-1.5 sm:p-2 text-xs sm:text-sm font-medium">{customer.customerName}</td>
-                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-words min-w-[200px] sm:min-w-[250px] align-top">{customer.address || '-'}</td>
+                                <td className="border p-1.5 sm:p-2 text-xs sm:text-sm break-words min-w-[300px] sm:min-w-[400px] align-top">{customer.address || '-'}</td>
                                 <td className="border p-1.5 sm:p-2 text-xs sm:text-sm whitespace-nowrap">{customer.phone || '-'}</td>
                                 <td className="border p-1.5 sm:p-2 text-xs sm:text-sm">
                                   <span className="text-orange-600 font-semibold text-xs">Chưa hoàn thành</span>
