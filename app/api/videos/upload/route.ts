@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { getJWT } from '@/lib/jwt'
 
+// Vercel có giới hạn 4.5MB cho request body
+// Giải pháp: Sử dụng streaming upload hoặc chunked upload
+export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 phút cho upload lớn
+
+// Tắt body parsing để xử lý streaming
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getJWT(request)
@@ -10,6 +18,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chỉ admin mới được upload video' }, { status: 403 })
     }
 
+    // Kiểm tra Content-Type
+    const contentType = request.headers.get('content-type') || ''
+    if (!contentType.includes('multipart/form-data')) {
+      return NextResponse.json({ error: 'Request phải là multipart/form-data' }, { status: 400 })
+    }
+
+    // Parse FormData - Next.js sẽ tự động parse nhưng có giới hạn 4.5MB
+    // Nếu file > 4.5MB, sẽ bị lỗi 413 trước khi đến đây
     const formData = await request.formData()
     const file = formData.get('file') as File
 
@@ -28,7 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File quá lớn. Kích thước tối đa là 100MB' }, { status: 400 })
     }
 
-    // Kiểm tra token trước khi upload (hỗ trợ cả BLOB_READ_WRITE_TOKEN và luutru_READ_WRITE_TOKEN)
+    console.log(`[Video Upload] Bắt đầu upload: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+
+    // Kiểm tra token trước khi upload
     const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.luutru_READ_WRITE_TOKEN
     if (!token) {
       console.error('Blob token is missing. Checked: BLOB_READ_WRITE_TOKEN, luutru_READ_WRITE_TOKEN')
@@ -37,14 +55,17 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Upload file lên Vercel Blob
+    // Upload file lên Vercel Blob sử dụng streaming
     try {
-      const blob = await put(file.name, file, {
+      // Sử dụng stream từ file để upload trực tiếp, tránh load toàn bộ vào memory
+      const blob = await put(file.name, file.stream(), {
         access: 'public',
         contentType: file.type,
-        token: token, // Truyền token trực tiếp
-        addRandomSuffix: true, // Tự động thêm suffix ngẫu nhiên để tránh trùng tên
+        token: token,
+        addRandomSuffix: true,
       })
+
+      console.log(`[Video Upload] Upload thành công: ${blob.url}`)
 
       return NextResponse.json({ 
         success: true, 
@@ -68,7 +89,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 })
       }
       
-      // Trả về lỗi chi tiết để debug
       return NextResponse.json({ 
         error: `Lỗi khi upload video lên Vercel Blob: ${errorMessage}. Vui lòng kiểm tra Vercel Logs để biết chi tiết.` 
       }, { status: 500 })
@@ -76,6 +96,17 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error uploading video:', error)
     const errorMessage = error.message || error.toString() || 'Unknown error'
+    
+    // Kiểm tra lỗi 413 (Payload Too Large)
+    if (errorMessage.includes('413') || 
+        errorMessage.includes('Payload Too Large') || 
+        errorMessage.includes('too large') ||
+        errorMessage.includes('Request Entity Too Large')) {
+      return NextResponse.json({ 
+        error: 'File quá lớn. Vercel có giới hạn 4.5MB cho request body qua API route. Vui lòng:\n1. Sử dụng video nhỏ hơn 4.5MB, hoặc\n2. Upload video lên một dịch vụ lưu trữ khác (YouTube, Vimeo, etc.) và nhập URL, hoặc\n3. Nén video trước khi upload.' 
+      }, { status: 413 })
+    }
+    
     return NextResponse.json({ 
       error: `Lỗi khi upload video: ${errorMessage}` 
     }, { status: 500 })

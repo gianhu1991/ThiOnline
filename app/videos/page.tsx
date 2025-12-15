@@ -216,27 +216,55 @@ export default function VideosPage() {
 
       // Nếu upload từ file
       if (uploadType === 'file' && videoFile) {
+        // Kiểm tra kích thước file (tối đa 100MB)
+        const maxSize = 100 * 1024 * 1024 // 100MB
+        if (videoFile.size > maxSize) {
+          setError(`File quá lớn (${(videoFile.size / 1024 / 1024).toFixed(2)}MB). Kích thước tối đa là 100MB.`)
+          setSubmitting(false)
+          return
+        }
+
         setUploadingFile(true)
         
-        // Upload video file
-        const uploadFormData = new FormData()
-        uploadFormData.append('file', videoFile)
+        try {
+          // Lấy token từ server để upload trực tiếp lên Vercel Blob
+          const tokenRes = await fetch('/api/videos/upload-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: videoFile.name,
+              contentType: videoFile.type,
+              size: videoFile.size,
+            }),
+          })
 
-        const uploadRes = await fetch('/api/videos/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        })
+          const tokenData = await tokenRes.json()
 
-        const uploadData = await uploadRes.json()
+          if (!tokenRes.ok || !tokenData.success) {
+            setError(tokenData.error || 'Lỗi khi lấy upload token')
+            setSubmitting(false)
+            setUploadingFile(false)
+            return
+          }
 
-        if (!uploadRes.ok || !uploadData.success) {
-          setError(uploadData.error || 'Lỗi khi upload video')
+          // Upload trực tiếp lên Vercel Blob từ client (tránh giới hạn 4.5MB)
+          const { put } = await import('@vercel/blob')
+          
+          const blob = await put(videoFile.name, videoFile, {
+            access: 'public',
+            contentType: videoFile.type,
+            token: tokenData.token,
+            addRandomSuffix: true,
+          })
+
+          videoUrl = blob.url
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError)
+          setError(`Lỗi khi upload video: ${uploadError.message || 'Unknown error'}`)
           setSubmitting(false)
           setUploadingFile(false)
           return
         }
-
-        videoUrl = uploadData.url
 
         // Upload thumbnail nếu có
         let thumbnailUrl = formData.thumbnail
