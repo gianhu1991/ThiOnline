@@ -216,10 +216,10 @@ export default function VideosPage() {
 
       // Nếu upload từ file
       if (uploadType === 'file' && videoFile) {
-        // Kiểm tra kích thước file (tối đa 100MB)
-        const maxSize = 100 * 1024 * 1024 // 100MB
-        if (videoFile.size > maxSize) {
-          setError(`File quá lớn (${(videoFile.size / 1024 / 1024).toFixed(2)}MB). Kích thước tối đa là 100MB.`)
+        // Kiểm tra kích thước file - Vercel có giới hạn 4.5MB cho request body
+        const vercelLimit = 4.5 * 1024 * 1024 // 4.5MB
+        if (videoFile.size > vercelLimit) {
+          setError(`File quá lớn (${(videoFile.size / 1024 / 1024).toFixed(2)}MB).\n\nVercel có giới hạn 4.5MB cho upload qua API route.\n\nVui lòng chọn một trong các cách sau:\n1. Nén video để giảm kích thước xuống dưới 4.5MB\n2. Upload video lên YouTube/Vimeo/Google Drive và nhập URL vào ô "URL video"\n3. Sử dụng video nhỏ hơn 4.5MB`)
           setSubmitting(false)
           return
         }
@@ -227,37 +227,37 @@ export default function VideosPage() {
         setUploadingFile(true)
         
         try {
-          // Lấy token từ server để upload trực tiếp lên Vercel Blob
-          const tokenRes = await fetch('/api/videos/upload-token', {
+          // Upload qua server
+          const uploadFormData = new FormData()
+          uploadFormData.append('file', videoFile)
+
+          const uploadRes = await fetch('/api/videos/upload', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename: videoFile.name,
-              contentType: videoFile.type,
-              size: videoFile.size,
-            }),
+            body: uploadFormData,
           })
 
-          const tokenData = await tokenRes.json()
+          const uploadData = await uploadRes.json()
 
-          if (!tokenRes.ok || !tokenData.success) {
-            setError(tokenData.error || 'Lỗi khi lấy upload token')
+          if (!uploadRes.ok) {
+            // Xử lý lỗi 413 đặc biệt
+            if (uploadRes.status === 413) {
+              setError('File quá lớn. Vercel có giới hạn 4.5MB cho upload qua API route.\n\nVui lòng:\n1. Nén video để giảm kích thước xuống dưới 4.5MB\n2. Upload video lên YouTube/Vimeo/Google Drive và nhập URL vào ô "URL video"\n3. Sử dụng video nhỏ hơn 4.5MB')
+            } else {
+              setError(uploadData.error || 'Lỗi khi upload video')
+            }
             setSubmitting(false)
             setUploadingFile(false)
             return
           }
 
-          // Upload trực tiếp lên Vercel Blob từ client (tránh giới hạn 4.5MB)
-          const { put } = await import('@vercel/blob')
-          
-          const blob = await put(videoFile.name, videoFile, {
-            access: 'public',
-            contentType: videoFile.type,
-            token: tokenData.token,
-            addRandomSuffix: true,
-          })
+          if (!uploadData.success) {
+            setError(uploadData.error || 'Lỗi khi upload video')
+            setSubmitting(false)
+            setUploadingFile(false)
+            return
+          }
 
-          videoUrl = blob.url
+          videoUrl = uploadData.url
         } catch (uploadError: any) {
           console.error('Upload error:', uploadError)
           setError(`Lỗi khi upload video: ${uploadError.message || 'Unknown error'}`)
