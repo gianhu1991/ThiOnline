@@ -55,6 +55,48 @@ export async function hasPermission(role: string, permissionCode: string): Promi
 }
 
 /**
+ * Kiểm tra quyền của user cụ thể (bao gồm cả quyền đặc biệt)
+ * Priority: UserPermission (deny) > UserPermission (grant) > RolePermission
+ */
+export async function hasUserPermission(userId: string, role: string, permissionCode: string): Promise<boolean> {
+  try {
+    // 1. Lấy permission ID từ code
+    const permission = await prisma.permission.findUnique({
+      where: { code: permissionCode }
+    })
+    
+    if (!permission) return false
+    
+    // 2. Kiểm tra UserPermission của user này
+    const userPerm = await prisma.userPermission.findUnique({
+      where: {
+        userId_permissionId: {
+          userId,
+          permissionId: permission.id
+        }
+      }
+    })
+    
+    // Nếu có deny, từ chối luôn
+    if (userPerm && userPerm.type === 'deny') {
+      return false
+    }
+    
+    // Nếu có grant, cho phép luôn
+    if (userPerm && userPerm.type === 'grant') {
+      return true
+    }
+    
+    // 3. Nếu không có UserPermission, check theo Role
+    return hasPermission(role, permissionCode)
+  } catch (error) {
+    console.error('[hasUserPermission] Error:', error)
+    // Fallback về RolePermission nếu có lỗi
+    return hasPermission(role, permissionCode)
+  }
+}
+
+/**
  * Kiểm tra xem một role có ít nhất một trong các quyền không
  */
 export async function hasAnyPermission(role: string, permissionCodes: string[]): Promise<boolean> {
@@ -99,19 +141,25 @@ export function invalidatePermissionsCache() {
 }
 
 /**
- * Kiểm tra quyền từ JWT user object
+ * Kiểm tra quyền từ JWT user object (với UserPermission)
  */
-export async function userHasPermission(user: { role: string } | null, permissionCode: string): Promise<boolean> {
+export async function userHasPermission(user: { userId: string, role: string } | null, permissionCode: string): Promise<boolean> {
   if (!user) return false
-  return hasPermission(user.role, permissionCode)
+  return hasUserPermission(user.userId, user.role, permissionCode)
 }
 
 /**
- * Kiểm tra user có ít nhất một trong các quyền
+ * Kiểm tra user có ít nhất một trong các quyền (với UserPermission)
  */
-export async function userHasAnyPermission(user: { role: string } | null, permissionCodes: string[]): Promise<boolean> {
+export async function userHasAnyPermission(user: { userId: string, role: string } | null, permissionCodes: string[]): Promise<boolean> {
   if (!user) return false
-  return hasAnyPermission(user.role, permissionCodes)
+  
+  for (const code of permissionCodes) {
+    const has = await hasUserPermission(user.userId, user.role, code)
+    if (has) return true
+  }
+  
+  return false
 }
 
 // Các permission codes - export để sử dụng trong code

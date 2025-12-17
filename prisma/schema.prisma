@@ -87,6 +87,7 @@ model User {
   examAssignments ExamAssignment[]
   userGroupMembers UserGroupMember[]
   taskAssignments TaskAssignment[]
+  userPermissions UserPermission[] // Quyền riêng của user (đặc cách)
 }
 
 model Category {
@@ -222,6 +223,7 @@ model Permission {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   rolePermissions RolePermission[]
+  userPermissions UserPermission[] // Quyền đặc biệt cho từng user
 }
 
 model RolePermission {
@@ -233,6 +235,22 @@ model RolePermission {
 
   @@unique([role, permissionId])
   @@index([role])
+  @@index([permissionId])
+}
+
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String     // ID của user
+  permissionId String
+  type         String     // "grant" (cấp thêm quyền) hoặc "deny" (gỡ bỏ quyền)
+  grantedBy    String?    // Username người cấp quyền
+  reason       String?    // Lý do cấp/gỡ quyền (ví dụ: "Đặc cách cho dự án X")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, permissionId])
+  @@index([userId])
   @@index([permissionId])
 }
 
