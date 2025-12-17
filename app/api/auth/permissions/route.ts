@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     })
     
     // Tạo map UserPermissions
-    const userPermMap = new Map<string, 'grant' | 'deny'>()
+    const userPermMap = new Map<string, string>()
     userPermissionOverrides.forEach(up => {
       userPermMap.set(up.permissionId, up.type)
     })
