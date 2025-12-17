@@ -124,17 +124,19 @@ export default function Navigation() {
                 </Link>
               )}
               
-              {/* Menu user thường - luôn hiện cho tất cả user */}
-              {(!permissions['view_exams'] || userRole === 'user') && (
+              {/* Menu user thường */}
+              {!permissions['view_exams'] && userRole !== 'admin' && userRole !== 'leader' && (
                 <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Bài thi của tôi
                 </Link>
               )}
               
-              {/* Nhiệm vụ của tôi - luôn hiện cho tất cả user (để xem nhiệm vụ được gán) */}
-              <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                Nhiệm vụ của tôi
-              </Link>
+              {/* Nhiệm vụ của tôi - chỉ hiện cho user thường (không phải admin/leader) */}
+              {userRole !== 'admin' && userRole !== 'leader' && (
+                <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Nhiệm vụ của tôi
+                </Link>
+              )}
               
               <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                 Video thực hành
