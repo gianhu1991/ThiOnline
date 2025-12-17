@@ -32,6 +32,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Admin luôn được phép truy cập tất cả
+  if (user.role === 'admin') {
+    return NextResponse.next()
+  }
+
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
     if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)) {
@@ -77,11 +82,6 @@ export async function middleware(request: NextRequest) {
     pathname.match(/^\/exams\/[^/]+\/result$/) || 
     pathname.match(/^\/exams\/[^/]+\/results$/)
   ) {
-    return NextResponse.next()
-  }
-
-  // Các trang khác mặc định cho phép admin
-  if (user.role === 'admin') {
     return NextResponse.next()
   }
 
