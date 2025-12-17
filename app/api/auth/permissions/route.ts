@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getJWT } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
-import { hasUserPermission } from '@/lib/permissions'
 
 /**
  * API để lấy tất cả permissions của user hiện tại
  * Frontend sẽ gọi API này để biết user có quyền gì
+ * OPTIMIZED: Load tất cả permissions trong 3 queries thay vì N queries
  */
 export async function GET(request: NextRequest) {
   try {
@@ -15,20 +15,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
 
-    // Lấy tất cả permissions
+    // Query 1: Lấy tất cả permissions
     const allPermissions = await prisma.permission.findMany({
       select: {
+        id: true,
         code: true,
         name: true,
         category: true
       }
     })
 
-    // Kiểm tra từng permission xem user có quyền không
+    // Query 2: Lấy tất cả RolePermissions cho role này
+    const rolePermissions = await prisma.rolePermission.findMany({
+      where: { role: user.role },
+      select: { permissionId: true }
+    })
+    const rolePermissionIds = new Set(rolePermissions.map(rp => rp.permissionId))
+
+    // Query 3: Lấy tất cả UserPermissions cho user này
+    const userPermissionOverrides = await prisma.userPermission.findMany({
+      where: { userId: user.userId },
+      select: { 
+        permissionId: true,
+        type: true 
+      }
+    })
+    
+    // Tạo map UserPermissions
+    const userPermMap = new Map<string, 'grant' | 'deny'>()
+    userPermissionOverrides.forEach(up => {
+      userPermMap.set(up.permissionId, up.type)
+    })
+
+    // Tính toán permissions: UserPermission (deny) > UserPermission (grant) > RolePermission
     const userPermissions: { [key: string]: boolean } = {}
     
     for (const perm of allPermissions) {
-      userPermissions[perm.code] = await hasUserPermission(user.userId, user.role, perm.code)
+      const userOverride = userPermMap.get(perm.id)
+      
+      if (userOverride === 'deny') {
+        userPermissions[perm.code] = false
+      } else if (userOverride === 'grant') {
+        userPermissions[perm.code] = true
+      } else {
+        userPermissions[perm.code] = rolePermissionIds.has(perm.id)
+      }
     }
 
     return NextResponse.json({ 
