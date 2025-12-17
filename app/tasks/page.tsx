@@ -166,10 +166,13 @@ export default function TasksPage() {
       })
       if (res.ok) {
         const data = await res.json()
+        console.log('🔑 Permissions loaded:', data.permissions)
         setPermissions(data.permissions || {})
+      } else {
+        console.error('❌ Failed to load permissions:', res.status)
       }
     } catch (error) {
-      console.error('Lỗi khi lấy permissions:', error)
+      console.error('❌ Lỗi khi lấy permissions:', error)
     }
   }
 
@@ -800,13 +803,17 @@ export default function TasksPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quản lý nhiệm vụ</h1>
-        {permissions['create_tasks'] && (
+        {permissions['create_tasks'] ? (
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             + Tạo nhiệm vụ mới
           </button>
+        ) : (
+          <div className="text-sm text-gray-500">
+            {Object.keys(permissions).length === 0 ? '⏳ Đang tải quyền...' : '🔒 Không có quyền tạo'}
+          </div>
         )}
       </div>
 
