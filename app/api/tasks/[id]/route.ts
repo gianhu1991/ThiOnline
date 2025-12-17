@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 // Lấy chi tiết nhiệm vụ
 export async function GET(
@@ -129,7 +130,7 @@ export async function GET(
   }
 }
 
-// Cập nhật nhiệm vụ (Admin)
+// Cập nhật nhiệm vụ (Kiểm tra permission)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -137,8 +138,13 @@ export async function PUT(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được cập nhật nhiệm vụ' }, { status: 403 })
+    if (!user) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_TASKS)
+    if (!canEdit) {
+      return NextResponse.json({ error: 'Bạn không có quyền cập nhật nhiệm vụ' }, { status: 403 })
     }
 
     const { name, description, isActive, startDate, endDate, dailyAssignmentCount } = await request.json()
@@ -162,7 +168,7 @@ export async function PUT(
   }
 }
 
-// Xóa nhiệm vụ (Admin)
+// Xóa nhiệm vụ (Kiểm tra permission)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -170,8 +176,13 @@ export async function DELETE(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xóa nhiệm vụ' }, { status: 403 })
+    if (!user) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS)
+    if (!canDelete) {
+      return NextResponse.json({ error: 'Bạn không có quyền xóa nhiệm vụ' }, { status: 403 })
     }
 
     await prisma.task.delete({

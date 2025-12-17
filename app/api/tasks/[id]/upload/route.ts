@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 import * as XLSX from 'xlsx'
 
 // Tăng timeout cho route này (5 phút) - chỉ hoạt động trên Vercel Pro
@@ -17,9 +18,15 @@ export async function POST(
     
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      console.log('[Upload] Lỗi: Không phải admin')
-      return NextResponse.json({ error: 'Chỉ admin mới được upload file' }, { status: 403 })
+    if (!user) {
+      console.log('[Upload] Lỗi: Chưa đăng nhập')
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    const canUpload = await hasUserPermission(user.userId, user.role, PERMISSIONS.UPLOAD_TASK_DATA)
+    if (!canUpload) {
+      console.log('[Upload] Lỗi: Không có quyền upload')
+      return NextResponse.json({ error: 'Bạn không có quyền upload dữ liệu' }, { status: 403 })
     }
 
     console.log('[Upload] User:', user.username)

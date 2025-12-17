@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 // Phân giao lại khách hàng (Admin)
 export async function POST(
@@ -10,8 +11,13 @@ export async function POST(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được phân giao lại' }, { status: 403 })
+    if (!user) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    const canAssign = await hasUserPermission(user.userId, user.role, PERMISSIONS.ASSIGN_TASKS)
+    if (!canAssign) {
+      return NextResponse.json({ error: 'Bạn không có quyền phân giao nhiệm vụ' }, { status: 403 })
     }
 
     const { customerId, newUserId, dailyCount } = await request.json()
