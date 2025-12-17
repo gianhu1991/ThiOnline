@@ -39,10 +39,15 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
-    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)) {
-      return NextResponse.next()
+    if (user.role) {
+      const hasPermission = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
+      console.log(`[Middleware] User ${user.username} (${user.role}) - VIEW_TASKS: ${hasPermission}`)
+      if (hasPermission) {
+        return NextResponse.next()
+      }
     }
     // Không có quyền → redirect về /my-tasks
+    console.log(`[Middleware] Redirecting ${user.username} to /my-tasks (no VIEW_TASKS permission)`)
     const url = request.nextUrl.clone()
     url.pathname = '/my-tasks'
     return NextResponse.redirect(url)
