@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getJWT } from './lib/jwt'
+import { hasUserPermission, PERMISSIONS } from './lib/permissions'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -31,76 +32,63 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Leader có quyền xem exams và tasks (chỉ xem và xuất excel, không chỉnh sửa)
-  if (user.role === 'leader') {
-    if (
-      pathname.startsWith('/videos') || 
-      pathname.startsWith('/documents') || 
-      pathname === '/' || 
-      pathname === '/settings' ||
-      pathname === '/exams' || // Cho phép xem danh sách bài thi và kết quả
-      pathname === '/tasks' || // Cho phép xem danh sách nhiệm vụ
-      pathname.match(/^\/exams\/[^/]+\/take$/) || 
-      pathname.match(/^\/exams\/[^/]+\/result$/) || 
-      pathname.match(/^\/exams\/[^/]+\/results$/)
-    ) {
+  // Kiểm tra quyền truy cập /tasks
+  if (pathname === '/tasks') {
+    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)) {
       return NextResponse.next()
     }
-    // Không cho phép tạo/sửa bài thi và câu hỏi
-    if (pathname.startsWith('/questions') ||
-        pathname.startsWith('/exams/create') ||
-        pathname.startsWith('/exams/') && pathname.includes('/edit')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/exams'
-      return NextResponse.redirect(url)
+    // Không có quyền → redirect về /my-tasks
+    const url = request.nextUrl.clone()
+    url.pathname = '/my-tasks'
+    return NextResponse.redirect(url)
+  }
+
+  // Kiểm tra quyền truy cập /exams (quản lý bài thi)
+  if (pathname === '/exams') {
+    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS)) {
+      return NextResponse.next()
     }
-    // Tất cả các trang khác redirect về trang chủ
+    // Không có quyền → redirect về /my-exams
+    const url = request.nextUrl.clone()
+    url.pathname = '/my-exams'
+    return NextResponse.redirect(url)
+  }
+
+  // Kiểm tra quyền truy cập /questions (ngân hàng câu hỏi)
+  if (pathname.startsWith('/questions')) {
+    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS)) {
+      return NextResponse.next()
+    }
+    // Không có quyền → redirect về trang chủ
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
-  // Nếu là user thường (không phải admin hoặc leader), chỉ cho phép truy cập videos, documents, trang chủ, settings và my-exams
-  if (user.role !== 'admin') {
-    // Cho phép truy cập /videos, /documents, trang chủ (/), settings, my-exams và my-tasks
-    if (
-      pathname.startsWith('/videos') || 
-      pathname.startsWith('/documents') || 
-      pathname === '/' || 
-      pathname === '/settings' ||
-      pathname === '/my-exams' ||
-      pathname === '/my-tasks' ||
-      pathname.match(/^\/exams\/[^/]+\/take$/) || // Cho phép làm bài thi
-      pathname.match(/^\/exams\/[^/]+\/result$/) || // Cho phép xem kết quả
-      pathname.match(/^\/exams\/[^/]+\/results$/) // Cho phép xem danh sách kết quả
-    ) {
-      return NextResponse.next()
-    }
-    // Tất cả các trang khác redirect về /videos (trừ /exams - chỉ admin mới được)
-    if (pathname.startsWith('/exams')) {
-      // Nếu user thường cố truy cập /exams (quản lý), redirect về /my-exams
-      const url = request.nextUrl.clone()
-      url.pathname = '/my-exams'
-      return NextResponse.redirect(url)
-    }
-    // Tất cả các trang khác redirect về /videos
-    const url = request.nextUrl.clone()
-    url.pathname = '/videos'
-    return NextResponse.redirect(url)
+  // Cho phép tất cả user truy cập các trang cơ bản
+  if (
+    pathname.startsWith('/videos') || 
+    pathname.startsWith('/documents') || 
+    pathname === '/' || 
+    pathname === '/settings' ||
+    pathname === '/my-exams' ||
+    pathname === '/my-tasks' ||
+    pathname.match(/^\/exams\/[^/]+\/take$/) || 
+    pathname.match(/^\/exams\/[^/]+\/result$/) || 
+    pathname.match(/^\/exams\/[^/]+\/results$/)
+  ) {
+    return NextResponse.next()
   }
 
-  // Kiểm tra quyền admin cho các trang quản lý (trừ /settings - cho phép cả user thường)
-  if (pathname.startsWith('/questions') ||
-      pathname.startsWith('/exams/create') ||
-      pathname.startsWith('/exams/') && pathname.includes('/edit')) {
-    if (user.role !== 'admin') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
-    }
+  // Các trang khác mặc định cho phép admin
+  if (user.role === 'admin') {
+    return NextResponse.next()
   }
 
-  return NextResponse.next()
+  // Nếu không match điều kiện nào, redirect về videos
+  const url = request.nextUrl.clone()
+  url.pathname = '/videos'
+  return NextResponse.redirect(url)
 }
 
 export const config = {

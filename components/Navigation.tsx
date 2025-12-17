@@ -8,6 +8,7 @@ export default function Navigation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [username, setUsername] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({})
   const [loading, setLoading] = useState(true)
   const pathname = usePathname()
 
@@ -21,15 +22,26 @@ export default function Navigation() {
         setIsAuthenticated(true)
         setUsername(data.user?.username || null)
         setUserRole(data.user?.role || null)
+        
+        // Lấy permissions
+        const permRes = await fetch('/api/auth/permissions', {
+          credentials: 'include',
+        })
+        if (permRes.ok) {
+          const permData = await permRes.json()
+          setPermissions(permData.permissions || {})
+        }
       } else {
         setIsAuthenticated(false)
         setUsername(null)
         setUserRole(null)
+        setPermissions({})
       }
     } catch (error) {
       setIsAuthenticated(false)
       setUsername(null)
       setUserRole(null)
+      setPermissions({})
     } finally {
       setLoading(false)
     }
@@ -73,55 +85,57 @@ export default function Navigation() {
           )}
           {isAuthenticated && (
             <div className="flex gap-2 md:gap-3 lg:gap-4 items-center overflow-x-auto">
-              {userRole === 'admin' ? (
-                <>
-                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Trang chủ
-                  </Link>
-                  <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Ngân hàng câu hỏi
-                  </Link>
-                  <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Quản lý bài thi
-                  </Link>
-                  <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Tạo bài thi
-                  </Link>
-                  <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Quản lý nhiệm vụ
-                  </Link>
-                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Video thực hành
-                  </Link>
-                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Tài liệu KT
-                  </Link>
-                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Cài đặt
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Trang chủ
-                  </Link>
-                  <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Bài thi của tôi
-                  </Link>
-                  <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Nhiệm vụ của tôi
-                  </Link>
-                  <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Video thực hành
-                  </Link>
-                  <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Tài liệu KT
-                  </Link>
-                  <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                    Cài đặt
-                  </Link>
-                </>
+              <Link href="/" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                Trang chủ
+              </Link>
+              
+              {/* Menu dựa trên permissions */}
+              {permissions['view_questions'] && (
+                <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Ngân hàng câu hỏi
+                </Link>
               )}
+              
+              {permissions['view_exams'] && (
+                <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Quản lý bài thi
+                </Link>
+              )}
+              
+              {permissions['create_exams'] && (
+                <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Tạo bài thi
+                </Link>
+              )}
+              
+              {permissions['view_tasks'] && (
+                <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Quản lý nhiệm vụ
+                </Link>
+              )}
+              
+              {/* Menu user thường */}
+              {!permissions['view_exams'] && (
+                <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Bài thi của tôi
+                </Link>
+              )}
+              
+              {!permissions['view_tasks'] && (
+                <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Nhiệm vụ của tôi
+                </Link>
+              )}
+              
+              <Link href="/videos" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                Video thực hành
+              </Link>
+              <Link href="/documents" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                Tài liệu KT
+              </Link>
+              <Link href="/settings" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                Cài đặt
+              </Link>
               <button
                 onClick={async () => {
                   try {
