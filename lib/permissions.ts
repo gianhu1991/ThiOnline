@@ -65,7 +65,10 @@ export async function hasUserPermission(userId: string, role: string, permission
       where: { code: permissionCode }
     })
     
-    if (!permission) return false
+    if (!permission) {
+      console.log(`[hasUserPermission] Permission ${permissionCode} not found`)
+      return false
+    }
     
     // 2. Kiểm tra UserPermission của user này
     const userPerm = await prisma.userPermission.findUnique({
@@ -76,6 +79,8 @@ export async function hasUserPermission(userId: string, role: string, permission
         }
       }
     })
+    
+    console.log(`[hasUserPermission] User ${userId}, Permission ${permissionCode}: userPerm=${userPerm ? userPerm.type : 'none'}`)
     
     // Nếu có deny, từ chối luôn
     if (userPerm && userPerm.type === 'deny') {
@@ -88,7 +93,9 @@ export async function hasUserPermission(userId: string, role: string, permission
     }
     
     // 3. Nếu không có UserPermission, check theo Role
-    return hasPermission(role, permissionCode)
+    const roleHasPerm = await hasPermission(role, permissionCode)
+    console.log(`[hasUserPermission] Role ${role} has ${permissionCode}: ${roleHasPerm}`)
+    return roleHasPerm
   } catch (error) {
     console.error('[hasUserPermission] Error:', error)
     // Fallback về RolePermission nếu có lỗi
