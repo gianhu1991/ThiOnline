@@ -323,18 +323,25 @@ export default function UserPermissionManagementForm() {
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 mb-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border-2 border-green-500 rounded"></div>
-              <span>Quyền từ role</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-500 rounded"></div>
-              <span>Cấp thêm (grant)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-100 border-2 border-red-500 rounded"></div>
-              <span>Gỡ bỏ (deny)</span>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+            <h4 className="font-semibold text-sm mb-3">Chú thích:</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked disabled className="w-4 h-4" />
+                <span>✅ Có quyền từ role</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked disabled className="w-4 h-4 accent-yellow-500" />
+                <span>⭐ Được cấp thêm (đặc cách)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" disabled className="w-4 h-4" />
+                <span>❌ Không có quyền</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked disabled className="w-4 h-4 accent-red-500" />
+                <span>🚫 Bị gỡ bỏ (deny)</span>
+              </div>
             </div>
           </div>
 
@@ -346,72 +353,107 @@ export default function UserPermissionManagementForm() {
                   {CATEGORY_LABELS[category] || category}
                 </h3>
                 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {perms.map(perm => {
                     const status = getPermissionStatus(perm.code)
+                    const hasPermission = status === 'role' || status === 'grant'
+                    const isDenied = status === 'deny'
                     
                     return (
                       <div
                         key={perm.code}
-                        className={`p-3 rounded-lg border-2 ${
-                          status === 'deny' ? 'bg-red-50 border-red-500' :
-                          status === 'grant' ? 'bg-yellow-50 border-yellow-500' :
-                          status === 'role' ? 'bg-green-50 border-green-500' :
-                          'bg-gray-50 border-gray-200'
+                        className={`p-3 rounded-lg hover:bg-gray-50 border ${
+                          isDenied ? 'border-red-300 bg-red-50' :
+                          status === 'grant' ? 'border-yellow-300 bg-yellow-50' :
+                          status === 'role' ? 'border-green-300 bg-green-50' :
+                          'border-gray-200'
                         }`}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-sm text-gray-900">
-                              {perm.name}
+                        <div className="flex items-center gap-3">
+                          {/* Checkbox chính - Có quyền hay không */}
+                          <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={hasPermission && !isDenied}
+                              onChange={() => {
+                                if (status === 'none') {
+                                  // Không có quyền → Cấp thêm
+                                  handleToggleGrant(perm.code)
+                                } else if (status === 'role') {
+                                  // Có từ role → Gỡ bỏ (deny)
+                                  handleToggleDeny(perm.code)
+                                } else if (status === 'grant') {
+                                  // Đã grant → Bỏ grant
+                                  handleToggleGrant(perm.code)
+                                } else if (status === 'deny') {
+                                  // Đã deny → Bỏ deny
+                                  handleToggleDeny(perm.code)
+                                }
+                              }}
+                              className={`w-5 h-5 rounded ${
+                                status === 'grant' ? 'accent-yellow-500' :
+                                isDenied ? 'accent-red-500' :
+                                'accent-green-500'
+                              }`}
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-sm text-gray-900">
+                                {perm.name}
+                                {status === 'grant' && (
+                                  <span className="ml-2 text-xs px-2 py-0.5 bg-yellow-500 text-white rounded">
+                                    ⭐ Đặc cách
+                                  </span>
+                                )}
+                                {status === 'deny' && (
+                                  <span className="ml-2 text-xs px-2 py-0.5 bg-red-500 text-white rounded">
+                                    🚫 Bị gỡ
+                                  </span>
+                                )}
+                                {status === 'role' && (
+                                  <span className="ml-2 text-xs text-green-600">
+                                    (từ role)
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {perm.code}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              {perm.code}
-                            </div>
-                          </div>
+                          </label>
                           
-                          <div className="flex gap-2">
-                            {status !== 'grant' && (
-                              <button
-                                onClick={() => handleToggleGrant(perm.code)}
-                                className={`px-3 py-1 text-xs rounded ${
-                                  status === 'none' || status === 'role'
-                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                    : 'bg-gray-300 text-gray-600'
-                                }`}
-                                title="Cấp thêm quyền này"
-                              >
-                                ➕ Grant
-                              </button>
-                            )}
-                            
-                            {status !== 'deny' && (
-                              <button
-                                onClick={() => handleToggleDeny(perm.code)}
-                                className={`px-3 py-1 text-xs rounded ${
-                                  status === 'role' || status === 'grant'
-                                    ? 'bg-red-500 text-white hover:bg-red-600'
-                                    : 'bg-gray-300 text-gray-600'
-                                }`}
-                                title="Gỡ bỏ quyền này"
-                              >
-                                ⛔ Deny
-                              </button>
-                            )}
-                            
-                            {(status === 'grant' || status === 'deny') && (
-                              <button
-                                onClick={() => {
-                                  if (status === 'grant') handleToggleGrant(perm.code)
-                                  if (status === 'deny') handleToggleDeny(perm.code)
-                                }}
-                                className="px-3 py-1 text-xs rounded bg-gray-500 text-white hover:bg-gray-600"
-                                title="Bỏ đặc biệt"
-                              >
-                                ↩️ Reset
-                              </button>
-                            )}
-                          </div>
+                          {/* Nút đặc biệt */}
+                          {status === 'role' && (
+                            <button
+                              onClick={() => handleToggleDeny(perm.code)}
+                              className="text-xs px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
+                              title="Gỡ bỏ quyền này (dù role có)"
+                            >
+                              🚫 Gỡ bỏ
+                            </button>
+                          )}
+                          
+                          {status === 'none' && (
+                            <button
+                              onClick={() => handleToggleGrant(perm.code)}
+                              className="text-xs px-3 py-1.5 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                              title="Cấp thêm quyền này (dù role không có)"
+                            >
+                              ⭐ Cấp thêm
+                            </button>
+                          )}
+                          
+                          {(status === 'grant' || status === 'deny') && (
+                            <button
+                              onClick={() => {
+                                if (status === 'grant') handleToggleGrant(perm.code)
+                                if (status === 'deny') handleToggleDeny(perm.code)
+                              }}
+                              className="text-xs px-3 py-1.5 bg-gray-500 text-white rounded hover:bg-gray-600"
+                              title="Reset về quyền role"
+                            >
+                              ↩️ Reset
+                            </button>
+                          )}
                         </div>
                       </div>
                     )
