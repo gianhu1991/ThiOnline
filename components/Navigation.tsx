@@ -22,6 +22,7 @@ export default function Navigation() {
         setIsAuthenticated(true)
         setUsername(data.user?.username || null)
         setUserRole(data.user?.role || null)
+        setLoading(false) // Set loading false ngay sau khi có user info
         
         // Lấy permissions (nếu có lỗi thì skip, dùng role-based)
         try {
@@ -31,6 +32,8 @@ export default function Navigation() {
           if (permRes.ok) {
             const permData = await permRes.json()
             setPermissions(permData.permissions || {})
+          } else {
+            setPermissions({})
           }
         } catch (permError) {
           console.error('Error fetching permissions:', permError)
@@ -42,13 +45,14 @@ export default function Navigation() {
         setUsername(null)
         setUserRole(null)
         setPermissions({})
+        setLoading(false)
       }
     } catch (error) {
+      console.error('Auth error:', error)
       setIsAuthenticated(false)
       setUsername(null)
       setUserRole(null)
       setPermissions({})
-    } finally {
       setLoading(false)
     }
   }
