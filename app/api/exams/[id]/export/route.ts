@@ -12,8 +12,9 @@ export async function GET(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xuất kết quả' }, { status: 403 })
+    // Cho phép admin và leader xuất kết quả
+    if (!user || (user.role !== 'admin' && user.role !== 'leader')) {
+      return NextResponse.json({ error: 'Chỉ admin và leader mới được xuất kết quả' }, { status: 403 })
     }
 
     // Lấy thông tin bài thi

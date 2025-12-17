@@ -79,7 +79,7 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   password  String   // Hashed password
-  role      String   @default("user") // "admin" hoặc "user"
+  role      String   @default("user") // "admin", "leader" hoặc "user"
   fullName  String?  // Họ và tên
   email     String?  // Email
   createdAt DateTime @default(now())
@@ -211,6 +211,29 @@ model Settings {
   value     String   // Giá trị (ví dụ: URL ảnh)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // Mã quyền (ví dụ: 'view_exams', 'create_exams', 'export_tasks')
+  name        String   // Tên quyền dễ đọc (ví dụ: 'Xem bài thi', 'Tạo bài thi')
+  description String?  // Mô tả chi tiết quyền
+  category    String   // Nhóm quyền (ví dụ: 'exams', 'tasks', 'users', 'videos')
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         String     // Role: "admin", "leader", "user"
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@index([permissionId])
 }
 
 model Task {

@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
-// Xuất file Excel kết quả thực hiện nhiệm vụ (Admin)
+// Xuất file Excel kết quả thực hiện nhiệm vụ (Admin và Leader)
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,8 +13,9 @@ export async function GET(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xuất file' }, { status: 403 })
+    // Cho phép admin và leader xuất file
+    if (!user || (user.role !== 'admin' && user.role !== 'leader')) {
+      return NextResponse.json({ error: 'Chỉ admin và leader mới được xuất file' }, { status: 403 })
     }
 
     const task = await prisma.task.findUnique({

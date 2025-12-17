@@ -261,20 +261,21 @@ export default function UserManagementForm() {
             </div>
           </div>
 
-          <div>
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">Vai trò</label>
-            <select
-              value={editFormData.role}
-              onChange={(e) => {
-                setEditFormData({ ...editFormData, role: e.target.value })
-                setUserError('') // Clear error when changing role
-              }}
-              className="input-field"
-              disabled={userLoading || (!isSuperAdmin && editingUser && editingUser.id === currentUserId)}
-            >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">Vai trò</label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => {
+                    setEditFormData({ ...editFormData, role: e.target.value })
+                    setUserError('') // Clear error when changing role
+                  }}
+                  className="input-field"
+                  disabled={userLoading || (!isSuperAdmin && editingUser && editingUser.id === currentUserId)}
+                >
+                  <option value="user">User</option>
+                  <option value="leader">Leader</option>
+                  <option value="admin">Admin</option>
+                </select>
             {!isSuperAdmin && editingUser && editingUser.id === currentUserId && (
               <p className="text-xs text-gray-500 mt-1">Bạn không thể tự hạ cấp mình</p>
             )}
@@ -428,9 +429,10 @@ export default function UserManagementForm() {
                   disabled={userLoading}
                 >
                   <option value="user">User</option>
+                  <option value="leader">Leader</option>
                   <option value="admin">Admin</option>
                 </select>
-                <p className="text-xs text-blue-600 mt-1">Super Admin: Bạn có thể tạo user hoặc admin mới</p>
+                <p className="text-xs text-blue-600 mt-1">User: Sử dụng cơ bản | Leader: Xem & xuất báo cáo | Admin: Toàn quyền</p>
               </div>
 
               <div className="flex gap-2">

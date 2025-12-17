@@ -54,6 +54,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   
   // State cho modal tạo nhiệm vụ
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -139,7 +140,22 @@ export default function TasksPage() {
     fetchTasks()
     fetchUsers()
     fetchUserGroups()
+    checkUserRole()
   }, [])
+
+  const checkUserRole = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.user?.role || null)
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error)
+    }
+  }
 
   const fetchTasks = async () => {
     try {
@@ -768,12 +784,14 @@ export default function TasksPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quản lý nhiệm vụ</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          + Tạo nhiệm vụ mới
-        </button>
+        {userRole === 'admin' && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            + Tạo nhiệm vụ mới
+          </button>
+        )}
       </div>
 
       {error && (
@@ -823,39 +841,45 @@ export default function TasksPage() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => openManageModal(task)}
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
-              >
-                Quản lý
-              </button>
+              {/* Chỉ admin mới có các nút quản lý */}
+              {userRole === 'admin' && (
+                <>
+                  <button
+                    onClick={() => openManageModal(task)}
+                    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
+                  >
+                    Quản lý
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUploadTaskId(task.id)
+                      setShowUploadModal(true)
+                    }}
+                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm"
+                  >
+                    Upload Excel
+                  </button>
+                  <button
+                    onClick={() => openAssignModal(task)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm"
+                  >
+                    Gán nhiệm vụ
+                  </button>
+                  <button
+                    onClick={() => openReassignModal(task)}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-sm"
+                  >
+                    Phân giao lại
+                  </button>
+                </>
+              )}
+              {/* Cả admin và leader đều có các nút xem và xuất */}
               <button
                 onClick={() => openCustomersModal(task.id)}
                 disabled={loadingCustomersTaskId === task.id}
                 className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 Xem DS khách hàng
-              </button>
-              <button
-                onClick={() => {
-                  setUploadTaskId(task.id)
-                  setShowUploadModal(true)
-                }}
-                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm"
-              >
-                Upload Excel
-              </button>
-              <button
-                onClick={() => openAssignModal(task)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm"
-              >
-                Gán nhiệm vụ
-              </button>
-              <button
-                onClick={() => openReassignModal(task)}
-                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-sm"
-              >
-                Phân giao lại
               </button>
               <button
                 onClick={() => fetchSummary(task.id)}
@@ -870,13 +894,16 @@ export default function TasksPage() {
               >
                 Xuất Excel
               </button>
-              <button
-                onClick={() => handleDeleteTask(task.id)}
-                disabled={deletingTaskId === task.id}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 text-sm"
-              >
-                {deletingTaskId === task.id ? 'Đang xóa...' : 'Xóa'}
-              </button>
+              {/* Chỉ admin mới có nút xóa */}
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => handleDeleteTask(task.id)}
+                  disabled={deletingTaskId === task.id}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 text-sm"
+                >
+                  {deletingTaskId === task.id ? 'Đang xóa...' : 'Xóa'}
+                </button>
+              )}
             </div>
           </div>
         ))}

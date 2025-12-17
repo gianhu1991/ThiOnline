@@ -7,6 +7,8 @@ export const revalidate = 0
 
 export async function GET(request: NextRequest) {
   try {
+    // Không cần kiểm tra quyền ở đây vì middleware đã xử lý
+    // Leader có thể xem danh sách bài thi
     console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
     
     // Kiểm tra kết nối database

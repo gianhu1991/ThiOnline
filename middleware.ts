@@ -31,7 +31,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Nếu là user thường (không phải admin), chỉ cho phép truy cập videos, documents, trang chủ, settings và my-exams
+  // Leader có quyền xem exams và tasks (chỉ xem và xuất excel, không chỉnh sửa)
+  if (user.role === 'leader') {
+    if (
+      pathname.startsWith('/videos') || 
+      pathname.startsWith('/documents') || 
+      pathname === '/' || 
+      pathname === '/settings' ||
+      pathname === '/exams' || // Cho phép xem danh sách bài thi và kết quả
+      pathname === '/tasks' || // Cho phép xem danh sách nhiệm vụ
+      pathname.match(/^\/exams\/[^/]+\/take$/) || 
+      pathname.match(/^\/exams\/[^/]+\/result$/) || 
+      pathname.match(/^\/exams\/[^/]+\/results$/)
+    ) {
+      return NextResponse.next()
+    }
+    // Không cho phép tạo/sửa bài thi và câu hỏi
+    if (pathname.startsWith('/questions') ||
+        pathname.startsWith('/exams/create') ||
+        pathname.startsWith('/exams/') && pathname.includes('/edit')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/exams'
+      return NextResponse.redirect(url)
+    }
+    // Tất cả các trang khác redirect về trang chủ
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // Nếu là user thường (không phải admin hoặc leader), chỉ cho phép truy cập videos, documents, trang chủ, settings và my-exams
   if (user.role !== 'admin') {
     // Cho phép truy cập /videos, /documents, trang chủ (/), settings, my-exams và my-tasks
     if (

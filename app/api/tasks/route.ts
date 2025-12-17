@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 
-// Lấy danh sách tất cả nhiệm vụ (Admin)
+// Lấy danh sách tất cả nhiệm vụ (Admin và Leader)
 export async function GET(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được truy cập' }, { status: 403 })
+    // Cho phép admin và leader xem danh sách nhiệm vụ
+    if (!user || (user.role !== 'admin' && user.role !== 'leader')) {
+      return NextResponse.json({ error: 'Chỉ admin và leader mới được truy cập' }, { status: 403 })
     }
 
     // Lấy danh sách tasks với thống kê trong một query duy nhất (tối ưu hơn)
