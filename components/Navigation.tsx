@@ -23,13 +23,19 @@ export default function Navigation() {
         setUsername(data.user?.username || null)
         setUserRole(data.user?.role || null)
         
-        // Lấy permissions
-        const permRes = await fetch('/api/auth/permissions', {
-          credentials: 'include',
-        })
-        if (permRes.ok) {
-          const permData = await permRes.json()
-          setPermissions(permData.permissions || {})
+        // Lấy permissions (nếu có lỗi thì skip, dùng role-based)
+        try {
+          const permRes = await fetch('/api/auth/permissions', {
+            credentials: 'include',
+          })
+          if (permRes.ok) {
+            const permData = await permRes.json()
+            setPermissions(permData.permissions || {})
+          }
+        } catch (permError) {
+          console.error('Error fetching permissions:', permError)
+          // Skip nếu permissions chưa setup, dùng role-based
+          setPermissions({})
         }
       } else {
         setIsAuthenticated(false)
@@ -89,39 +95,39 @@ export default function Navigation() {
                 Trang chủ
               </Link>
               
-              {/* Menu dựa trên permissions */}
-              {permissions['view_questions'] && (
+              {/* Menu dựa trên permissions hoặc role (fallback) */}
+              {(permissions['view_questions'] || userRole === 'admin') && (
                 <Link href="/questions" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Ngân hàng câu hỏi
                 </Link>
               )}
               
-              {permissions['view_exams'] && (
+              {(permissions['view_exams'] || userRole === 'admin' || userRole === 'leader') && (
                 <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Quản lý bài thi
                 </Link>
               )}
               
-              {permissions['create_exams'] && (
+              {(permissions['create_exams'] || userRole === 'admin') && (
                 <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Tạo bài thi
                 </Link>
               )}
               
-              {permissions['view_tasks'] && (
+              {(permissions['view_tasks'] || userRole === 'admin' || userRole === 'leader') && (
                 <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Quản lý nhiệm vụ
                 </Link>
               )}
               
               {/* Menu user thường */}
-              {!permissions['view_exams'] && (
+              {!permissions['view_exams'] && userRole !== 'admin' && userRole !== 'leader' && (
                 <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Bài thi của tôi
                 </Link>
               )}
               
-              {!permissions['view_tasks'] && (
+              {!permissions['view_tasks'] && userRole !== 'admin' && userRole !== 'leader' && (
                 <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Nhiệm vụ của tôi
                 </Link>

@@ -38,7 +38,15 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[/api/auth/permissions] Error:', error)
-    return NextResponse.json({ error: 'Lỗi khi lấy permissions' }, { status: 500 })
+    
+    // Nếu bảng Permission chưa tồn tại, trả về empty permissions
+    // Frontend sẽ fallback về role-based
+    const user = await getJWT(request)
+    return NextResponse.json({ 
+      permissions: {},
+      role: user?.role || null,
+      username: user?.username || null
+    }, { status: 200 })
   }
 }
 
