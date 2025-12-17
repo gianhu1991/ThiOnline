@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-<
-
-prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 
