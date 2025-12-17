@@ -16,9 +16,11 @@ export async function GET(
     }
 
     // Chỉ admin hoặc người có quyền manage_permissions mới xem được
-    const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
-    if (!canManage) {
-      return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+    if (user.role !== 'admin') {
+      const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
+      if (!canManage) {
+        return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+      }
     }
 
     // Lấy thông tin user
@@ -88,9 +90,11 @@ export async function PUT(
     }
 
     // Chỉ admin hoặc người có quyền manage_permissions mới cập nhật được
-    const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
-    if (!canManage) {
-      return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+    if (user.role !== 'admin') {
+      const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
+      if (!canManage) {
+        return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+      }
     }
 
     const { grants, denies, reason } = await request.json()
@@ -170,9 +174,11 @@ export async function DELETE(
     }
 
     // Chỉ admin hoặc người có quyền manage_permissions mới xóa được
-    const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
-    if (!canManage) {
-      return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+    if (user.role !== 'admin') {
+      const canManage = await hasPermission(user.role, PERMISSIONS.MANAGE_PERMISSIONS)
+      if (!canManage) {
+        return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 })
+      }
     }
 
     await prisma.userPermission.deleteMany({
