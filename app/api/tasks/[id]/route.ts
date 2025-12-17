@@ -138,7 +138,7 @@ export async function PUT(
   try {
     const user = await getJWT(request)
     
-    if (!user) {
+    if (!user || !user.role) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
@@ -176,7 +176,7 @@ export async function DELETE(
   try {
     const user = await getJWT(request)
     
-    if (!user) {
+    if (!user || !user.role) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     

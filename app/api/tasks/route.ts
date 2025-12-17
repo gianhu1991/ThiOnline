@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
-    if (!user) {
+    if (!user || !user.role) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
