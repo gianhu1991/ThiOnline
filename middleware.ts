@@ -7,14 +7,15 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Cho phép truy cập công khai:
-  // - Trang login, register, init-admin, debug-db
+  // - Trang login, register, init-admin, debug-db, debug-permissions
   // - Trang làm bài thi (public link)
   // - Tất cả API routes
   if (
     pathname === '/login' || 
     pathname === '/register' ||
     pathname === '/init-admin' || 
-    pathname === '/debug-db' || 
+    pathname === '/debug-db' ||
+    pathname === '/debug-permissions' ||
     pathname.startsWith('/api/') ||
     pathname.match(/^\/exams\/[^/]+\/take$/) || // /exams/[id]/take
     pathname.match(/^\/exams\/[^/]+\/result$/) // /exams/[id]/result
