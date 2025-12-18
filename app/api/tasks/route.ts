@@ -3,14 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
-// Lấy danh sách tất cả nhiệm vụ (Admin và Leader)
+// Lấy danh sách tất cả nhiệm vụ (Kiểm tra permission VIEW_TASKS)
 export async function GET(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
-    // Cho phép admin và leader xem danh sách nhiệm vụ
-    if (!user || (user.role !== 'admin' && user.role !== 'leader')) {
-      return NextResponse.json({ error: 'Chỉ admin và leader mới được truy cập' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      // Continue below
+    } else {
+      // Kiểm tra quyền VIEW_TASKS (bao gồm cả đặc cách)
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
+      if (!canView) {
+        return NextResponse.json({ error: 'Bạn không có quyền xem danh sách nhiệm vụ' }, { status: 403 })
+      }
     }
 
     // Lấy danh sách tasks với thống kê trong một query duy nhất (tối ưu hơn)
