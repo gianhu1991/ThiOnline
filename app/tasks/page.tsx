@@ -828,6 +828,12 @@ export default function TasksPage() {
         </div>
       )}
 
+      {tasks.length === 0 && !loading && !error && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-blue-800">📋 Chưa có nhiệm vụ nào trong hệ thống.</p>
+        </div>
+      )}
+
       <div className="grid gap-4">
         {tasks.map((task) => (
           <div key={task.id} className="bg-white border rounded-lg p-6 shadow-sm">
