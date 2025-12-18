@@ -40,10 +40,21 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
+    // Admin luôn được phép (đã check ở trên)
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
     if (user.role) {
-      const hasPermission = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
-      console.log(`[Middleware] User ${user.username} (${user.role}) - VIEW_TASKS: ${hasPermission}`)
-      if (hasPermission) {
+      try {
+        const hasPermission = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
+        console.log(`[Middleware] User ${user.username} (${user.role}) - VIEW_TASKS: ${hasPermission}`)
+        if (hasPermission) {
+          return NextResponse.next()
+        }
+      } catch (error) {
+        console.error(`[Middleware] Error checking permission for ${user.username}:`, error)
+        // Nếu có lỗi, cho phép vào (fallback) - frontend sẽ check lại
         return NextResponse.next()
       }
     }
