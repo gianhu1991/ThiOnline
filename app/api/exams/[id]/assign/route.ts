@@ -17,7 +17,7 @@ export async function POST(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canAssign = await hasUserPermission(user.userId, user.role, PERMISSIONS.ASSIGN_EXAMS)
+      const canAssign = await hasUserPermission(user.userId, user.role, PERMISSIONS.ASSIGN_EXAMS, user.username)
       if (!canAssign) {
         return NextResponse.json({ error: 'Bạn không có quyền gán bài thi' }, { status: 403 })
       }

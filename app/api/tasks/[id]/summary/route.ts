@@ -18,7 +18,7 @@ export async function GET(
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền EXPORT_TASK_RESULTS (xem kết quả cũng cần quyền này)
-      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS)
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS, user.username)
       if (!canView) {
         return NextResponse.json({ error: 'Bạn không có quyền xem kết quả' }, { status: 403 })
       }

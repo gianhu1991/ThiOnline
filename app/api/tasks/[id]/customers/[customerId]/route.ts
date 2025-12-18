@@ -17,7 +17,7 @@ export async function PUT(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_TASKS)
+      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_TASKS, user.username)
       if (!canEdit) {
         return NextResponse.json({ error: 'Bạn không có quyền sửa khách hàng' }, { status: 403 })
       }

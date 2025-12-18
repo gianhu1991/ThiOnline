@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_DOCUMENTS)
+      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_DOCUMENTS, user.username)
       if (!canCreate) {
         return NextResponse.json({ error: 'Bạn không có quyền upload tài liệu' }, { status: 403 })
       }

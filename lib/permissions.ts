@@ -209,19 +209,19 @@ export function invalidatePermissionsCache() {
 /**
  * Kiểm tra quyền từ JWT user object (với UserPermission)
  */
-export async function userHasPermission(user: { userId: string, role: string } | null, permissionCode: string): Promise<boolean> {
+export async function userHasPermission(user: { userId: string, role: string, username?: string } | null, permissionCode: string): Promise<boolean> {
   if (!user) return false
-  return hasUserPermission(user.userId, user.role, permissionCode)
+  return hasUserPermission(user.userId, user.role, permissionCode, user.username)
 }
 
 /**
  * Kiểm tra user có ít nhất một trong các quyền (với UserPermission)
  */
-export async function userHasAnyPermission(user: { userId: string, role: string } | null, permissionCodes: string[]): Promise<boolean> {
+export async function userHasAnyPermission(user: { userId: string, role: string, username?: string } | null, permissionCodes: string[]): Promise<boolean> {
   if (!user) return false
   
   for (const code of permissionCodes) {
-    const has = await hasUserPermission(user.userId, user.role, code)
+    const has = await hasUserPermission(user.userId, user.role, code, user.username)
     if (has) return true
   }
   

@@ -142,7 +142,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
-    const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_TASKS)
+    const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_TASKS, user.username)
     if (!canEdit) {
       return NextResponse.json({ error: 'Bạn không có quyền cập nhật nhiệm vụ' }, { status: 403 })
     }
@@ -180,7 +180,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
-    const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS)
+    const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS, user.username)
     if (!canDelete) {
       return NextResponse.json({ error: 'Bạn không có quyền xóa nhiệm vụ' }, { status: 403 })
     }

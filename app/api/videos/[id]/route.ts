@@ -16,7 +16,7 @@ export async function DELETE(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_VIDEOS)
+      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_VIDEOS, user.username)
       if (!canDelete) {
         return NextResponse.json({ error: 'Bạn không có quyền xóa video' }, { status: 403 })
       }
@@ -45,7 +45,7 @@ export async function PUT(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS)
+      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS, user.username)
       if (!canEdit) {
         return NextResponse.json({ error: 'Bạn không có quyền sửa video' }, { status: 403 })
       }

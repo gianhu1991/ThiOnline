@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
     // Test check permissions với tất cả quyền
     const permissionChecks: Record<string, any> = {}
     for (const perm of allPerms) {
-      const hasPerm = await hasUserPermission(user.userId, user.role || '', perm.code)
-      const checkResult = await checkPermission(user.userId, user.role || '', perm.code)
+      const hasPerm = await hasUserPermission(user.userId, user.role || '', perm.code, user.username)
+      const checkResult = await checkPermission(user.userId, user.role || '', perm.code, user.username)
       permissionChecks[perm.code] = {
         hasUserPermission: hasPerm,
         checkPermission: checkResult

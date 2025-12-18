@@ -20,7 +20,7 @@ export async function GET(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canExport = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS)
+      const canExport = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS, user.username)
       if (!canExport) {
         return NextResponse.json({ error: 'Bạn không có quyền xuất kết quả nhiệm vụ' }, { status: 403 })
       }

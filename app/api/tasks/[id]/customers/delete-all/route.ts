@@ -17,7 +17,7 @@ export async function DELETE(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS)
+      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS, user.username)
       if (!canDelete) {
         return NextResponse.json({ error: 'Bạn không có quyền xóa khách hàng' }, { status: 403 })
       }

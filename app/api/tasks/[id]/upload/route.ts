@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
-    const canUpload = await hasUserPermission(user.userId, user.role, PERMISSIONS.UPLOAD_TASK_DATA)
+    const canUpload = await hasUserPermission(user.userId, user.role, PERMISSIONS.UPLOAD_TASK_DATA, user.username)
     if (!canUpload) {
       console.log('[Upload] Lỗi: Không có quyền upload')
       return NextResponse.json({ error: 'Bạn không có quyền upload dữ liệu' }, { status: 403 })

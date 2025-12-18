@@ -16,7 +16,7 @@ export async function POST(
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canToggle = await hasUserPermission(user.userId, user.role, PERMISSIONS.TOGGLE_EXAM_STATUS)
+      const canToggle = await hasUserPermission(user.userId, user.role, PERMISSIONS.TOGGLE_EXAM_STATUS, user.username)
       if (!canToggle) {
         return NextResponse.json({ error: 'Bạn không có quyền thay đổi trạng thái bài thi' }, { status: 403 })
       }

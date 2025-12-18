@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền CREATE_VIDEOS (bao gồm cả đặc cách)
-      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_VIDEOS)
+      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_VIDEOS, user.username)
       if (!canCreate) {
         return NextResponse.json({ error: 'Bạn không có quyền tạo video' }, { status: 403 })
       }

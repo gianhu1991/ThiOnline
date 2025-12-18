@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
-      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS)
+      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS, user.username)
       if (!canEdit) {
         return NextResponse.json({ error: 'Bạn không có quyền upload thumbnail' }, { status: 403 })
       }

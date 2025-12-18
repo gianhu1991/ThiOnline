@@ -15,7 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
-    const canAssign = await hasUserPermission(user.userId, user.role, PERMISSIONS.ASSIGN_TASKS)
+    const canAssign = await hasUserPermission(user.userId, user.role, PERMISSIONS.ASSIGN_TASKS, user.username)
     if (!canAssign) {
       return NextResponse.json({ error: 'Bạn không có quyền phân giao nhiệm vụ' }, { status: 403 })
     }
