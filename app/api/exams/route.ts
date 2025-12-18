@@ -15,9 +15,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
-    // TEMPORARY: Bypass permission check để test
-    // TODO: Bật lại sau khi fix xong
-    /*
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền VIEW_EXAMS (bao gồm cả đặc cách)
@@ -33,8 +30,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách bài thi' }, { status: 403 })
       }
     }
-    */
-    console.log('[GET /api/exams] TEMPORARY: Bypassing permission check for testing')
     
     console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
     

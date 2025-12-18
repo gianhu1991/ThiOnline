@@ -2,22 +2,11 @@ import { prisma } from './prisma'
 import { PERMISSIONS } from './permissions'
 
 /**
- * Helper function để lấy userId đúng từ database (dựa trên userId hoặc username)
+ * Helper function để lấy userId đúng từ database (LUÔN dùng username để tìm, vì username là unique và đáng tin cậy hơn)
  */
 async function getCorrectUserId(userId: string, username?: string): Promise<string | null> {
   try {
-    // Thử tìm user bằng userId
-    const userById = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true }
-    })
-    
-    if (userById) {
-      console.log('[getCorrectUserId] Found by userId:', { inputUserId: userId, foundUserId: userById.id, foundUsername: userById.username })
-      return userById.id
-    }
-    
-    // Nếu không tìm thấy, thử tìm bằng username
+    // ƯU TIÊN: Tìm bằng username trước (vì username là unique và đáng tin cậy hơn userId trong JWT)
     if (username) {
       const userByUsername = await prisma.user.findUnique({
         where: { username },
@@ -30,6 +19,17 @@ async function getCorrectUserId(userId: string, username?: string): Promise<stri
       } else {
         console.log('[getCorrectUserId] User not found by username:', { inputUserId: userId, inputUsername: username })
       }
+    }
+    
+    // FALLBACK: Nếu không có username hoặc không tìm thấy, thử tìm bằng userId
+    const userById = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true }
+    })
+    
+    if (userById) {
+      console.log('[getCorrectUserId] Found by userId (fallback):', { inputUserId: userId, foundUserId: userById.id, foundUsername: userById.username })
+      return userById.id
     }
     
     console.log('[getCorrectUserId] User not found:', { inputUserId: userId, inputUsername: username })
