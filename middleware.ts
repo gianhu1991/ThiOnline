@@ -100,6 +100,60 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Kiểm tra quyền truy cập /exams/create (tạo bài thi)
+  if (pathname === '/exams/create') {
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
+    if (user.role) {
+      try {
+        const permission = await prisma.permission.findUnique({
+          where: { code: PERMISSIONS.CREATE_EXAMS }
+        })
+        
+        if (permission) {
+          const userPerm = await prisma.userPermission.findUnique({
+            where: {
+              userId_permissionId: {
+                userId: user.userId,
+                permissionId: permission.id
+              }
+            }
+          })
+          
+          if (userPerm && userPerm.type === 'grant') {
+            return NextResponse.next()
+          }
+          
+          if (userPerm && userPerm.type === 'deny') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/exams'
+            return NextResponse.redirect(url)
+          }
+          
+          const rolePerm = await prisma.rolePermission.findFirst({
+            where: {
+              role: user.role,
+              permissionId: permission.id
+            }
+          })
+          
+          if (rolePerm) {
+            return NextResponse.next()
+          }
+        }
+      } catch (error) {
+        console.error(`[Middleware] Error checking CREATE_EXAMS:`, error)
+        return NextResponse.next()
+      }
+    }
+    
+    const url = request.nextUrl.clone()
+    url.pathname = '/exams'
+    return NextResponse.redirect(url)
+  }
+
   // Kiểm tra quyền truy cập /exams (quản lý bài thi)
   if (pathname === '/exams') {
     if (user.role === 'admin') {
@@ -205,6 +259,60 @@ export async function middleware(request: NextRequest) {
     
     const url = request.nextUrl.clone()
     url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // Kiểm tra quyền truy cập /exams/[id]/edit (sửa bài thi)
+  if (pathname.match(/^\/exams\/[^/]+\/edit$/)) {
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
+    if (user.role) {
+      try {
+        const permission = await prisma.permission.findUnique({
+          where: { code: PERMISSIONS.EDIT_EXAMS }
+        })
+        
+        if (permission) {
+          const userPerm = await prisma.userPermission.findUnique({
+            where: {
+              userId_permissionId: {
+                userId: user.userId,
+                permissionId: permission.id
+              }
+            }
+          })
+          
+          if (userPerm && userPerm.type === 'grant') {
+            return NextResponse.next()
+          }
+          
+          if (userPerm && userPerm.type === 'deny') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/exams'
+            return NextResponse.redirect(url)
+          }
+          
+          const rolePerm = await prisma.rolePermission.findFirst({
+            where: {
+              role: user.role,
+              permissionId: permission.id
+            }
+          })
+          
+          if (rolePerm) {
+            return NextResponse.next()
+          }
+        }
+      } catch (error) {
+        console.error(`[Middleware] Error checking EDIT_EXAMS:`, error)
+        return NextResponse.next()
+      }
+    }
+    
+    const url = request.nextUrl.clone()
+    url.pathname = '/exams'
     return NextResponse.redirect(url)
   }
 
