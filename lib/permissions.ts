@@ -248,6 +248,7 @@ export const PERMISSIONS = {
   CREATE_TASKS: 'create_tasks',
   EDIT_TASKS: 'edit_tasks',
   DELETE_TASKS: 'delete_tasks',
+  VIEW_TASK_RESULTS: 'view_task_results',
   EXPORT_TASK_RESULTS: 'export_task_results',
   ASSIGN_TASKS: 'assign_tasks',
   UPLOAD_TASK_DATA: 'upload_task_data',

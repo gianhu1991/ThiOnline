@@ -911,27 +911,35 @@ export default function TasksPage() {
                   Phân giao lại
                 </button>
               )}
-              {/* Cả admin và leader đều có các nút xem và xuất */}
-              <button
-                onClick={() => openCustomersModal(task.id)}
-                disabled={loadingCustomersTaskId === task.id}
-                className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                Xem DS khách hàng
-              </button>
-              <button
-                onClick={() => fetchSummary(task.id)}
-                disabled={loadingSummary && summaryTaskId === task.id}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                Xem KQ
-              </button>
-              <button
-                onClick={() => handleExport(task.id)}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
-              >
-                Xuất Excel
-              </button>
+              {/* Kiểm tra quyền xem danh sách khách hàng */}
+              {(permissions['view_task_customers'] || userRole === 'admin' || userRole === 'leader') && (
+                <button
+                  onClick={() => openCustomersModal(task.id)}
+                  disabled={loadingCustomersTaskId === task.id}
+                  className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Xem DS khách hàng
+                </button>
+              )}
+              {/* Kiểm tra quyền xem kết quả */}
+              {(permissions['view_task_results'] || userRole === 'admin' || userRole === 'leader') && (
+                <button
+                  onClick={() => fetchSummary(task.id)}
+                  disabled={loadingSummary && summaryTaskId === task.id}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Xem KQ
+                </button>
+              )}
+              {/* Kiểm tra quyền xuất Excel */}
+              {(permissions['export_task_results'] || userRole === 'admin' || userRole === 'leader') && (
+                <button
+                  onClick={() => handleExport(task.id)}
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+                >
+                  Xuất Excel
+                </button>
+              )}
               {/* Kiểm tra quyền xóa */}
               {(permissions['delete_tasks'] || userRole === 'admin') && (
                 <button
