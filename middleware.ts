@@ -43,6 +43,15 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/tasks') {
     console.log('[middleware] ========== /tasks CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
+    
+    // BẮT BUỘC: Phải có username để check permission đúng
+    if (!user.username) {
+      console.error('[middleware] ❌ /tasks - No username in JWT, redirecting to /my-tasks')
+      const url = request.nextUrl.clone()
+      url.pathname = '/my-tasks'
+      return NextResponse.redirect(url)
+    }
+    
     if (user.role) {
       const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
       console.log('[middleware] /tasks permission check result:', {
@@ -56,7 +65,12 @@ export async function middleware(request: NextRequest) {
         console.log('[middleware] ✅ /tasks - Permission granted, allowing access')
         return NextResponse.next()
       } else {
-        console.log('[middleware] ❌ /tasks - Permission denied, redirecting to /my-tasks')
+        // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
+        // Trong trường hợp này, vẫn redirect để tránh lỗi, nhưng log chi tiết
+        if (reason === 'User not found' || reason === 'Permission not found' || reason?.includes('Error:')) {
+          console.error('[middleware] ⚠️ /tasks - Permission check error:', reason, '- This might be a temporary issue')
+        }
+        console.log('[middleware] ❌ /tasks - Permission denied, redirecting to /my-tasks. Reason:', reason)
       }
     } else {
       console.log('[middleware] ❌ /tasks - No role, redirecting to /my-tasks')
@@ -83,6 +97,15 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/exams') {
     console.log('[middleware] ========== /exams CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
+    
+    // BẮT BUỘC: Phải có username để check permission đúng
+    if (!user.username) {
+      console.error('[middleware] ❌ /exams - No username in JWT, redirecting to /my-exams')
+      const url = request.nextUrl.clone()
+      url.pathname = '/my-exams'
+      return NextResponse.redirect(url)
+    }
+    
     if (user.role) {
       const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
       console.log('[middleware] /exams permission check result:', {
@@ -96,7 +119,11 @@ export async function middleware(request: NextRequest) {
         console.log('[middleware] ✅ /exams - Permission granted, allowing access')
         return NextResponse.next()
       } else {
-        console.log('[middleware] ❌ /exams - Permission denied, redirecting to /my-exams')
+        // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
+        if (reason === 'User not found' || reason === 'Permission not found' || reason?.includes('Error:')) {
+          console.error('[middleware] ⚠️ /exams - Permission check error:', reason, '- This might be a temporary issue')
+        }
+        console.log('[middleware] ❌ /exams - Permission denied, redirecting to /my-exams. Reason:', reason)
       }
     } else {
       console.log('[middleware] ❌ /exams - No role, redirecting to /my-exams')
