@@ -103,9 +103,9 @@ export async function middleware(request: NextRequest) {
     console.log('[middleware] ========== /exams CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
     
-    // Admin và Leader luôn được phép
+    // Admin và Leader luôn được phép - BỎ QUA TẤT CẢ CHECK
     if (user.role === 'admin' || user.role === 'leader') {
-      console.log('[middleware] ✅ /exams - Admin/Leader, allowing access')
+      console.log('[middleware] ✅ /exams - Admin/Leader, allowing access (bypassing all checks)')
       return NextResponse.next()
     }
     
@@ -117,31 +117,53 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
     
-    if (user.role) {
-      const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
-      console.log('[middleware] /exams permission check result:', {
+    if (!user.role) {
+      console.log('[middleware] ❌ /exams - No role, redirecting to /my-exams')
+      const url = request.nextUrl.clone()
+      url.pathname = '/my-exams'
+      return NextResponse.redirect(url)
+    }
+    
+    // Check permission với logging chi tiết
+    console.log('[middleware] 🔍 Checking permission VIEW_EXAMS for user:', {
+      userId: user.userId,
+      username: user.username,
+      role: user.role
+    })
+    
+    const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
+    
+    console.log('[middleware] 📊 /exams permission check result:', {
+      userId: user.userId,
+      username: user.username,
+      role: user.role,
+      permission: PERMISSIONS.VIEW_EXAMS,
+      allowed,
+      reason
+    })
+    
+    if (allowed) {
+      console.log('[middleware] ✅ /exams - Permission granted, allowing access')
+      return NextResponse.next()
+    } else {
+      // Log chi tiết lý do từ chối
+      console.error('[middleware] ❌ /exams - Permission DENIED:', {
+        reason,
         userId: user.userId,
         username: user.username,
         role: user.role,
-        allowed,
-        reason
+        permission: PERMISSIONS.VIEW_EXAMS
       })
-      if (allowed) {
-        console.log('[middleware] ✅ /exams - Permission granted, allowing access')
-        return NextResponse.next()
-      } else {
-        // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
-        if (reason === 'User not found' || reason === 'Permission not found' || reason?.includes('Error:')) {
-          console.error('[middleware] ⚠️ /exams - Permission check error:', reason, '- This might be a temporary issue')
-        }
-        console.log('[middleware] ❌ /exams - Permission denied, redirecting to /my-exams. Reason:', reason)
+      
+      // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
+      if (reason === 'User not found' || reason === 'Permission not found' || reason?.includes('Error:')) {
+        console.error('[middleware] ⚠️ /exams - Permission check error:', reason, '- This might be a temporary issue')
       }
-    } else {
-      console.log('[middleware] ❌ /exams - No role, redirecting to /my-exams')
+      
+      const url = request.nextUrl.clone()
+      url.pathname = '/my-exams'
+      return NextResponse.redirect(url)
     }
-    const url = request.nextUrl.clone()
-    url.pathname = '/my-exams'
-    return NextResponse.redirect(url)
   }
 
   // Kiểm tra quyền truy cập /exams/[id]/edit (sửa bài thi)

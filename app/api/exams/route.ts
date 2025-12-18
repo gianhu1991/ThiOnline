@@ -38,8 +38,10 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Admin luôn được phép
-    if (user.role !== 'admin') {
+    // Admin và Leader luôn được phép
+    if (user.role === 'admin' || user.role === 'leader') {
+      console.log('[GET /api/exams] ✅ Admin/Leader - bypassing permission check')
+    } else {
       // Kiểm tra quyền VIEW_EXAMS (bao gồm cả đặc cách)
       console.log('[GET /api/exams] 🔍 Checking permission VIEW_EXAMS...')
       const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
@@ -56,8 +58,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách bài thi' }, { status: 403 })
       }
       console.log('[GET /api/exams] ✅ Permission granted')
-    } else {
-      console.log('[GET /api/exams] ✅ Admin - bypassing permission check')
     }
     
     console.log('[GET /api/exams] 📥 Fetching exams from database...')
