@@ -41,6 +41,17 @@ export async function checkPermission(
       }
     })
 
+    // Debug logging
+    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks') {
+      console.log('[checkPermission] Debug:', {
+        userId,
+        role,
+        permissionCode,
+        permissionId: permission.id,
+        userPerm: userPerm ? { type: userPerm.type, userId: userPerm.userId } : null
+      })
+    }
+
     // DENY có ưu tiên cao nhất - từ chối luôn
     if (userPerm && userPerm.type === 'deny') {
       return { allowed: false, reason: 'User permission denied' }
