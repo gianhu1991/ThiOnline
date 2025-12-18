@@ -49,6 +49,24 @@ export async function GET(request: NextRequest) {
       }
     }) : []
 
+    // Lấy TẤT CẢ UserPermissions để xem có userId nào khác không
+    const allUserPerms = await (prisma as any).userPermission.findMany({
+      where: {
+        permission: {
+          code: { in: ['view_exams', 'create_exams', 'view_tasks', 'create_tasks', 'create_videos'] }
+        }
+      },
+      include: {
+        permission: true,
+        user: {
+          select: {
+            id: true,
+            username: true
+          }
+        }
+      }
+    })
+
     // Lấy tất cả permissions để test
     const allPerms = await (prisma as any).permission.findMany({
       orderBy: { code: 'asc' }
@@ -91,6 +109,15 @@ export async function GET(request: NextRequest) {
           userId: up.userId
         }))
       },
+      allUserPermissionsForGianhu1991: allUserPerms
+        .filter((up: any) => up.user.username === 'gianhu1991')
+        .map((up: any) => ({
+          code: up.permission.code,
+          name: up.permission.name,
+          type: up.type,
+          userId: up.userId,
+          userUsername: up.user.username
+        })),
       allPermissions: allPerms.map((p: any) => ({
         code: p.code,
         name: p.name,

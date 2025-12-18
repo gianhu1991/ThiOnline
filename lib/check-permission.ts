@@ -9,10 +9,11 @@ async function getCorrectUserId(userId: string, username?: string): Promise<stri
     // Thử tìm user bằng userId
     const userById = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true }
+      select: { id: true, username: true }
     })
     
     if (userById) {
+      console.log('[getCorrectUserId] Found by userId:', { inputUserId: userId, foundUserId: userById.id, foundUsername: userById.username })
       return userById.id
     }
     
@@ -20,14 +21,18 @@ async function getCorrectUserId(userId: string, username?: string): Promise<stri
     if (username) {
       const userByUsername = await prisma.user.findUnique({
         where: { username },
-        select: { id: true }
+        select: { id: true, username: true }
       })
       
       if (userByUsername) {
+        console.log('[getCorrectUserId] Found by username:', { inputUserId: userId, inputUsername: username, foundUserId: userByUsername.id, foundUsername: userByUsername.username })
         return userByUsername.id
+      } else {
+        console.log('[getCorrectUserId] User not found by username:', { inputUserId: userId, inputUsername: username })
       }
     }
     
+    console.log('[getCorrectUserId] User not found:', { inputUserId: userId, inputUsername: username })
     return null
   } catch (error) {
     console.error('[getCorrectUserId] Error:', error)
@@ -82,8 +87,14 @@ export async function checkPermission(
       }
     })
 
-    // Debug logging
-    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks' || permissionCode === 'view_exams' || permissionCode === 'create_exams') {
+    // Debug logging - luôn log cho các permission quan trọng
+    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks' || permissionCode === 'view_exams' || permissionCode === 'create_exams' || permissionCode === 'create_videos') {
+      // Tìm tất cả UserPermission của user này để debug
+      const allUserPerms = await prisma.userPermission.findMany({
+        where: { userId: correctUserId },
+        include: { permission: true }
+      })
+      
       console.log('[checkPermission] Debug:', {
         originalUserId: userId,
         correctUserId,
@@ -91,7 +102,8 @@ export async function checkPermission(
         role,
         permissionCode,
         permissionId: permission.id,
-        userPerm: userPerm ? { type: userPerm.type, userId: userPerm.userId } : null
+        userPerm: userPerm ? { type: userPerm.type, userId: userPerm.userId } : null,
+        allUserPerms: allUserPerms.map(up => ({ code: up.permission.code, type: up.type, userId: up.userId }))
       })
     }
 
