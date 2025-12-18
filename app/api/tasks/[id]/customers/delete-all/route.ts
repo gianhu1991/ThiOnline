@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 // Xóa tất cả khách hàng của nhiệm vụ (Admin)
 export async function DELETE(
@@ -10,8 +11,16 @@ export async function DELETE(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xóa khách hàng' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_TASKS)
+      if (!canDelete) {
+        return NextResponse.json({ error: 'Bạn không có quyền xóa khách hàng' }, { status: 403 })
+      }
     }
 
     // Kiểm tra nhiệm vụ tồn tại

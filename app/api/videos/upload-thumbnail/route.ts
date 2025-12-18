@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getJWT(request)
 
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được upload thumbnail' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS)
+      if (!canEdit) {
+        return NextResponse.json({ error: 'Bạn không có quyền upload thumbnail' }, { status: 403 })
+      }
     }
 
     const formData = await request.formData()

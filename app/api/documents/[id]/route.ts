@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -68,8 +69,16 @@ export async function PUT(
   try {
     const user = await getJWT(request)
 
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được sửa tài liệu' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_DOCUMENTS)
+      if (!canEdit) {
+        return NextResponse.json({ error: 'Bạn không có quyền sửa tài liệu' }, { status: 403 })
+      }
     }
 
     const body = await request.json()
@@ -102,8 +111,16 @@ export async function DELETE(
   try {
     const user = await getJWT(request)
 
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xóa tài liệu' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_DOCUMENTS)
+      if (!canDelete) {
+        return NextResponse.json({ error: 'Bạn không có quyền xóa tài liệu' }, { status: 403 })
+      }
     }
 
     await prisma.document.delete({
