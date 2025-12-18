@@ -8,11 +8,12 @@ async function getCorrectUserId(userId: string, username?: string): Promise<stri
   try {
     // BẮT BUỘC: Phải có username, không thì return null
     if (!username) {
-      console.error('[getCorrectUserId] ❌ Username không tồn tại!')
+      console.error('[getCorrectUserId] ❌ Username không tồn tại!', { userId })
       return null
     }
 
     // Tìm user bằng username (đáng tin cậy nhất)
+    console.log('[getCorrectUserId] 🔍 Looking up user by username:', username)
     const userByUsername = await prisma.user.findUnique({
       where: { username },
       select: { id: true, username: true }
@@ -24,13 +25,16 @@ async function getCorrectUserId(userId: string, username?: string): Promise<stri
         console.warn('[getCorrectUserId] ⚠️ userId mismatch:', {
           jwtUserId: userId,
           correctUserId: userByUsername.id,
-          username
+          username,
+          willUse: userByUsername.id
         })
+      } else {
+        console.log('[getCorrectUserId] ✅ userId match:', { userId, username })
       }
       return userByUsername.id
     }
     
-    console.error('[getCorrectUserId] ❌ User not found by username:', { username })
+    console.error('[getCorrectUserId] ❌ User not found by username:', { username, jwtUserId: userId })
     return null
   } catch (error) {
     console.error('[getCorrectUserId] ❌ Error:', error)
@@ -76,6 +80,11 @@ export async function checkPermission(
     }
 
     // Check UserPermission (ưu tiên cao nhất)
+    console.log('[checkPermission] 🔍 Checking UserPermission:', {
+      correctUserId,
+      permissionId: permission.id,
+      permissionCode
+    })
     const userPerm = await prisma.userPermission.findUnique({
       where: {
         userId_permissionId: {
@@ -84,6 +93,11 @@ export async function checkPermission(
         }
       }
     })
+    console.log('[checkPermission] 📊 UserPermission result:', userPerm ? {
+      type: userPerm.type,
+      userId: userPerm.userId,
+      permissionId: userPerm.permissionId
+    } : 'NOT FOUND')
 
     // Debug logging - luôn log cho các permission quan trọng
     if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks' || permissionCode === 'view_exams' || permissionCode === 'create_exams' || permissionCode === 'create_videos') {
@@ -93,29 +107,32 @@ export async function checkPermission(
         include: { permission: true }
       })
       
-      console.log('[checkPermission] Debug:', {
-        originalUserId: userId,
+      console.log('[checkPermission] 🔍 All UserPermissions for this user:', {
         correctUserId,
         username,
-        role,
-        permissionCode,
-        permissionId: permission.id,
-        userPerm: userPerm ? { type: userPerm.type, userId: userPerm.userId } : null,
-        allUserPerms: allUserPerms.map(up => ({ code: up.permission.code, type: up.type, userId: up.userId }))
+        count: allUserPerms.length,
+        permissions: allUserPerms.map(up => ({ 
+          code: up.permission.code, 
+          type: up.type, 
+          userId: up.userId 
+        }))
       })
     }
 
     // DENY có ưu tiên cao nhất - từ chối luôn
     if (userPerm && userPerm.type === 'deny') {
+      console.log('[checkPermission] ❌ DENY - User permission denied')
       return { allowed: false, reason: 'User permission denied' }
     }
 
     // GRANT cho phép luôn - bỏ qua role permission
     if (userPerm && userPerm.type === 'grant') {
+      console.log('[checkPermission] ✅ GRANT - User permission granted')
       return { allowed: true }
     }
 
     // Nếu không có UserPermission, check RolePermission
+    console.log('[checkPermission] 🔍 Checking RolePermission:', { role, permissionId: permission.id })
     const rolePerm = await prisma.rolePermission.findFirst({
       where: {
         role,
@@ -124,9 +141,11 @@ export async function checkPermission(
     })
 
     if (rolePerm) {
+      console.log('[checkPermission] ✅ RolePermission found - allowed')
       return { allowed: true }
     }
 
+    console.log('[checkPermission] ❌ No permission found')
     return { allowed: false, reason: 'No permission' }
   } catch (error: any) {
     console.error('[checkPermission] Error:', error)

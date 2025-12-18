@@ -6,31 +6,60 @@ import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 // Lấy danh sách tất cả nhiệm vụ (Kiểm tra permission VIEW_TASKS)
 export async function GET(request: NextRequest) {
   try {
+    console.log('[GET /api/tasks] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[GET /api/tasks] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
     
     if (!user || !user.role) {
+      console.log('[GET /api/tasks] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Tìm userId đúng từ database
+    let correctUserId = user.userId
+    if (user.username) {
+      const dbUser = await prisma.user.findUnique({
+        where: { username: user.username },
+        select: { id: true, username: true, role: true }
+      })
+      if (dbUser) {
+        correctUserId = dbUser.id
+        console.log('[GET /api/tasks] ✅ Found correct userId:', { 
+          jwtUserId: user.userId, 
+          correctUserId, 
+          username: user.username,
+          match: user.userId === correctUserId
+        })
+      } else {
+        console.log('[GET /api/tasks] ❌ User not found in database:', user.username)
+      }
     }
     
     // Admin luôn được phép
     if (user.role === 'admin') {
+      console.log('[GET /api/tasks] ✅ Admin - bypassing permission check')
       // Continue below
     } else {
       // Kiểm tra quyền VIEW_TASKS (bao gồm cả đặc cách)
+      console.log('[GET /api/tasks] 🔍 Checking permission VIEW_TASKS...')
       const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
-      console.log('[GET /api/tasks] Permission check:', {
-        userId: user.userId,
+      console.log('[GET /api/tasks] 📊 Permission check result:', {
+        jwtUserId: user.userId,
+        correctUserId,
         username: user.username,
         role: user.role,
         permission: PERMISSIONS.VIEW_TASKS,
         canView
       })
       if (!canView) {
+        console.log('[GET /api/tasks] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách nhiệm vụ' }, { status: 403 })
       }
+      console.log('[GET /api/tasks] ✅ Permission granted')
     }
 
     // Lấy danh sách tasks với thống kê trong một query duy nhất (tối ưu hơn)
+    console.log('[GET /api/tasks] 📥 Fetching tasks from database...')
     const tasks = await prisma.task.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -96,6 +125,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('[GET /api/tasks] ✅ Returning tasks:', { count: tasksWithStats.length })
+    console.log('[GET /api/tasks] ========== END ==========')
     return NextResponse.json({ tasks: tasksWithStats })
   } catch (error: any) {
     console.error('Error fetching tasks:', error)

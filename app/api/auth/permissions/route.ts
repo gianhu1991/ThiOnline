@@ -9,14 +9,18 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[GET /api/auth/permissions] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[GET /api/auth/permissions] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
     
     if (!user || !user.role) {
+      console.log('[GET /api/auth/permissions] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
 
     // BẮT BUỘC: Tìm userId đúng từ database bằng username (vì username là unique và đáng tin cậy)
     if (!user.username) {
+      console.log('[GET /api/auth/permissions] ❌ No username in JWT')
       return NextResponse.json({ error: 'Username không tồn tại trong JWT' }, { status: 401 })
     }
 
@@ -26,18 +30,21 @@ export async function GET(request: NextRequest) {
     })
 
     if (!dbUser) {
+      console.log('[GET /api/auth/permissions] ❌ User not found in database:', user.username)
       return NextResponse.json({ error: 'User không tồn tại trong database' }, { status: 404 })
     }
 
     const correctUserId = dbUser.id
+    console.log('[GET /api/auth/permissions] ✅ Found correct userId:', {
+      jwtUserId: user.userId,
+      correctUserId,
+      username: user.username,
+      match: user.userId === correctUserId
+    })
     
-    // Log để debug
+    // Log warning nếu userId không match
     if (user.userId !== correctUserId) {
-      console.warn('[GET /api/auth/permissions] ⚠️ userId mismatch:', {
-        jwtUserId: user.userId,
-        correctUserId,
-        username: user.username
-      })
+      console.warn('[GET /api/auth/permissions] ⚠️ userId mismatch!')
     }
 
     // Query 1: Lấy tất cả permissions
@@ -58,6 +65,7 @@ export async function GET(request: NextRequest) {
     const rolePermissionIds = new Set(rolePermissions.map(rp => rp.permissionId))
 
     // Query 3: Lấy tất cả UserPermissions cho user này (dùng correctUserId)
+    console.log('[GET /api/auth/permissions] 🔍 Fetching UserPermissions with userId:', correctUserId)
     const userPermissionOverrides = await prisma.userPermission.findMany({
       where: { userId: correctUserId },
       select: { 
@@ -65,7 +73,11 @@ export async function GET(request: NextRequest) {
         type: true 
       }
     })
-    console.log('[GET /api/auth/permissions] User permissions found:', userPermissionOverrides.length)
+    console.log('[GET /api/auth/permissions] 📊 UserPermissions found:', {
+      count: userPermissionOverrides.length,
+      grants: userPermissionOverrides.filter(up => up.type === 'grant').length,
+      denies: userPermissionOverrides.filter(up => up.type === 'deny').length
+    })
     
     // Tạo map UserPermissions
     const userPermMap = new Map<string, string>()
@@ -88,6 +100,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const grantedPerms = Object.entries(userPermissions).filter(([_, v]) => v).map(([k]) => k)
+    console.log('[GET /api/auth/permissions] ✅ Final permissions:', {
+      total: Object.keys(userPermissions).length,
+      granted: grantedPerms.length,
+      grantedList: grantedPerms
+    })
+    console.log('[GET /api/auth/permissions] ========== END ==========')
+    
     return NextResponse.json({ 
       permissions: userPermissions,
       role: user.role,

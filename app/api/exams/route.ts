@@ -9,29 +9,58 @@ export const revalidate = 0
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[GET /api/exams] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[GET /api/exams] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
     
     if (!user || !user.role) {
+      console.log('[GET /api/exams] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Tìm userId đúng từ database
+    let correctUserId = user.userId
+    if (user.username) {
+      const dbUser = await prisma.user.findUnique({
+        where: { username: user.username },
+        select: { id: true, username: true, role: true }
+      })
+      if (dbUser) {
+        correctUserId = dbUser.id
+        console.log('[GET /api/exams] ✅ Found correct userId:', { 
+          jwtUserId: user.userId, 
+          correctUserId, 
+          username: user.username,
+          match: user.userId === correctUserId
+        })
+      } else {
+        console.log('[GET /api/exams] ❌ User not found in database:', user.username)
+      }
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền VIEW_EXAMS (bao gồm cả đặc cách)
+      console.log('[GET /api/exams] 🔍 Checking permission VIEW_EXAMS...')
       const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
-      console.log('[GET /api/exams] Permission check:', {
-        userId: user.userId,
+      console.log('[GET /api/exams] 📊 Permission check result:', {
+        jwtUserId: user.userId,
+        correctUserId,
         username: user.username,
         role: user.role,
         permission: PERMISSIONS.VIEW_EXAMS,
         canView
       })
       if (!canView) {
+        console.log('[GET /api/exams] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách bài thi' }, { status: 403 })
       }
+      console.log('[GET /api/exams] ✅ Permission granted')
+    } else {
+      console.log('[GET /api/exams] ✅ Admin - bypassing permission check')
     }
     
-    console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
+    console.log('[GET /api/exams] 📥 Fetching exams from database...')
     
     // Kiểm tra kết nối database
     const examCount = await prisma.exam.count()
@@ -63,8 +92,8 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    console.log('[GET /api/exams] Số bài thi trả về:', exams.length)
-    console.log('[GET /api/exams] Danh sách bài thi:', exams.map(e => ({ id: e.id, title: e.title })))
+    console.log('[GET /api/exams] ✅ Returning exams:', { count: exams.length })
+    console.log('[GET /api/exams] ========== END ==========')
     
     // Đảm bảo mỗi exam đều có _count với giá trị mặc định nếu không có
     if (fullData && Array.isArray(exams)) {
