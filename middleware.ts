@@ -36,8 +36,9 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
-    // Admin luôn được phép
-    if (user.role === 'admin') {
+    // Admin và Leader luôn được phép
+    if (user.role === 'admin' || user.role === 'leader') {
+      console.log('[middleware] ✅ /tasks - Admin/Leader, allowing access')
       return NextResponse.next()
     }
     console.log('[middleware] ========== /tasks CHECK ==========')
@@ -102,9 +103,9 @@ export async function middleware(request: NextRequest) {
     console.log('[middleware] ========== /exams CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
     
-    // Admin luôn được phép
-    if (user.role === 'admin') {
-      console.log('[middleware] ✅ /exams - Admin, allowing access')
+    // Admin và Leader luôn được phép
+    if (user.role === 'admin' || user.role === 'leader') {
+      console.log('[middleware] ✅ /exams - Admin/Leader, allowing access')
       return NextResponse.next()
     }
     

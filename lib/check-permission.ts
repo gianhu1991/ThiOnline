@@ -53,8 +53,8 @@ export async function checkPermission(
   username?: string
 ): Promise<{ allowed: boolean; reason?: string }> {
   try {
-    // Admin luôn được phép
-    if (role === 'admin') {
+    // Admin và Leader luôn được phép
+    if (role === 'admin' || role === 'leader') {
       return { allowed: true }
     }
 
