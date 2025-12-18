@@ -107,7 +107,8 @@ export async function GET(request: NextRequest) {
     }
     console.log('[DEBUG] Permission checks completed')
 
-    return NextResponse.json({
+    console.log('[DEBUG] Preparing response...')
+    const response = {
       jwt: {
         userId: user.userId,
         username: user.username,
