@@ -67,18 +67,33 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[PUT /api/documents/[id]] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[PUT /api/documents/[id]] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[PUT /api/documents/[id]] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[PUT /api/documents/[id]] 🔍 Checking permission EDIT_DOCUMENTS...')
       const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_DOCUMENTS, user.username)
+      console.log('[PUT /api/documents/[id]] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.EDIT_DOCUMENTS,
+        canEdit
+      })
       if (!canEdit) {
+        console.log('[PUT /api/documents/[id]] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền sửa tài liệu' }, { status: 403 })
       }
+      console.log('[PUT /api/documents/[id]] ✅ Permission granted')
+    } else {
+      console.log('[PUT /api/documents/[id]] ✅ Admin - bypassing permission check')
     }
 
     const body = await request.json()
@@ -109,18 +124,33 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[DELETE /api/documents/[id]] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[DELETE /api/documents/[id]] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[DELETE /api/documents/[id]] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[DELETE /api/documents/[id]] 🔍 Checking permission DELETE_DOCUMENTS...')
       const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_DOCUMENTS, user.username)
+      console.log('[DELETE /api/documents/[id]] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.DELETE_DOCUMENTS,
+        canDelete
+      })
       if (!canDelete) {
+        console.log('[DELETE /api/documents/[id]] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền xóa tài liệu' }, { status: 403 })
       }
+      console.log('[DELETE /api/documents/[id]] ✅ Permission granted')
+    } else {
+      console.log('[DELETE /api/documents/[id]] ✅ Admin - bypassing permission check')
     }
 
     await prisma.document.delete({

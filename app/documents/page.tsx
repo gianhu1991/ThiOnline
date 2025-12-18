@@ -354,21 +354,21 @@ export default function DocumentsPage() {
                       Không có file
                     </button>
                   )}
-                  {userRole === 'admin' && (
-                    <>
-                      <button
-                        onClick={() => handleEdit(doc)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDelete(doc.id)}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
-                      >
-                        Xóa
-                      </button>
-                    </>
+                  {(permissions['edit_documents'] || userRole === 'admin') && (
+                    <button
+                      onClick={() => handleEdit(doc)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
+                    >
+                      Sửa
+                    </button>
+                  )}
+                  {(permissions['delete_documents'] || userRole === 'admin') && (
+                    <button
+                      onClick={() => handleDelete(doc.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
+                    >
+                      Xóa
+                    </button>
                   )}
                 </div>
               </div>
@@ -378,7 +378,7 @@ export default function DocumentsPage() {
       )}
 
       {/* Edit Document Modal */}
-      {showEditModal && userRole === 'admin' && editingDocument && (
+      {showEditModal && (permissions['edit_documents'] || userRole === 'admin') && editingDocument && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Sửa tài liệu</h2>
