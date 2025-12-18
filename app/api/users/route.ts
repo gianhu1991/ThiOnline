@@ -3,14 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
 import { hashPassword } from '@/lib/auth'
 import { isSuperAdminByUsername } from '@/lib/super-admin'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
-// Lấy danh sách tất cả user (chỉ admin)
+// Lấy danh sách tất cả user (admin hoặc user có quyền view_users)
 export async function GET(request: NextRequest) {
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xem danh sách user' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      // Kiểm tra quyền VIEW_USERS
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_USERS, user.username)
+      if (!canView) {
+        return NextResponse.json({ error: 'Bạn không có quyền xem danh sách user' }, { status: 403 })
+      }
     }
 
     const users = await prisma.user.findMany({

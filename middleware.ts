@@ -84,7 +84,7 @@ export async function middleware(request: NextRequest) {
     }
     
     if (user.role) {
-      const { allowed, reason } = await checkPermissionViaAPI(request, PERMISSIONS.VIEW_TASKS)
+      const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
       console.log('[middleware] /tasks permission check result:', {
         userId: user.userId,
         username: user.username,
