@@ -106,25 +106,31 @@ export default function Navigation() {
                 </Link>
               )}
               
-              {/* Bài thi: Admin/Leader thấy "Quản lý bài thi", user thường thấy "Bài thi của tôi" */}
-              {(permissions['view_exams'] || userRole === 'admin' || userRole === 'leader') ? (
-                <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                  Quản lý bài thi
-                </Link>
-              ) : (
+              {/* Bài thi của tôi - luôn hiện cho user thường (không phải admin/leader) */}
+              {userRole !== 'admin' && userRole !== 'leader' && (
                 <Link href="/my-exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Bài thi của tôi
                 </Link>
               )}
               
-              {/* Nhiệm vụ: Admin/Leader thấy "Quản lý nhiệm vụ", user thường thấy "Nhiệm vụ của tôi" */}
-              {(permissions['view_tasks'] || userRole === 'admin' || userRole === 'leader') ? (
-                <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                  Quản lý nhiệm vụ
+              {/* Quản lý bài thi - chỉ hiện cho user có quyền view_exams hoặc admin/leader */}
+              {(permissions['view_exams'] || userRole === 'admin' || userRole === 'leader') && (
+                <Link href="/exams" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Quản lý bài thi
                 </Link>
-              ) : (
+              )}
+              
+              {/* Nhiệm vụ của tôi - luôn hiện cho user thường (không phải admin/leader) */}
+              {userRole !== 'admin' && userRole !== 'leader' && (
                 <Link href="/my-tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Nhiệm vụ của tôi
+                </Link>
+              )}
+              
+              {/* Quản lý nhiệm vụ - chỉ hiện cho user có quyền view_tasks hoặc admin/leader */}
+              {(permissions['view_tasks'] || userRole === 'admin' || userRole === 'leader') && (
+                <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
+                  Quản lý nhiệm vụ
                 </Link>
               )}
               
