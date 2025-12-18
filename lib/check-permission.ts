@@ -2,40 +2,38 @@ import { prisma } from './prisma'
 import { PERMISSIONS } from './permissions'
 
 /**
- * Helper function để lấy userId đúng từ database (LUÔN dùng username để tìm, vì username là unique và đáng tin cậy hơn)
+ * Helper function để lấy userId đúng từ database (BẮT BUỘC dùng username, không dùng userId từ JWT)
  */
 async function getCorrectUserId(userId: string, username?: string): Promise<string | null> {
   try {
-    // ƯU TIÊN: Tìm bằng username trước (vì username là unique và đáng tin cậy hơn userId trong JWT)
-    if (username) {
-      const userByUsername = await prisma.user.findUnique({
-        where: { username },
-        select: { id: true, username: true }
-      })
-      
-      if (userByUsername) {
-        console.log('[getCorrectUserId] Found by username:', { inputUserId: userId, inputUsername: username, foundUserId: userByUsername.id, foundUsername: userByUsername.username })
-        return userByUsername.id
-      } else {
-        console.log('[getCorrectUserId] User not found by username:', { inputUserId: userId, inputUsername: username })
-      }
+    // BẮT BUỘC: Phải có username, không thì return null
+    if (!username) {
+      console.error('[getCorrectUserId] ❌ Username không tồn tại!')
+      return null
     }
-    
-    // FALLBACK: Nếu không có username hoặc không tìm thấy, thử tìm bằng userId
-    const userById = await prisma.user.findUnique({
-      where: { id: userId },
+
+    // Tìm user bằng username (đáng tin cậy nhất)
+    const userByUsername = await prisma.user.findUnique({
+      where: { username },
       select: { id: true, username: true }
     })
     
-    if (userById) {
-      console.log('[getCorrectUserId] Found by userId (fallback):', { inputUserId: userId, foundUserId: userById.id, foundUsername: userById.username })
-      return userById.id
+    if (userByUsername) {
+      // Log warning nếu userId không match
+      if (userByUsername.id !== userId) {
+        console.warn('[getCorrectUserId] ⚠️ userId mismatch:', {
+          jwtUserId: userId,
+          correctUserId: userByUsername.id,
+          username
+        })
+      }
+      return userByUsername.id
     }
     
-    console.log('[getCorrectUserId] User not found:', { inputUserId: userId, inputUsername: username })
+    console.error('[getCorrectUserId] ❌ User not found by username:', { username })
     return null
   } catch (error) {
-    console.error('[getCorrectUserId] Error:', error)
+    console.error('[getCorrectUserId] ❌ Error:', error)
     return null
   }
 }

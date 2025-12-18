@@ -15,21 +15,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
 
-    // Tìm userId đúng từ database (ưu tiên username)
-    let correctUserId = user.userId
-    if (user.username) {
-      const dbUser = await prisma.user.findUnique({
-        where: { username: user.username },
-        select: { id: true }
+    // BẮT BUỘC: Tìm userId đúng từ database bằng username (vì username là unique và đáng tin cậy)
+    if (!user.username) {
+      return NextResponse.json({ error: 'Username không tồn tại trong JWT' }, { status: 401 })
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { username: user.username },
+      select: { id: true, username: true, role: true }
+    })
+
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User không tồn tại trong database' }, { status: 404 })
+    }
+
+    const correctUserId = dbUser.id
+    
+    // Log để debug
+    if (user.userId !== correctUserId) {
+      console.warn('[GET /api/auth/permissions] ⚠️ userId mismatch:', {
+        jwtUserId: user.userId,
+        correctUserId,
+        username: user.username
       })
-      if (dbUser) {
-        correctUserId = dbUser.id
-        console.log('[GET /api/auth/permissions] Found correct userId:', { 
-          jwtUserId: user.userId, 
-          correctUserId, 
-          username: user.username 
-        })
-      }
     }
 
     // Query 1: Lấy tất cả permissions
