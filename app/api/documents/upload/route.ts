@@ -5,18 +5,33 @@ import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[POST /api/documents/upload] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[POST /api/documents/upload] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[POST /api/documents/upload] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[POST /api/documents/upload] 🔍 Checking permission CREATE_DOCUMENTS...')
       const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_DOCUMENTS, user.username)
+      console.log('[POST /api/documents/upload] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.CREATE_DOCUMENTS,
+        canCreate
+      })
       if (!canCreate) {
+        console.log('[POST /api/documents/upload] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền upload tài liệu' }, { status: 403 })
       }
+      console.log('[POST /api/documents/upload] ✅ Permission granted')
+    } else {
+      console.log('[POST /api/documents/upload] ✅ Admin - bypassing permission check')
     }
 
     const formData = await request.formData()

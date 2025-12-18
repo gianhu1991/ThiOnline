@@ -73,18 +73,33 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[POST /api/documents] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[POST /api/documents] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[POST /api/documents] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[POST /api/documents] 🔍 Checking permission CREATE_DOCUMENTS...')
       const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_DOCUMENTS, user.username)
+      console.log('[POST /api/documents] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.CREATE_DOCUMENTS,
+        canCreate
+      })
       if (!canCreate) {
+        console.log('[POST /api/documents] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền tạo tài liệu' }, { status: 403 })
       }
+      console.log('[POST /api/documents] ✅ Permission granted')
+    } else {
+      console.log('[POST /api/documents] ✅ Admin - bypassing permission check')
     }
 
     const body = await request.json()
