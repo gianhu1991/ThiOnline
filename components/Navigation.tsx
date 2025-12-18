@@ -112,12 +112,6 @@ export default function Navigation() {
                 </Link>
               )}
               
-              {(permissions['create_exams'] || userRole === 'admin') && (
-                <Link href="/exams/create" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
-                  Tạo bài thi
-                </Link>
-              )}
-              
               {(permissions['view_tasks'] || userRole === 'admin' || userRole === 'leader') && (
                 <Link href="/tasks" className="hover:text-blue-200 transition-colors font-medium whitespace-nowrap text-sm md:text-base">
                   Quản lý nhiệm vụ
