@@ -22,6 +22,8 @@ export default function QuestionsPage() {
   const [category, setCategory] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [categories, setCategories] = useState<string[]>([])
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({})
   
   // Add question state
   const [showAddForm, setShowAddForm] = useState(false)
@@ -61,11 +63,44 @@ export default function QuestionsPage() {
 
   useEffect(() => {
     fetchQuestions()
+    checkUserRole()
+    fetchPermissions()
   }, [selectedCategory])
 
   useEffect(() => {
     fetchCategories()
   }, [])
+
+  const checkUserRole = async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.user?.role || null)
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error)
+    }
+  }
+
+  const fetchPermissions = async () => {
+    try {
+      const res = await fetch('/api/auth/permissions', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPermissions(data.permissions || {})
+      } else {
+        setPermissions({})
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error)
+      setPermissions({})
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -436,16 +471,17 @@ export default function QuestionsPage() {
       </div>
 
       {/* Form import */}
-      <div className="card mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+      {(permissions['import_questions'] || userRole === 'admin') && (
+        <div className="card mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold">Import câu hỏi</h2>
           </div>
-          <h2 className="text-2xl font-bold">Import câu hỏi</h2>
-        </div>
-        <form onSubmit={handleImport} className="space-y-6">
+          <form onSubmit={handleImport} className="space-y-6">
           <div className="flex items-center gap-4 mb-4">
             <button
               type="button"
@@ -529,13 +565,15 @@ export default function QuestionsPage() {
                 'Import câu hỏi'
               )}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="btn-primary"
-            >
-              Thêm câu hỏi
-            </button>
+            {(permissions['create_questions'] || userRole === 'admin') && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="btn-primary"
+              >
+                Thêm câu hỏi
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -561,7 +599,7 @@ export default function QuestionsPage() {
                 ))}
               </select>
             </div>
-            {questions.length > 0 && (
+            {questions.length > 0 && (permissions['delete_questions'] || userRole === 'admin') && (
               <button
                 onClick={handleDeleteAll}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 whitespace-nowrap"
@@ -655,24 +693,28 @@ export default function QuestionsPage() {
                       </div>
                     </div>
                     <div className="flex-shrink-0 flex gap-2">
-                      <button
-                        onClick={() => handleEdit(q)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
-                        title="Sửa câu hỏi"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(q.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                        title="Xóa câu hỏi"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {(permissions['edit_questions'] || userRole === 'admin') && (
+                        <button
+                          onClick={() => handleEdit(q)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                          title="Sửa câu hỏi"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+                      {(permissions['delete_questions'] || userRole === 'admin') && (
+                        <button
+                          onClick={() => handleDelete(q.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                          title="Xóa câu hỏi"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -680,7 +722,7 @@ export default function QuestionsPage() {
             })}
             
             {/* Edit Modal */}
-            {editingQuestion && (
+            {editingQuestion && (permissions['edit_questions'] || userRole === 'admin') && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                   <div className="p-6">
@@ -814,7 +856,7 @@ export default function QuestionsPage() {
       </div>
 
       {/* Modal thêm câu hỏi thủ công */}
-      {showAddForm && (
+      {showAddForm && (permissions['create_questions'] || userRole === 'admin') && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">

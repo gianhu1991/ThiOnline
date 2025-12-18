@@ -14,10 +14,12 @@ type SettingsTab = 'password' | 'category' | 'user' | 'group' | 'background' | '
 
 export default function SettingsPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({})
   const [activeTab, setActiveTab] = useState<SettingsTab>('password')
 
   useEffect(() => {
     checkUserRole()
+    fetchPermissions()
   }, [])
 
   const checkUserRole = async () => {
@@ -31,6 +33,23 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Error checking user role:', error)
+    }
+  }
+
+  const fetchPermissions = async () => {
+    try {
+      const res = await fetch('/api/auth/permissions', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPermissions(data.permissions || {})
+      } else {
+        setPermissions({})
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error)
+      setPermissions({})
     }
   }
 
@@ -62,10 +81,9 @@ export default function SettingsPage() {
                 </div>
               </button>
 
-              {userRole === 'admin' && (
-                <>
-                  <button
-                    onClick={() => setActiveTab('category')}
+              {(permissions['manage_categories'] || userRole === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('category')}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                       activeTab === 'category' ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                     }`}
@@ -79,9 +97,11 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </button>
+              )}
 
-                  <button
-                    onClick={() => setActiveTab('user')}
+              {(permissions['view_users'] || userRole === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('user')}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                       activeTab === 'user' ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                     }`}
@@ -95,9 +115,11 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </button>
+              )}
 
-                  <button
-                    onClick={() => setActiveTab('group')}
+              {(permissions['manage_groups'] || userRole === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('group')}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                       activeTab === 'group' ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                     }`}
@@ -111,9 +133,11 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </button>
+              )}
 
-                  <button
-                    onClick={() => setActiveTab('background')}
+              {(permissions['manage_settings'] || userRole === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('background')}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                       activeTab === 'background' ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                     }`}
@@ -127,7 +151,10 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </button>
+              )}
 
+              {(permissions['manage_permissions'] || userRole === 'admin') && (
+                <>
                   <button
                     onClick={() => setActiveTab('permissions')}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
@@ -168,12 +195,12 @@ export default function SettingsPage() {
         {/* Nội dung bên phải */}
         <div className="flex-1 w-full">
           {activeTab === 'password' && <ChangePasswordForm />}
-          {activeTab === 'category' && userRole === 'admin' && <CategoryManagementForm />}
-          {activeTab === 'user' && userRole === 'admin' && <UserManagementForm />}
-          {activeTab === 'group' && userRole === 'admin' && <UserGroupManagementForm />}
-          {activeTab === 'background' && userRole === 'admin' && <LoginBackgroundForm />}
-          {activeTab === 'permissions' && userRole === 'admin' && <PermissionManagementForm />}
-          {activeTab === 'user-permissions' && userRole === 'admin' && <UserPermissionManagementForm />}
+          {activeTab === 'category' && (permissions['manage_categories'] || userRole === 'admin') && <CategoryManagementForm />}
+          {activeTab === 'user' && (permissions['view_users'] || userRole === 'admin') && <UserManagementForm />}
+          {activeTab === 'group' && (permissions['manage_groups'] || userRole === 'admin') && <UserGroupManagementForm />}
+          {activeTab === 'background' && (permissions['manage_settings'] || userRole === 'admin') && <LoginBackgroundForm />}
+          {activeTab === 'permissions' && (permissions['manage_permissions'] || userRole === 'admin') && <PermissionManagementForm />}
+          {activeTab === 'user-permissions' && (permissions['manage_permissions'] || userRole === 'admin') && <UserPermissionManagementForm />}
         </div>
       </div>
     </div>

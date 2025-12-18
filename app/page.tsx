@@ -50,6 +50,19 @@ export default function Home() {
         const role = data.user?.role
         setUserRole(role)
         
+        // Fetch permissions
+        try {
+          const permRes = await fetch('/api/auth/permissions', {
+            credentials: 'include',
+          })
+          if (permRes.ok) {
+            const permData = await permRes.json()
+            setPermissions(permData.permissions || {})
+          }
+        } catch (permError) {
+          console.error('Error fetching permissions:', permError)
+        }
+        
         // Cho phép cả admin và user thường xem trang chủ
         setCheckingAuth(false)
       } catch (error) {
@@ -186,7 +199,7 @@ export default function Home() {
           <p className="text-gray-600 mb-4">
             Import và quản lý câu hỏi từ file Excel hoặc PDF. Hỗ trợ câu hỏi chọn 1 hoặc nhiều đáp án.
           </p>
-          {userRole === 'admin' ? (
+          {(permissions['view_questions'] || userRole === 'admin') ? (
             <Link href="/questions" className="btn-primary inline-block">
               Quản lý câu hỏi
             </Link>
