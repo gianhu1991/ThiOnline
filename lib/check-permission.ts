@@ -16,12 +16,18 @@ export async function checkPermission(
       return { allowed: true }
     }
 
+    if (!role) {
+      return { allowed: false, reason: 'No role' }
+    }
+
     // Lấy permission từ database
     const permission = await prisma.permission.findUnique({
       where: { code: permissionCode }
     })
 
     if (!permission) {
+      // Nếu permission không tồn tại, có thể bảng chưa được tạo
+      // Fallback về false để an toàn
       return { allowed: false, reason: 'Permission not found' }
     }
 
@@ -35,17 +41,17 @@ export async function checkPermission(
       }
     })
 
-    // DENY có ưu tiên cao nhất
+    // DENY có ưu tiên cao nhất - từ chối luôn
     if (userPerm && userPerm.type === 'deny') {
       return { allowed: false, reason: 'User permission denied' }
     }
 
-    // GRANT cho phép luôn
+    // GRANT cho phép luôn - bỏ qua role permission
     if (userPerm && userPerm.type === 'grant') {
       return { allowed: true }
     }
 
-    // Check RolePermission
+    // Nếu không có UserPermission, check RolePermission
     const rolePerm = await prisma.rolePermission.findFirst({
       where: {
         role,
@@ -58,10 +64,10 @@ export async function checkPermission(
     }
 
     return { allowed: false, reason: 'No permission' }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[checkPermission] Error:', error)
-    // Nếu có lỗi, fallback về false để an toàn
-    return { allowed: false, reason: 'Error checking permission' }
+    // Nếu có lỗi (ví dụ: bảng chưa tồn tại), fallback về false để an toàn
+    return { allowed: false, reason: `Error: ${error.message}` }
   }
 }
 
