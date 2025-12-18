@@ -2,7 +2,38 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getJWT } from './lib/jwt'
 import { PERMISSIONS } from './lib/permissions'
-import { checkPermission } from './lib/check-permission'
+
+/**
+ * Helper function để check permission từ middleware (Edge Runtime)
+ * Gọi API route thay vì dùng Prisma trực tiếp
+ */
+async function checkPermissionViaAPI(
+  request: NextRequest,
+  permissionCode: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  try {
+    const checkUrl = new URL('/api/auth/check-permission', request.url)
+    checkUrl.searchParams.set('permission', permissionCode)
+    
+    const checkRequest = new Request(checkUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Cookie': request.headers.get('cookie') || '',
+      }
+    })
+    
+    const checkResponse = await fetch(checkRequest)
+    const checkResult = await checkResponse.json()
+    
+    return {
+      allowed: checkResult.allowed || false,
+      reason: checkResult.reason
+    }
+  } catch (error: any) {
+    console.error('[middleware] Error checking permission via API:', error)
+    return { allowed: false, reason: `Error: ${error.message}` }
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -88,7 +119,7 @@ export async function middleware(request: NextRequest) {
     }
     
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS, user.username)
+      const { allowed } = await checkPermissionViaAPI(request, PERMISSIONS.CREATE_EXAMS)
       if (allowed) {
         return NextResponse.next()
       }
@@ -124,42 +155,63 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
     
-    // Check permission với logging chi tiết
+    // Check permission bằng cách gọi API route (vì middleware chạy trên Edge Runtime, không thể dùng Prisma)
     console.log('[middleware] 🔍 Checking permission VIEW_EXAMS for user:', {
       userId: user.userId,
       username: user.username,
       role: user.role
     })
     
-    const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
-    
-    console.log('[middleware] 📊 /exams permission check result:', {
-      userId: user.userId,
-      username: user.username,
-      role: user.role,
-      permission: PERMISSIONS.VIEW_EXAMS,
-      allowed,
-      reason
-    })
-    
-    if (allowed) {
-      console.log('[middleware] ✅ /exams - Permission granted, allowing access')
-      return NextResponse.next()
-    } else {
-      // Log chi tiết lý do từ chối
-      console.error('[middleware] ❌ /exams - Permission DENIED:', {
-        reason,
+    try {
+      // Gọi API route để check permission
+      const checkUrl = new URL('/api/auth/check-permission', request.url)
+      checkUrl.searchParams.set('permission', PERMISSIONS.VIEW_EXAMS)
+      
+      // Tạo request mới với cookies từ request gốc
+      const checkRequest = new Request(checkUrl.toString(), {
+        method: 'GET',
+        headers: {
+          'Cookie': request.headers.get('cookie') || '',
+        }
+      })
+      
+      const checkResponse = await fetch(checkRequest)
+      const checkResult = await checkResponse.json()
+      
+      console.log('[middleware] 📊 /exams permission check result:', {
         userId: user.userId,
         username: user.username,
         role: user.role,
-        permission: PERMISSIONS.VIEW_EXAMS
+        permission: PERMISSIONS.VIEW_EXAMS,
+        allowed: checkResult.allowed,
+        reason: checkResult.reason
       })
       
-      // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
-      if (reason === 'User not found' || reason === 'Permission not found' || reason?.includes('Error:')) {
-        console.error('[middleware] ⚠️ /exams - Permission check error:', reason, '- This might be a temporary issue')
+      if (checkResult.allowed) {
+        console.log('[middleware] ✅ /exams - Permission granted, allowing access')
+        return NextResponse.next()
+      } else {
+        // Log chi tiết lý do từ chối
+        console.error('[middleware] ❌ /exams - Permission DENIED:', {
+          reason: checkResult.reason,
+          userId: user.userId,
+          username: user.username,
+          role: user.role,
+          permission: PERMISSIONS.VIEW_EXAMS
+        })
+        
+        // Nếu lỗi là "User not found" hoặc "Permission not found", có thể là lỗi tạm thời
+        if (checkResult.reason === 'User not found' || checkResult.reason === 'Permission not found' || checkResult.reason?.includes('Error:')) {
+          console.error('[middleware] ⚠️ /exams - Permission check error:', checkResult.reason, '- This might be a temporary issue')
+        }
+        
+        const url = request.nextUrl.clone()
+        url.pathname = '/my-exams'
+        return NextResponse.redirect(url)
       }
-      
+    } catch (error: any) {
+      console.error('[middleware] ❌ Error checking permission:', error)
+      // Nếu có lỗi khi check permission, redirect để an toàn
       const url = request.nextUrl.clone()
       url.pathname = '/my-exams'
       return NextResponse.redirect(url)
@@ -174,7 +226,7 @@ export async function middleware(request: NextRequest) {
     }
     
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.EDIT_EXAMS, user.username)
+      const { allowed } = await checkPermissionViaAPI(request, PERMISSIONS.EDIT_EXAMS)
       if (allowed) {
         return NextResponse.next()
       }
@@ -192,7 +244,7 @@ export async function middleware(request: NextRequest) {
     }
     
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS, user.username)
+      const { allowed } = await checkPermissionViaAPI(request, PERMISSIONS.VIEW_QUESTIONS)
       if (allowed) {
         return NextResponse.next()
       }
