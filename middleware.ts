@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getJWT } from './lib/jwt'
-import { hasUserPermission, PERMISSIONS } from './lib/permissions'
+import { PERMISSIONS } from './lib/permissions'
+import { prisma } from './lib/prisma'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -47,10 +48,45 @@ export async function middleware(request: NextRequest) {
     
     if (user.role) {
       try {
-        const hasPermission = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
-        console.log(`[Middleware] User ${user.username} (${user.role}) - VIEW_TASKS: ${hasPermission}`)
-        if (hasPermission) {
-          return NextResponse.next()
+        // Check permissions giống như API /api/auth/permissions
+        const permission = await prisma.permission.findUnique({
+          where: { code: PERMISSIONS.VIEW_TASKS }
+        })
+        
+        if (permission) {
+          // Check UserPermission
+          const userPerm = await prisma.userPermission.findUnique({
+            where: {
+              userId_permissionId: {
+                userId: user.userId,
+                permissionId: permission.id
+              }
+            }
+          })
+          
+          // Nếu có grant, cho phép
+          if (userPerm && userPerm.type === 'grant') {
+            return NextResponse.next()
+          }
+          
+          // Nếu có deny, từ chối
+          if (userPerm && userPerm.type === 'deny') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/my-tasks'
+            return NextResponse.redirect(url)
+          }
+          
+          // Check RolePermission
+          const rolePerm = await prisma.rolePermission.findFirst({
+            where: {
+              role: user.role,
+              permissionId: permission.id
+            }
+          })
+          
+          if (rolePerm) {
+            return NextResponse.next()
+          }
         }
       } catch (error) {
         console.error(`[Middleware] Error checking permission for ${user.username}:`, error)
@@ -59,7 +95,6 @@ export async function middleware(request: NextRequest) {
       }
     }
     // Không có quyền → redirect về /my-tasks
-    console.log(`[Middleware] Redirecting ${user.username} to /my-tasks (no VIEW_TASKS permission)`)
     const url = request.nextUrl.clone()
     url.pathname = '/my-tasks'
     return NextResponse.redirect(url)
