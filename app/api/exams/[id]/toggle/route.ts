@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function POST(
   request: NextRequest,
@@ -9,8 +10,16 @@ export async function POST(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được thay đổi trạng thái bài thi' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canToggle = await hasUserPermission(user.userId, user.role, PERMISSIONS.TOGGLE_EXAM_STATUS)
+      if (!canToggle) {
+        return NextResponse.json({ error: 'Bạn không có quyền thay đổi trạng thái bài thi' }, { status: 403 })
+      }
     }
 
     const exam = await prisma.exam.findUnique({
