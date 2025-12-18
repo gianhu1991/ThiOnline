@@ -18,6 +18,13 @@ export async function GET(request: NextRequest) {
     } else {
       // Kiểm tra quyền VIEW_TASKS (bao gồm cả đặc cách)
       const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
+      console.log('[GET /api/tasks] Permission check:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.VIEW_TASKS,
+        canView
+      })
       if (!canView) {
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách nhiệm vụ' }, { status: 403 })
       }

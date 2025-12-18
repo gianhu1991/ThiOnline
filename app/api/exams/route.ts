@@ -19,6 +19,13 @@ export async function GET(request: NextRequest) {
     if (user.role !== 'admin') {
       // Kiểm tra quyền VIEW_EXAMS (bao gồm cả đặc cách)
       const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
+      console.log('[GET /api/exams] Permission check:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.VIEW_EXAMS,
+        canView
+      })
       if (!canView) {
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách bài thi' }, { status: 403 })
       }
