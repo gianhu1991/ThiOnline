@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 import ExcelJS from 'exceljs'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -13,9 +14,16 @@ export async function GET(
   try {
     const user = await getJWT(request)
     
-    // Cho phép admin và leader xuất file
-    if (!user || (user.role !== 'admin' && user.role !== 'leader')) {
-      return NextResponse.json({ error: 'Chỉ admin và leader mới được xuất file' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      const canExport = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS)
+      if (!canExport) {
+        return NextResponse.json({ error: 'Bạn không có quyền xuất kết quả nhiệm vụ' }, { status: 403 })
+      }
     }
 
     const task = await prisma.task.findUnique({

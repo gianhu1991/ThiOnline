@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 // Lấy dữ liệu tổng hợp kết quả thực hiện nhiệm vụ
 export async function GET(
@@ -10,8 +11,17 @@ export async function GET(
   try {
     const user = await getJWT(request)
     
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được xem kết quả' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      // Kiểm tra quyền EXPORT_TASK_RESULTS (xem kết quả cũng cần quyền này)
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.EXPORT_TASK_RESULTS)
+      if (!canView) {
+        return NextResponse.json({ error: 'Bạn không có quyền xem kết quả' }, { status: 403 })
+      }
     }
 
     // Lấy query parameter date (format: YYYY-MM-DD)
