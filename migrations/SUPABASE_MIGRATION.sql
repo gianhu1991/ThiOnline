@@ -77,6 +77,7 @@ VALUES
     (gen_random_uuid()::text, 'create_tasks', 'Tạo nhiệm vụ mới', 'Tạo nhiệm vụ mới', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (gen_random_uuid()::text, 'edit_tasks', 'Chỉnh sửa nhiệm vụ', 'Chỉnh sửa thông tin nhiệm vụ', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (gen_random_uuid()::text, 'delete_tasks', 'Xóa nhiệm vụ', 'Xóa nhiệm vụ và dữ liệu liên quan', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (gen_random_uuid()::text, 'view_task_results', 'Xem kết quả nhiệm vụ', 'Xem kết quả thực hiện nhiệm vụ', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (gen_random_uuid()::text, 'export_task_results', 'Xuất kết quả nhiệm vụ', 'Xuất kết quả nhiệm vụ ra file Excel', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (gen_random_uuid()::text, 'assign_tasks', 'Gán nhiệm vụ', 'Gán nhiệm vụ cho người dùng', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (gen_random_uuid()::text, 'upload_task_data', 'Upload dữ liệu nhiệm vụ', 'Upload file Excel để cập nhật dữ liệu nhiệm vụ', 'tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -173,6 +174,7 @@ WHERE "code" IN (
     -- Tasks
     'view_tasks',
     'view_task_customers',
+    'view_task_results',
     'export_task_results',
     -- Questions
     'view_questions',
