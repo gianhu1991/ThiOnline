@@ -15,6 +15,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
 
+    // Tìm userId đúng từ database (ưu tiên username)
+    let correctUserId = user.userId
+    if (user.username) {
+      const dbUser = await prisma.user.findUnique({
+        where: { username: user.username },
+        select: { id: true }
+      })
+      if (dbUser) {
+        correctUserId = dbUser.id
+        console.log('[GET /api/auth/permissions] Found correct userId:', { 
+          jwtUserId: user.userId, 
+          correctUserId, 
+          username: user.username 
+        })
+      }
+    }
+
     // Query 1: Lấy tất cả permissions
     const allPermissions = await prisma.permission.findMany({
       select: {
@@ -32,14 +49,15 @@ export async function GET(request: NextRequest) {
     })
     const rolePermissionIds = new Set(rolePermissions.map(rp => rp.permissionId))
 
-    // Query 3: Lấy tất cả UserPermissions cho user này
+    // Query 3: Lấy tất cả UserPermissions cho user này (dùng correctUserId)
     const userPermissionOverrides = await prisma.userPermission.findMany({
-      where: { userId: user.userId },
+      where: { userId: correctUserId },
       select: { 
         permissionId: true,
         type: true 
       }
     })
+    console.log('[GET /api/auth/permissions] User permissions found:', userPermissionOverrides.length)
     
     // Tạo map UserPermissions
     const userPermMap = new Map<string, string>()
