@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,8 +73,17 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getJWT(request)
 
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Chỉ admin mới được upload video' }, { status: 403 })
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      // Kiểm tra quyền CREATE_VIDEOS (bao gồm cả đặc cách)
+      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_VIDEOS)
+      if (!canCreate) {
+        return NextResponse.json({ error: 'Bạn không có quyền tạo video' }, { status: 403 })
+      }
     }
 
     const body = await request.json()

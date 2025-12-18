@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getJWT } from '@/lib/jwt'
+import { hasUserPermission, PERMISSIONS } from '@/lib/permissions'
 
 // Đảm bảo route này luôn dynamic, không cache
 export const dynamic = 'force-dynamic'
@@ -76,6 +78,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getJWT(request)
+    
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      // Kiểm tra quyền CREATE_EXAMS (bao gồm cả đặc cách)
+      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS)
+      if (!canCreate) {
+        return NextResponse.json({ error: 'Bạn không có quyền tạo bài thi' }, { status: 403 })
+      }
+    }
+    
     const body = await request.json()
     const {
       title,
