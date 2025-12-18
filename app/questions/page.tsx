@@ -576,7 +576,8 @@ export default function QuestionsPage() {
             )}
           </div>
         </form>
-      </div>
+        </div>
+      )}
 
       {/* Danh sách câu hỏi */}
       <div className="card">
