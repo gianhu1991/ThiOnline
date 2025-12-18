@@ -22,6 +22,7 @@ export default function VideosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [categories, setCategories] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({})
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
@@ -43,11 +44,13 @@ export default function VideosPage() {
   useEffect(() => {
     fetchVideos()
     checkUserRole()
+    fetchPermissions()
   }, [selectedCategory])
 
   // Re-check user role when component mounts
   useEffect(() => {
     checkUserRole()
+    fetchPermissions()
   }, [])
 
   const checkUserRole = async () => {
@@ -67,6 +70,23 @@ export default function VideosPage() {
     } catch (error) {
       console.error('Error checking user role:', error)
       setUserRole(null)
+    }
+  }
+
+  const fetchPermissions = async () => {
+    try {
+      const res = await fetch('/api/auth/permissions', {
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPermissions(data.permissions || {})
+      } else {
+        setPermissions({})
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error)
+      setPermissions({})
     }
   }
 
@@ -366,7 +386,7 @@ export default function VideosPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Video thực hành</h1>
           <p className="text-gray-600">Xem các video hướng dẫn thực hành</p>
         </div>
-        {userRole === 'admin' && (
+        {(permissions['create_videos'] || userRole === 'admin') && (
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2"
@@ -475,9 +495,9 @@ export default function VideosPage() {
                   </div>
                 </Link>
 
-                {/* Edit and Delete Buttons - Only for admin */}
-                {userRole === 'admin' && (
-                  <div className="mt-2 px-1 flex gap-2 flex-shrink-0">
+                {/* Edit and Delete Buttons */}
+                <div className="mt-2 px-1 flex gap-2 flex-shrink-0">
+                  {(permissions['edit_videos'] || userRole === 'admin') && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -492,6 +512,8 @@ export default function VideosPage() {
                       </svg>
                       Sửa
                     </button>
+                  )}
+                  {(permissions['delete_videos'] || userRole === 'admin') && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -506,8 +528,8 @@ export default function VideosPage() {
                       </svg>
                       Xóa
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )
           })}
@@ -515,7 +537,7 @@ export default function VideosPage() {
       )}
 
       {/* Edit Video Modal */}
-      {showEditModal && userRole === 'admin' && editingVideo && (
+      {showEditModal && (permissions['edit_videos'] || userRole === 'admin') && editingVideo && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Sửa video</h2>
@@ -642,7 +664,7 @@ export default function VideosPage() {
       )}
 
       {/* Add Video Modal */}
-      {showAddModal && userRole === 'admin' && (
+      {showAddModal && (permissions['create_videos'] || userRole === 'admin') && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Thêm video mới</h2>

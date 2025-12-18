@@ -8,18 +8,33 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[DELETE /api/videos/[id]] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[DELETE /api/videos/[id]] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[DELETE /api/videos/[id]] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[DELETE /api/videos/[id]] 🔍 Checking permission DELETE_VIDEOS...')
       const canDelete = await hasUserPermission(user.userId, user.role, PERMISSIONS.DELETE_VIDEOS, user.username)
+      console.log('[DELETE /api/videos/[id]] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.DELETE_VIDEOS,
+        canDelete
+      })
       if (!canDelete) {
+        console.log('[DELETE /api/videos/[id]] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền xóa video' }, { status: 403 })
       }
+      console.log('[DELETE /api/videos/[id]] ✅ Permission granted')
+    } else {
+      console.log('[DELETE /api/videos/[id]] ✅ Admin - bypassing permission check')
     }
 
     await prisma.video.delete({
@@ -37,18 +52,33 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[PUT /api/videos/[id]] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[PUT /api/videos/[id]] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[PUT /api/videos/[id]] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
+      console.log('[PUT /api/videos/[id]] 🔍 Checking permission EDIT_VIDEOS...')
       const canEdit = await hasUserPermission(user.userId, user.role, PERMISSIONS.EDIT_VIDEOS, user.username)
+      console.log('[PUT /api/videos/[id]] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.EDIT_VIDEOS,
+        canEdit
+      })
       if (!canEdit) {
+        console.log('[PUT /api/videos/[id]] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền sửa video' }, { status: 403 })
       }
+      console.log('[PUT /api/videos/[id]] ✅ Permission granted')
+    } else {
+      console.log('[PUT /api/videos/[id]] ✅ Admin - bypassing permission check')
     }
 
     const body = await request.json()

@@ -71,19 +71,34 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[POST /api/videos] ========== START ==========')
     const user = await getJWT(request)
+    console.log('[POST /api/videos] JWT user:', { userId: user?.userId, username: user?.username, role: user?.role })
 
     if (!user || !user.role) {
+      console.log('[POST /api/videos] ❌ No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
     
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền CREATE_VIDEOS (bao gồm cả đặc cách)
+      console.log('[POST /api/videos] 🔍 Checking permission CREATE_VIDEOS...')
       const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_VIDEOS, user.username)
+      console.log('[POST /api/videos] 📊 Permission check result:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        permission: PERMISSIONS.CREATE_VIDEOS,
+        canCreate
+      })
       if (!canCreate) {
+        console.log('[POST /api/videos] ❌ Permission denied - returning 403')
         return NextResponse.json({ error: 'Bạn không có quyền tạo video' }, { status: 403 })
       }
+      console.log('[POST /api/videos] ✅ Permission granted')
+    } else {
+      console.log('[POST /api/videos] ✅ Admin - bypassing permission check')
     }
 
     const body = await request.json()
