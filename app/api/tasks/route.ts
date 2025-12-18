@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       // Continue below
     } else {
       // Kiểm tra quyền VIEW_TASKS (bao gồm cả đặc cách)
-      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
       if (!canView) {
         return NextResponse.json({ error: 'Bạn không có quyền xem danh sách nhiệm vụ' }, { status: 403 })
       }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Kiểm tra quyền CREATE_TASKS (bao gồm cả đặc cách)
-    const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_TASKS)
+    const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_TASKS, user.username)
     if (!canCreate) {
       return NextResponse.json({ error: 'Bạn không có quyền tạo nhiệm vụ' }, { status: 403 })
     }

@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS)
+      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
       if (allowed) {
         return NextResponse.next()
       }
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /exams/create (tạo bài thi)
   if (pathname === '/exams/create') {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS)
+      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS, user.username)
       if (allowed) {
         return NextResponse.next()
       }
@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /exams (quản lý bài thi)
   if (pathname === '/exams') {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS)
+      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
       if (allowed) {
         return NextResponse.next()
       }
@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /exams/[id]/edit (sửa bài thi)
   if (pathname.match(/^\/exams\/[^/]+\/edit$/)) {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.EDIT_EXAMS)
+      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.EDIT_EXAMS, user.username)
       if (allowed) {
         return NextResponse.next()
       }
@@ -94,7 +94,7 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /questions (ngân hàng câu hỏi)
   if (pathname.startsWith('/questions')) {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS)
+      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS, user.username)
       if (allowed) {
         return NextResponse.next()
       }

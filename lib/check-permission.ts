@@ -2,13 +2,48 @@ import { prisma } from './prisma'
 import { PERMISSIONS } from './permissions'
 
 /**
+ * Helper function để lấy userId đúng từ database (dựa trên userId hoặc username)
+ */
+async function getCorrectUserId(userId: string, username?: string): Promise<string | null> {
+  try {
+    // Thử tìm user bằng userId
+    const userById = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    })
+    
+    if (userById) {
+      return userById.id
+    }
+    
+    // Nếu không tìm thấy, thử tìm bằng username
+    if (username) {
+      const userByUsername = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true }
+      })
+      
+      if (userByUsername) {
+        return userByUsername.id
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('[getCorrectUserId] Error:', error)
+    return null
+  }
+}
+
+/**
  * Helper function để check permission - dùng chung cho middleware và API routes
  * Returns: { allowed: boolean, reason?: string }
  */
 export async function checkPermission(
   userId: string,
   role: string,
-  permissionCode: string
+  permissionCode: string,
+  username?: string
 ): Promise<{ allowed: boolean; reason?: string }> {
   try {
     // Admin luôn được phép
@@ -18,6 +53,12 @@ export async function checkPermission(
 
     if (!role) {
       return { allowed: false, reason: 'No role' }
+    }
+
+    // Lấy userId đúng từ database
+    const correctUserId = await getCorrectUserId(userId, username)
+    if (!correctUserId) {
+      return { allowed: false, reason: 'User not found' }
     }
 
     // Lấy permission từ database
@@ -35,16 +76,18 @@ export async function checkPermission(
     const userPerm = await prisma.userPermission.findUnique({
       where: {
         userId_permissionId: {
-          userId,
+          userId: correctUserId,
           permissionId: permission.id
         }
       }
     })
 
     // Debug logging
-    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks') {
+    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks' || permissionCode === 'view_exams' || permissionCode === 'create_exams') {
       console.log('[checkPermission] Debug:', {
-        userId,
+        originalUserId: userId,
+        correctUserId,
+        username,
         role,
         permissionCode,
         permissionId: permission.id,

@@ -55,14 +55,55 @@ export async function hasPermission(role: string, permissionCode: string): Promi
 }
 
 /**
+ * Helper function để lấy userId đúng từ database (dựa trên userId hoặc username)
+ */
+async function getCorrectUserId(userId: string, username?: string): Promise<string | null> {
+  try {
+    // Thử tìm user bằng userId
+    const userById = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    })
+    
+    if (userById) {
+      return userById.id
+    }
+    
+    // Nếu không tìm thấy, thử tìm bằng username
+    if (username) {
+      const userByUsername = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true }
+      })
+      
+      if (userByUsername) {
+        return userByUsername.id
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('[getCorrectUserId] Error:', error)
+    return null
+  }
+}
+
+/**
  * Kiểm tra quyền của user cụ thể (bao gồm cả quyền đặc biệt)
  * Priority: UserPermission (deny) > UserPermission (grant) > RolePermission
  */
-export async function hasUserPermission(userId: string, role: string, permissionCode: string): Promise<boolean> {
+export async function hasUserPermission(userId: string, role: string, permissionCode: string, username?: string): Promise<boolean> {
   try {
     // Admin luôn được phép
     if (role === 'admin') {
       return true
+    }
+
+    // Lấy userId đúng từ database
+    const correctUserId = await getCorrectUserId(userId, username)
+    if (!correctUserId) {
+      console.error('[hasUserPermission] User not found:', { userId, username })
+      return false
     }
 
     // Lấy permission từ database
@@ -78,11 +119,23 @@ export async function hasUserPermission(userId: string, role: string, permission
     const userPerm = await prisma.userPermission.findUnique({
       where: {
         userId_permissionId: {
-          userId,
+          userId: correctUserId,
           permissionId: permission.id
         }
       }
     })
+
+    // Debug logging
+    if (permissionCode === 'view_tasks' || permissionCode === 'create_tasks' || permissionCode === 'view_exams' || permissionCode === 'create_exams') {
+      console.log('[hasUserPermission] Debug:', {
+        originalUserId: userId,
+        correctUserId,
+        username,
+        role,
+        permissionCode,
+        userPerm: userPerm ? { type: userPerm.type, userId: userPerm.userId } : null
+      })
+    }
 
     // DENY có ưu tiên cao nhất
     if (userPerm && userPerm.type === 'deny') {

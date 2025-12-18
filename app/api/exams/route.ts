@@ -9,8 +9,21 @@ export const revalidate = 0
 
 export async function GET(request: NextRequest) {
   try {
-    // Không cần kiểm tra quyền ở đây vì middleware đã xử lý
-    // Leader có thể xem danh sách bài thi
+    const user = await getJWT(request)
+    
+    if (!user || !user.role) {
+      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+    }
+    
+    // Admin luôn được phép
+    if (user.role !== 'admin') {
+      // Kiểm tra quyền VIEW_EXAMS (bao gồm cả đặc cách)
+      const canView = await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
+      if (!canView) {
+        return NextResponse.json({ error: 'Bạn không có quyền xem danh sách bài thi' }, { status: 403 })
+      }
+    }
+    
     console.log('[GET /api/exams] Bắt đầu lấy danh sách bài thi...')
     
     // Kiểm tra kết nối database
@@ -87,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Admin luôn được phép
     if (user.role !== 'admin') {
       // Kiểm tra quyền CREATE_EXAMS (bao gồm cả đặc cách)
-      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS)
+      const canCreate = await hasUserPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS, user.username)
       if (!canCreate) {
         return NextResponse.json({ error: 'Bạn không có quyền tạo bài thi' }, { status: 403 })
       }
