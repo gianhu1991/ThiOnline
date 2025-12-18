@@ -102,10 +102,53 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /exams (quản lý bài thi)
   if (pathname === '/exams') {
-    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS)) {
+    if (user.role === 'admin') {
       return NextResponse.next()
     }
-    // Không có quyền → redirect về /my-exams
+    
+    if (user.role) {
+      try {
+        const permission = await prisma.permission.findUnique({
+          where: { code: PERMISSIONS.VIEW_EXAMS }
+        })
+        
+        if (permission) {
+          const userPerm = await prisma.userPermission.findUnique({
+            where: {
+              userId_permissionId: {
+                userId: user.userId,
+                permissionId: permission.id
+              }
+            }
+          })
+          
+          if (userPerm && userPerm.type === 'grant') {
+            return NextResponse.next()
+          }
+          
+          if (userPerm && userPerm.type === 'deny') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/my-exams'
+            return NextResponse.redirect(url)
+          }
+          
+          const rolePerm = await prisma.rolePermission.findFirst({
+            where: {
+              role: user.role,
+              permissionId: permission.id
+            }
+          })
+          
+          if (rolePerm) {
+            return NextResponse.next()
+          }
+        }
+      } catch (error) {
+        console.error(`[Middleware] Error checking VIEW_EXAMS:`, error)
+        return NextResponse.next()
+      }
+    }
+    
     const url = request.nextUrl.clone()
     url.pathname = '/my-exams'
     return NextResponse.redirect(url)
@@ -113,10 +156,53 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /questions (ngân hàng câu hỏi)
   if (pathname.startsWith('/questions')) {
-    if (user.role && await hasUserPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS)) {
+    if (user.role === 'admin') {
       return NextResponse.next()
     }
-    // Không có quyền → redirect về trang chủ
+    
+    if (user.role) {
+      try {
+        const permission = await prisma.permission.findUnique({
+          where: { code: PERMISSIONS.VIEW_QUESTIONS }
+        })
+        
+        if (permission) {
+          const userPerm = await prisma.userPermission.findUnique({
+            where: {
+              userId_permissionId: {
+                userId: user.userId,
+                permissionId: permission.id
+              }
+            }
+          })
+          
+          if (userPerm && userPerm.type === 'grant') {
+            return NextResponse.next()
+          }
+          
+          if (userPerm && userPerm.type === 'deny') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/'
+            return NextResponse.redirect(url)
+          }
+          
+          const rolePerm = await prisma.rolePermission.findFirst({
+            where: {
+              role: user.role,
+              permissionId: permission.id
+            }
+          })
+          
+          if (rolePerm) {
+            return NextResponse.next()
+          }
+        }
+      } catch (error) {
+        console.error(`[Middleware] Error checking VIEW_QUESTIONS:`, error)
+        return NextResponse.next()
+      }
+    }
+    
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
