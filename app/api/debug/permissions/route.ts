@@ -67,19 +67,24 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Lấy tất cả permissions để test
-    const allPerms = await (prisma as any).permission.findMany({
-      orderBy: { code: 'asc' }
-    })
-
-    // Test check permissions với tất cả quyền
+    // Chỉ test các permissions quan trọng (không test tất cả để tránh timeout)
+    const importantPerms = ['view_exams', 'create_exams', 'view_tasks', 'create_tasks', 'create_videos']
+    
+    // Test check permissions với các quyền quan trọng
     const permissionChecks: Record<string, any> = {}
-    for (const perm of allPerms) {
-      const hasPerm = await hasUserPermission(user.userId, user.role || '', perm.code, user.username)
-      const checkResult = await checkPermission(user.userId, user.role || '', perm.code, user.username)
-      permissionChecks[perm.code] = {
-        hasUserPermission: hasPerm,
-        checkPermission: checkResult
+    for (const permCode of importantPerms) {
+      try {
+        const hasPerm = await hasUserPermission(user.userId, user.role || '', permCode, user.username)
+        const checkResult = await checkPermission(user.userId, user.role || '', permCode, user.username)
+        permissionChecks[permCode] = {
+          hasUserPermission: hasPerm,
+          checkPermission: checkResult
+        }
+      } catch (err: any) {
+        permissionChecks[permCode] = {
+          hasUserPermission: false,
+          checkPermission: { allowed: false, reason: `Error: ${err.message}` }
+        }
       }
     }
 
@@ -118,11 +123,6 @@ export async function GET(request: NextRequest) {
           userId: up.userId,
           userUsername: up.user.username
         })),
-      allPermissions: allPerms.map((p: any) => ({
-        code: p.code,
-        name: p.name,
-        category: p.category
-      })),
       permissionChecks
     })
   } catch (error: any) {

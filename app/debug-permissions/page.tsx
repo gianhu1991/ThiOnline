@@ -8,17 +8,37 @@ export default function DebugPermissionsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 seconds timeout
+    
     fetch('/api/debug/permissions', {
-      credentials: 'include'
+      credentials: 'include',
+      signal: controller.signal
     })
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+          throw new Error(errorData.error || `HTTP ${res.status}`)
+        }
+        return res.json()
+      })
       .then(data => {
+        if (data.error) {
+          throw new Error(data.error)
+        }
         setData(data)
         setLoading(false)
       })
       .catch(err => {
-        setError(err.message)
+        if (err.name === 'AbortError') {
+          setError('Request timeout - API đang chạy quá lâu. Vui lòng thử lại.')
+        } else {
+          setError(err.message || 'Lỗi không xác định')
+        }
         setLoading(false)
+      })
+      .finally(() => {
+        clearTimeout(timeoutId)
       })
   }, [])
 
@@ -33,9 +53,23 @@ export default function DebugPermissionsPage() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Debug Permissions</h1>
-        <p className="text-red-600">Lỗi: {error}</p>
+        <div className="bg-red-50 border border-red-200 rounded p-4">
+          <p className="text-red-700 font-semibold mb-2">❌ Lỗi:</p>
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Thử lại
+          </button>
+        </div>
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded p-4">
+          <p className="text-sm text-yellow-800">
+            💡 <strong>Gợi ý:</strong> Mở Console (F12) → Network tab → Xem request <code>/api/debug/permissions</code> để xem lỗi chi tiết.
+          </p>
+        </div>
       </div>
     )
   }
