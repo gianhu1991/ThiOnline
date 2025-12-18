@@ -9,13 +9,18 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[DEBUG] Starting /api/debug/permissions...')
     const user = await getJWT(request)
     
     if (!user || !user.role) {
+      console.log('[DEBUG] No user or role')
       return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
     }
 
+    console.log('[DEBUG] User from JWT:', { userId: user.userId, username: user.username, role: user.role })
+
     // Lấy thông tin user từ database (thử cả id và username)
+    console.log('[DEBUG] Fetching user by ID...')
     const dbUserById = await prisma.user.findUnique({
       where: { id: user.userId },
       select: {
@@ -24,7 +29,9 @@ export async function GET(request: NextRequest) {
         role: true
       }
     })
+    console.log('[DEBUG] User by ID:', dbUserById)
 
+    console.log('[DEBUG] Fetching user by username...')
     const dbUserByUsername = await prisma.user.findUnique({
       where: { username: user.username },
       select: {
@@ -33,23 +40,29 @@ export async function GET(request: NextRequest) {
         role: true
       }
     })
+    console.log('[DEBUG] User by username:', dbUserByUsername)
 
     // Lấy UserPermissions với cả 2 userId
+    console.log('[DEBUG] Fetching user permissions by JWT userId...')
     const userPermsByJwtId = await (prisma as any).userPermission.findMany({
       where: { userId: user.userId },
       include: {
         permission: true
       }
     })
+    console.log('[DEBUG] User permissions by JWT userId:', userPermsByJwtId.length)
 
+    console.log('[DEBUG] Fetching user permissions by DB userId...')
     const userPermsByDbId = dbUserByUsername ? await (prisma as any).userPermission.findMany({
       where: { userId: dbUserByUsername.id },
       include: {
         permission: true
       }
     }) : []
+    console.log('[DEBUG] User permissions by DB userId:', userPermsByDbId.length)
 
     // Lấy TẤT CẢ UserPermissions để xem có userId nào khác không
+    console.log('[DEBUG] Fetching all user permissions for gianhu1991...')
     const allUserPerms = await (prisma as any).userPermission.findMany({
       where: {
         permission: {
@@ -66,27 +79,33 @@ export async function GET(request: NextRequest) {
         }
       }
     })
+    console.log('[DEBUG] All user permissions found:', allUserPerms.length)
 
     // Chỉ test các permissions quan trọng (không test tất cả để tránh timeout)
     const importantPerms = ['view_exams', 'create_exams', 'view_tasks', 'create_tasks', 'create_videos']
     
     // Test check permissions với các quyền quan trọng
+    console.log('[DEBUG] Testing permissions...')
     const permissionChecks: Record<string, any> = {}
     for (const permCode of importantPerms) {
       try {
+        console.log(`[DEBUG] Checking ${permCode}...`)
         const hasPerm = await hasUserPermission(user.userId, user.role || '', permCode, user.username)
         const checkResult = await checkPermission(user.userId, user.role || '', permCode, user.username)
         permissionChecks[permCode] = {
           hasUserPermission: hasPerm,
           checkPermission: checkResult
         }
+        console.log(`[DEBUG] ${permCode}: hasPerm=${hasPerm}, allowed=${checkResult.allowed}`)
       } catch (err: any) {
+        console.error(`[DEBUG] Error checking ${permCode}:`, err)
         permissionChecks[permCode] = {
           hasUserPermission: false,
           checkPermission: { allowed: false, reason: `Error: ${err.message}` }
         }
       }
     }
+    console.log('[DEBUG] Permission checks completed')
 
     return NextResponse.json({
       jwt: {
@@ -124,9 +143,12 @@ export async function GET(request: NextRequest) {
           userUsername: up.user.username
         })),
       permissionChecks
-    })
+    }
+    console.log('[DEBUG] Sending response...')
+    return NextResponse.json(response)
   } catch (error: any) {
     console.error('[/api/debug/permissions] Error:', error)
+    console.error('[/api/debug/permissions] Error stack:', error.stack)
     return NextResponse.json({ 
       error: error.message,
       stack: error.stack 
