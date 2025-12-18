@@ -93,7 +93,7 @@ export default function Home() {
         }
         const [questionsRes, examsRes, resultsRes] = await Promise.allSettled([
           fetch(`/api/questions?t=${timestamp}&r=${random}`, fetchOptions),
-          fetch(`/api/exams?t=${timestamp}&r=${random}`, fetchOptions),
+          fetch(`/api/exams/count?t=${timestamp}&r=${random}`, fetchOptions), // Dùng API count thay vì /api/exams
           fetch(`/api/results/count?t=${timestamp}&r=${random}`, fetchOptions),
         ])
 
@@ -111,7 +111,7 @@ export default function Home() {
         if (examsRes.status === 'fulfilled' && examsRes.value instanceof Response && examsRes.value.ok) {
           try {
             const data = await examsRes.value.json()
-            exams = Array.isArray(data) ? data.length : 0
+            exams = typeof data.count === 'number' ? data.count : 0
           } catch {
             exams = 0
           }
