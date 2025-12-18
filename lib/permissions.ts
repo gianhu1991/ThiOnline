@@ -1,5 +1,4 @@
 import { prisma } from './prisma'
-import { checkPermission as checkPerm } from './check-permission'
 
 // Cache permissions trong memory để tránh query database liên tục
 let permissionsCache: Map<string, Set<string>> = new Map()
@@ -60,8 +59,54 @@ export async function hasPermission(role: string, permissionCode: string): Promi
  * Priority: UserPermission (deny) > UserPermission (grant) > RolePermission
  */
 export async function hasUserPermission(userId: string, role: string, permissionCode: string): Promise<boolean> {
-  const { allowed } = await checkPerm(userId, role, permissionCode)
-  return allowed
+  try {
+    // Admin luôn được phép
+    if (role === 'admin') {
+      return true
+    }
+
+    // Lấy permission từ database
+    const permission = await prisma.permission.findUnique({
+      where: { code: permissionCode }
+    })
+
+    if (!permission) {
+      return false
+    }
+
+    // Check UserPermission (ưu tiên cao nhất)
+    const userPerm = await prisma.userPermission.findUnique({
+      where: {
+        userId_permissionId: {
+          userId,
+          permissionId: permission.id
+        }
+      }
+    })
+
+    // DENY có ưu tiên cao nhất
+    if (userPerm && userPerm.type === 'deny') {
+      return false
+    }
+
+    // GRANT cho phép luôn
+    if (userPerm && userPerm.type === 'grant') {
+      return true
+    }
+
+    // Check RolePermission
+    const rolePerm = await prisma.rolePermission.findFirst({
+      where: {
+        role,
+        permissionId: permission.id
+      }
+    })
+
+    return !!rolePerm
+  } catch (error) {
+    console.error('[hasUserPermission] Error:', error)
+    return false
+  }
 }
 
 /**
