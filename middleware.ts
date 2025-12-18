@@ -81,6 +81,11 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /exams/create (tạo bài thi)
   if (pathname === '/exams/create') {
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
     if (user.role) {
       const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.CREATE_EXAMS, user.username)
       if (allowed) {
@@ -140,6 +145,11 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /exams/[id]/edit (sửa bài thi)
   if (pathname.match(/^\/exams\/[^/]+\/edit$/)) {
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
     if (user.role) {
       const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.EDIT_EXAMS, user.username)
       if (allowed) {
@@ -153,6 +163,11 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra quyền truy cập /questions (ngân hàng câu hỏi)
   if (pathname.startsWith('/questions')) {
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
+    
     if (user.role) {
       const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_QUESTIONS, user.username)
       if (allowed) {
