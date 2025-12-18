@@ -10,6 +10,7 @@ export default function Home() {
   const [stats, setStats] = useState({ questions: 0, exams: 0, results: 0 })
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({})
   const [homepageText, setHomepageText] = useState({
     title: 'TTVT Nho Quan',
     subtitle: 'Phần mềm đào tạo kỹ thuật',
