@@ -179,24 +179,29 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       setError(null)
+      console.log('[fetchTasks] Fetching tasks...')
       const res = await fetch('/api/tasks', {
         credentials: 'include',
       })
       
+      console.log('[fetchTasks] Response status:', res.status)
+      
       if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định' }))
+        console.error('[fetchTasks] Error response:', errorData)
         if (res.status === 403) {
-          setError('Chỉ admin mới được truy cập trang này')
+          setError(errorData.error || 'Bạn không có quyền xem danh sách nhiệm vụ')
         } else {
-          const errorData = await res.json().catch(() => ({ error: 'Lỗi không xác định' }))
           throw new Error(errorData.error || `Lỗi ${res.status}`)
         }
         return
       }
       
       const data = await res.json()
+      console.log('[fetchTasks] Tasks data:', data)
       setTasks(data.tasks || [])
     } catch (error: any) {
-      console.error('Error fetching tasks:', error)
+      console.error('[fetchTasks] Error:', error)
       setError(error.message || 'Lỗi khi tải danh sách nhiệm vụ')
     } finally {
       setLoading(false)

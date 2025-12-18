@@ -42,7 +42,14 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
+      const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_TASKS, user.username)
+      console.log('[middleware] /tasks permission check:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        allowed,
+        reason
+      })
       if (allowed) {
         return NextResponse.next()
       }
@@ -68,7 +75,14 @@ export async function middleware(request: NextRequest) {
   // Kiểm tra quyền truy cập /exams (quản lý bài thi)
   if (pathname === '/exams') {
     if (user.role) {
-      const { allowed } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
+      const { allowed, reason } = await checkPermission(user.userId, user.role, PERMISSIONS.VIEW_EXAMS, user.username)
+      console.log('[middleware] /exams permission check:', {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        allowed,
+        reason
+      })
       if (allowed) {
         return NextResponse.next()
       }
