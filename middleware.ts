@@ -34,13 +34,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin luôn được phép truy cập tất cả
-  if (user.role === 'admin') {
-    return NextResponse.next()
-  }
-
   // Kiểm tra quyền truy cập /tasks
   if (pathname === '/tasks') {
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      return NextResponse.next()
+    }
     console.log('[middleware] ========== /tasks CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
     
@@ -97,6 +96,12 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/exams') {
     console.log('[middleware] ========== /exams CHECK ==========')
     console.log('[middleware] User info:', { userId: user.userId, username: user.username, role: user.role })
+    
+    // Admin luôn được phép
+    if (user.role === 'admin') {
+      console.log('[middleware] ✅ /exams - Admin, allowing access')
+      return NextResponse.next()
+    }
     
     // BẮT BUỘC: Phải có username để check permission đúng
     if (!user.username) {
