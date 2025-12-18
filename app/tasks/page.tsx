@@ -808,7 +808,7 @@ export default function TasksPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quản lý nhiệm vụ</h1>
-        {permissions['create_tasks'] ? (
+        {(permissions['create_tasks'] || userRole === 'admin') ? (
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -876,7 +876,7 @@ export default function TasksPage() {
 
             <div className="flex gap-2 flex-wrap">
               {/* Kiểm tra quyền để hiện các nút */}
-              {permissions['edit_tasks'] && (
+              {(permissions['edit_tasks'] || userRole === 'admin') && (
                 <button
                   onClick={() => openManageModal(task)}
                   className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
@@ -884,7 +884,7 @@ export default function TasksPage() {
                   Quản lý
                 </button>
               )}
-              {permissions['upload_task_data'] && (
+              {(permissions['upload_task_data'] || userRole === 'admin') && (
                 <button
                   onClick={() => {
                     setUploadTaskId(task.id)
@@ -895,7 +895,7 @@ export default function TasksPage() {
                   Upload Excel
                 </button>
               )}
-              {permissions['assign_tasks'] && (
+              {(permissions['assign_tasks'] || userRole === 'admin') && (
                 <button
                   onClick={() => openAssignModal(task)}
                   className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm"
@@ -933,7 +933,7 @@ export default function TasksPage() {
                 Xuất Excel
               </button>
               {/* Kiểm tra quyền xóa */}
-              {permissions['delete_tasks'] && (
+              {(permissions['delete_tasks'] || userRole === 'admin') && (
                 <button
                   onClick={() => handleDeleteTask(task.id)}
                   disabled={deletingTaskId === task.id}

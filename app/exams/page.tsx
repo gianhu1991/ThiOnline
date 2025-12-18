@@ -433,7 +433,7 @@ export default function ExamsPage() {
           <h1 className="text-3xl font-bold">Quản lý bài thi</h1>
           <p className="text-sm text-gray-500 mt-1">Thời gian hiện tại: {getCurrentTime()}</p>
         </div>
-        {permissions['create_exams'] && (
+        {(permissions['create_exams'] || userRole === 'admin') && (
           <Link
             href="/exams/create"
             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
@@ -524,7 +524,7 @@ export default function ExamsPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   {/* Kiểm tra permissions cho các nút điều khiển */}
-                  {permissions['toggle_exam_status'] && (
+                  {(permissions['toggle_exam_status'] || userRole === 'admin') && (
                     <button
                       onClick={() => handleToggleStatus(exam.id, exam.isActive)}
                       className={`${exam.isActive ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2 text-sm`}
@@ -540,7 +540,7 @@ export default function ExamsPage() {
                       {exam.isActive ? 'Tắt' : 'Mở'}
                     </button>
                   )}
-                  {permissions['toggle_exam_status'] && (
+                  {(permissions['toggle_exam_status'] || userRole === 'admin') && (
                     <button
                       onClick={() => handleTogglePublic(exam.id, exam.isPublic)}
                       className={`${exam.isPublic ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white px-4 py-2 rounded text-center flex items-center justify-center gap-2 text-sm`}
@@ -559,7 +559,7 @@ export default function ExamsPage() {
                       {exam.isPublic ? 'Riêng tư' : 'Công khai'}
                     </button>
                   )}
-                  {permissions['assign_exams'] && (
+                  {(permissions['assign_exams'] || userRole === 'admin') && (
                     <button
                       onClick={() => handleOpenAssignModal(exam.id)}
                       className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-center flex items-center justify-center gap-2 text-sm"
@@ -571,7 +571,7 @@ export default function ExamsPage() {
                       Gán BT
                     </button>
                   )}
-                  {permissions['edit_exams'] && (
+                  {(permissions['edit_exams'] || userRole === 'admin') && (
                     <Link
                       href={`/exams/${exam.id}/edit`}
                       className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-center flex items-center justify-center gap-2 text-sm"
@@ -583,7 +583,7 @@ export default function ExamsPage() {
                       Sửa
                     </Link>
                   )}
-                  {permissions['edit_exams'] && (
+                  {(permissions['edit_exams'] || userRole === 'admin') && (
                     <button
                       onClick={() => {
                         const link = `${window.location.origin}/exams/${exam.id}/take`
@@ -627,7 +627,7 @@ export default function ExamsPage() {
                     Xuất KQ
                   </button>
                   {/* Kiểm tra quyền xóa */}
-                  {permissions['delete_exams'] && (
+                  {(permissions['delete_exams'] || userRole === 'admin') && (
                     <button
                       onClick={() => handleDelete(exam.id)}
                       className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
