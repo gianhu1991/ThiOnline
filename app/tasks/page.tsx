@@ -853,9 +853,36 @@ export default function TasksPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm ${task.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {task.isActive ? 'Đang hoạt động' : 'Đã tắt'}
-                </span>
+                {(() => {
+                  // Kiểm tra xem đã hết hạn chưa
+                  const now = new Date()
+                  now.setHours(0, 0, 0, 0)
+                  const endDate = task.endDate ? new Date(task.endDate) : null
+                  if (endDate) {
+                    endDate.setHours(0, 0, 0, 0)
+                  }
+                  const isExpired = endDate && endDate < now
+                  
+                  if (isExpired) {
+                    return (
+                      <span className="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
+                        Đã hết hạn
+                      </span>
+                    )
+                  } else if (!task.isActive) {
+                    return (
+                      <span className="px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
+                        Đã tắt
+                      </span>
+                    )
+                  } else {
+                    return (
+                      <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                        Đang hoạt động
+                      </span>
+                    )
+                  }
+                })()}
               </div>
             </div>
 
