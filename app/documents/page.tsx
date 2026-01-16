@@ -37,6 +37,7 @@ export default function DocumentsPage() {
   const [uploadingFile, setUploadingFile] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchDocuments()
@@ -209,6 +210,7 @@ export default function DocumentsPage() {
         alert('Cập nhật tài liệu thành công!')
         setShowEditModal(false)
         setEditingDocument(null)
+        setSelectedDocuments(new Set())
         setFormData({
           title: '',
           description: '',
@@ -237,6 +239,7 @@ export default function DocumentsPage() {
 
       if (res.ok) {
         alert('Xóa tài liệu thành công!')
+        setSelectedDocuments(new Set())
         fetchDocuments()
       } else {
         const data = await res.json()
@@ -244,6 +247,82 @@ export default function DocumentsPage() {
       }
     } catch (error) {
       alert('Lỗi khi xóa tài liệu')
+    }
+  }
+
+  const handleSelectDocument = (id: string) => {
+    const newSelected = new Set(selectedDocuments)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedDocuments(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedDocuments.size === documents.length) {
+      setSelectedDocuments(new Set())
+    } else {
+      setSelectedDocuments(new Set(documents.map(doc => doc.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedDocuments.size === 0) return
+    if (!confirm(`Bạn có chắc muốn xóa ${selectedDocuments.size} tài liệu đã chọn?`)) return
+
+    try {
+      const deletePromises = Array.from(selectedDocuments).map(id =>
+        fetch(`/api/documents/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const allSuccess = results.every(res => res.ok)
+
+      if (allSuccess) {
+        alert(`Đã xóa ${selectedDocuments.size} tài liệu thành công!`)
+        setSelectedDocuments(new Set())
+        fetchDocuments()
+      } else {
+        alert('Có lỗi xảy ra khi xóa một số tài liệu')
+        fetchDocuments()
+      }
+    } catch (error) {
+      alert('Lỗi khi xóa tài liệu')
+    }
+  }
+
+  const handleBulkDownload = () => {
+    if (selectedDocuments.size === 0) return
+    
+    const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id))
+    selectedDocs.forEach(doc => {
+      if (doc.url) {
+        const link = document.createElement('a')
+        link.href = doc.url
+        link.download = doc.fileName || doc.title
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+    })
+  }
+
+  const handleBulkEdit = () => {
+    if (selectedDocuments.size !== 1) {
+      alert('Vui lòng chọn đúng 1 tài liệu để sửa')
+      return
+    }
+    const docId = Array.from(selectedDocuments)[0]
+    const doc = documents.find(d => d.id === docId)
+    if (doc) {
+      handleEdit(doc)
+      setSelectedDocuments(new Set())
     }
   }
 
@@ -297,6 +376,57 @@ export default function DocumentsPage() {
         </div>
       )}
 
+      {/* Action buttons - chỉ hiện khi có tài liệu được chọn */}
+      {selectedDocuments.size > 0 && (
+        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">
+              Đã chọn: {selectedDocuments.size} tài liệu
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBulkDownload}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Tải xuống ({selectedDocuments.size})
+              </button>
+              {(permissions['edit_documents'] || userRole === 'admin') && (
+                <button
+                  onClick={handleBulkEdit}
+                  disabled={selectedDocuments.size !== 1}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Sửa
+                </button>
+              )}
+              {(permissions['delete_documents'] || userRole === 'admin') && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Xóa ({selectedDocuments.size})
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedDocuments(new Set())}
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium text-sm"
+              >
+                Bỏ chọn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {documents.length === 0 ? (
         <div className="py-12 text-center">
           <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,74 +436,89 @@ export default function DocumentsPage() {
           <p className="text-gray-400">Tài liệu sẽ được cập nhật sớm</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {documents.map((doc) => (
-            <div key={doc.id} className="card hover:shadow-xl transition-shadow">
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">{doc.title}</h3>
-                    {doc.description && (
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{doc.description}</p>
-                    )}
-                  </div>
-                  <div className="ml-2">
-                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                  <span>{(doc.downloadCount || 0)} lượt tải</span>
-                  {doc.category && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                      {doc.category}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                  <span>{formatFileSize(doc.fileSize)}</span>
-                  <span>{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('vi-VN') : '-'}</span>
-                </div>
-                <div className="flex gap-2">
-                  {doc.url ? (
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center font-medium"
-                    >
-                      Tải xuống
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex-1 bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed text-center font-medium"
-                    >
-                      Không có file
-                    </button>
-                  )}
-                  {(permissions['edit_documents'] || userRole === 'admin') && (
-                    <button
-                      onClick={() => handleEdit(doc)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
-                    >
-                      Sửa
-                    </button>
-                  )}
-                  {(permissions['delete_documents'] || userRole === 'admin') && (
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
-                    >
-                      Xóa
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      checked={documents.length > 0 && selectedDocuments.size === documents.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tài liệu
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Danh mục
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kích thước
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lượt tải
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày tạo
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {documents.map((doc) => (
+                  <tr
+                    key={doc.id}
+                    className={`hover:bg-gray-50 cursor-pointer transition-colors ${
+                      selectedDocuments.has(doc.id) ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => handleSelectDocument(doc.id)}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDocuments.has(doc.id)}
+                        onChange={() => handleSelectDocument(doc.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <svg className="w-8 h-8 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                          {doc.description && (
+                            <div className="text-sm text-gray-500 truncate max-w-md">{doc.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {doc.category ? (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          {doc.category}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatFileSize(doc.fileSize)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {doc.downloadCount || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('vi-VN') : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
