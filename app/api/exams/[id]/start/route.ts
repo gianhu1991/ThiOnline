@@ -231,27 +231,40 @@ export async function POST(
     })
 
     // Chọn câu hỏi: ưu tiên chưa làm, sau đó là đã làm ít nhất
+    // Sử dụng Set để đảm bảo không có câu hỏi trùng lặp
     let selectedQuestions: typeof allQuestions = []
+    const selectedQuestionIds = new Set<string>()
+    
+    // Helper function để thêm câu hỏi không trùng lặp
+    const addQuestionIfNotExists = (question: typeof allQuestions[0]) => {
+      if (!selectedQuestionIds.has(question.id) && selectedQuestions.length < exam.questionCount) {
+        selectedQuestions.push(question)
+        selectedQuestionIds.add(question.id)
+      }
+    }
     
     // Ưu tiên chọn câu hỏi chưa làm
     const unusedShuffled = [...unusedQuestions].sort(() => Math.random() - 0.5)
-    selectedQuestions = unusedShuffled.slice(0, exam.questionCount)
+    for (const question of unusedShuffled) {
+      if (selectedQuestions.length >= exam.questionCount) break
+      addQuestionIfNotExists(question)
+    }
     
     // Nếu không đủ, bổ sung từ câu hỏi đã làm ít nhất
     if (selectedQuestions.length < exam.questionCount) {
-      const needed = exam.questionCount - selectedQuestions.length
-      const additionalQuestions = usedQuestions.slice(0, needed)
-      selectedQuestions = [...selectedQuestions, ...additionalQuestions]
+      for (const question of usedQuestions) {
+        if (selectedQuestions.length >= exam.questionCount) break
+        addQuestionIfNotExists(question)
+      }
     }
     
     // Nếu vẫn không đủ (trường hợp hiếm), trộn lại và chọn ngẫu nhiên
     if (selectedQuestions.length < exam.questionCount) {
-      const remaining = exam.questionCount - selectedQuestions.length
       const allShuffled = [...allQuestions].sort(() => Math.random() - 0.5)
-      const additional = allShuffled
-        .filter(q => !selectedQuestions.some(sq => sq.id === q.id))
-        .slice(0, remaining)
-      selectedQuestions = [...selectedQuestions, ...additional]
+      for (const question of allShuffled) {
+        if (selectedQuestions.length >= exam.questionCount) break
+        addQuestionIfNotExists(question)
+      }
     }
 
     // Lấy câu hỏi đã chọn
