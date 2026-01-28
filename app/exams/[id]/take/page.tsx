@@ -9,6 +9,7 @@ interface Question {
   type: string
   options: string
   correctAnswers: string
+  answerMapping?: string | null // Mapping từ nhãn mới về nhãn cũ khi trộn đáp án
 }
 
 interface ExamData {
@@ -31,6 +32,7 @@ export default function TakeExamPage() {
   const examId = params.id as string
   const [examData, setExamData] = useState<ExamData | null>(null)
   const [answers, setAnswers] = useState<Record<string, string[]>>({})
+  const [answerMappings, setAnswerMappings] = useState<Record<string, { [newLabel: string]: string }>>({}) // Lưu mapping cho mỗi câu hỏi
   const [timeLeft, setTimeLeft] = useState(0) // giây
   const [submitting, setSubmitting] = useState(false)
   const [studentName, setStudentName] = useState('')
@@ -59,6 +61,20 @@ export default function TakeExamPage() {
       if (res.ok && data) {
         // Đảm bảo questions là array
         const questions = Array.isArray(data.questions) ? data.questions : []
+        
+        // Lưu answerMapping cho mỗi câu hỏi
+        const mappings: Record<string, { [newLabel: string]: string }> = {}
+        questions.forEach((q: Question) => {
+          if (q.answerMapping) {
+            try {
+              mappings[q.id] = JSON.parse(q.answerMapping)
+            } catch {
+              // Bỏ qua nếu không parse được
+            }
+          }
+        })
+        setAnswerMappings(mappings)
+        
         setExamData({
           ...data,
           questions,
@@ -128,6 +144,7 @@ export default function TakeExamPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           answers,
+          answerMappings, // Gửi mapping để backend map lại đáp án
           timeSpent,
           studentName,
           studentId: studentId || null,

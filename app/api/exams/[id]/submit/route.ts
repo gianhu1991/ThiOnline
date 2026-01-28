@@ -7,7 +7,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
-    const { answers, timeSpent, studentName, studentId } = body
+    const { answers, answerMappings, timeSpent, studentName, studentId } = body
 
     const exam = await prisma.exam.findUnique({
       where: { id: params.id },
@@ -89,7 +89,17 @@ export async function POST(
       const question = questionMap.get(questionId)
       if (!question) continue // Bỏ qua nếu không tìm thấy câu hỏi
 
-      const userAnswers = answers[questionId] || []
+      let userAnswers = answers[questionId] || []
+      
+      // Nếu có trộn đáp án, map lại từ nhãn mới về nhãn cũ
+      if (answerMappings && answerMappings[questionId]) {
+        const mapping = answerMappings[questionId] // { "A": "B", "B": "A", ... }
+        userAnswers = userAnswers.map(newLabel => {
+          // Map nhãn mới về nhãn cũ
+          return mapping[newLabel] || newLabel
+        })
+      }
+      
       const correctAnswers = JSON.parse(question.correctAnswers)
 
       // So sánh đáp án (không phân biệt thứ tự)

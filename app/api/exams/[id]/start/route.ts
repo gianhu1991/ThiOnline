@@ -278,19 +278,60 @@ export async function POST(
     // KHÔNG lưu examQuestions vào DB để tránh xung đột khi nhiều người cùng thi
     // Mỗi người sẽ có câu hỏi riêng, được lưu vào ExamResult.questionIds khi submit
 
-    // Trộn đáp án nếu cần
+    // Trộn đáp án nếu cần (chỉ trộn nội dung, giữ nguyên nhãn ABCD)
     if (exam.shuffleAnswers && questions.length > 0) {
       questions = questions.map(q => {
         try {
           const options = JSON.parse(q.options || '[]')
-          const shuffled = Array.isArray(options) 
-            ? [...options].sort(() => Math.random() - 0.5)
-            : []
-          return { ...q, options: JSON.stringify(shuffled) }
+          if (!Array.isArray(options) || options.length === 0) {
+            return { ...q, options: '[]', answerMapping: null }
+          }
+          
+          // Tách nhãn và nội dung: "A. Đáp án 1" -> { label: "A", content: "Đáp án 1" }
+          const optionsWithLabels = options.map((opt: string) => {
+            const match = opt.match(/^([A-Z])\.\s*(.+)$/)
+            if (match) {
+              return { label: match[1], content: match[2] }
+            }
+            // Nếu không match format, giữ nguyên
+            return { label: String.fromCharCode(65 + options.indexOf(opt)), content: opt }
+          })
+          
+          // Trộn chỉ nội dung (không trộn nhãn)
+          const contents = optionsWithLabels.map(o => o.content)
+          const shuffledContents = [...contents].sort(() => Math.random() - 0.5)
+          
+          // Tạo mapping: nhãn mới -> nhãn cũ
+          // Ví dụ: nếu "Đáp án 1" (nhãn cũ A) sau khi trộn ở vị trí B (nhãn mới)
+          // thì mapping["B"] = "A"
+          const answerMapping: { [newLabel: string]: string } = {}
+          shuffledContents.forEach((content, newIndex) => {
+            const newLabel = String.fromCharCode(65 + newIndex) // A, B, C, D...
+            // Tìm nhãn cũ của content này
+            const originalOption = optionsWithLabels.find(o => o.content === content)
+            if (originalOption) {
+              answerMapping[newLabel] = originalOption.label
+            }
+          })
+          
+          // Gán lại nhãn A, B, C, D theo thứ tự mới
+          const shuffledOptions = shuffledContents.map((content, index) => {
+            const label = String.fromCharCode(65 + index) // A, B, C, D...
+            return `${label}. ${content}`
+          })
+          
+          return { 
+            ...q, 
+            options: JSON.stringify(shuffledOptions),
+            answerMapping: JSON.stringify(answerMapping) // Lưu mapping để dùng khi submit
+          }
         } catch {
-          return { ...q, options: '[]' }
+          return { ...q, options: '[]', answerMapping: null }
         }
       })
+    } else {
+      // Nếu không trộn, không cần mapping
+      questions = questions.map(q => ({ ...q, answerMapping: null }))
     }
 
     return NextResponse.json({
