@@ -93,8 +93,8 @@ export async function POST(
       
       // Nếu có trộn đáp án, map lại từ nhãn mới về nhãn cũ
       if (answerMappings && answerMappings[questionId]) {
-        const mapping = answerMappings[questionId] // { "A": "B", "B": "A", ... }
-        userAnswers = userAnswers.map(newLabel => {
+        const mapping = answerMappings[questionId] as { [newLabel: string]: string } // { "A": "B", "B": "A", ... }
+        userAnswers = userAnswers.map((newLabel: string) => {
           // Map nhãn mới về nhãn cũ
           return mapping[newLabel] || newLabel
         })
