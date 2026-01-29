@@ -83,8 +83,10 @@ export async function POST(
     // Tạo map để truy cập nhanh
     const questionMap = new Map(questions.map(q => [q.id, q]))
 
-    // Tính điểm cho từng câu hỏi đã làm
+    // Tính điểm và chuẩn bị answers để lưu (dùng nhãn cũ để xem kết quả đúng)
     let correctCount = 0
+    const answersToSave: Record<string, string[]> = {} // Lưu nhãn cũ để trang xem kết quả hiển thị đúng
+
     for (const questionId of questionIds) {
       const question = questionMap.get(questionId)
       if (!question) continue // Bỏ qua nếu không tìm thấy câu hỏi
@@ -100,6 +102,9 @@ export async function POST(
         })
       }
       
+      // Lưu đáp án đã map (nhãn cũ) để trang xem kết quả so sánh đúng với options gốc
+      answersToSave[questionId] = userAnswers
+      
       const correctAnswers = JSON.parse(question.correctAnswers)
 
       // So sánh đáp án (không phân biệt thứ tự)
@@ -113,7 +118,7 @@ export async function POST(
 
     const score = (correctCount / totalQuestions) * 10
 
-    // Lưu kết quả
+    // Lưu kết quả - dùng answersToSave (nhãn cũ) để trang xem kết quả hiển thị đúng
     const result = await prisma.examResult.create({
       data: {
         examId: params.id,
@@ -122,7 +127,7 @@ export async function POST(
         score,
         totalQuestions,
         correctAnswers: correctCount,
-        answers: JSON.stringify(answers),
+        answers: JSON.stringify(answersToSave),
         questionIds: JSON.stringify(questionIds), // Lưu danh sách câu hỏi đã làm
         timeSpent,
         attemptNumber: attemptCount + 1,
