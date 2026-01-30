@@ -7,7 +7,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
-    const { answers, answerMappings, timeSpent, studentName, studentId } = body
+    const { answers, answerMappings, questionIds: bodyQuestionIds, timeSpent, studentName, studentId } = body
 
     const exam = await prisma.exam.findUnique({
       where: { id: params.id },
@@ -63,14 +63,14 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Tính điểm dựa trên câu hỏi thực tế đã làm (từ answers object)
-    // Lấy questionIds từ answers để đảm bảo chính xác, không phụ thuộc vào exam.examQuestions
-    // (vì nhiều người cùng thi có thể ghi đè lên exam.examQuestions)
-    const questionIds: string[] = Object.keys(answers) // Lấy danh sách câu hỏi từ answers
+    // Tổng số câu = toàn bộ câu hỏi của đề (client gửi questionIds khi start). Câu không trả lời = sai.
+    const questionIds: string[] = Array.isArray(bodyQuestionIds) && bodyQuestionIds.length > 0
+      ? bodyQuestionIds
+      : Object.keys(answers)
     const totalQuestions = questionIds.length
 
     if (totalQuestions === 0) {
-      return NextResponse.json({ error: 'Không có câu trả lời nào' }, { status: 400 })
+      return NextResponse.json({ error: 'Không có câu hỏi nào' }, { status: 400 })
     }
 
     // Lấy thông tin câu hỏi từ database
