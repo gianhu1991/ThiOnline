@@ -118,23 +118,29 @@ export async function POST(
 
     const score = (correctCount / totalQuestions) * 10
 
-    // Lưu kết quả - dùng answersToSave (nhãn cũ) để trang xem kết quả hiển thị đúng
-    const createData = {
-      examId: params.id,
-      studentName,
-      studentId,
-      score,
-      totalQuestions,
-      correctAnswers: correctCount,
-      answers: JSON.stringify(answersToSave),
-      questionIds: JSON.stringify(questionIds),
-      displayOptions: bodyDisplayOptions && typeof bodyDisplayOptions === 'object' ? JSON.stringify(bodyDisplayOptions) : null,
-      timeSpent,
-      attemptNumber: attemptCount + 1,
-    }
+    // Lưu kết quả - không gửi displayOptions vào create để tránh lỗi khi Prisma client cũ (Vercel) chưa có field này
     const result = await prisma.examResult.create({
-      data: createData as Parameters<typeof prisma.examResult.create>[0]['data'] & { displayOptions?: string | null },
+      data: {
+        examId: params.id,
+        studentName,
+        studentId: studentId ?? undefined,
+        score,
+        totalQuestions,
+        correctAnswers: correctCount,
+        answers: JSON.stringify(answersToSave),
+        questionIds: JSON.stringify(questionIds),
+        timeSpent,
+        attemptNumber: attemptCount + 1,
+      },
     })
+
+    // Cập nhật displayOptions bằng raw SQL (hoạt động dù Prisma client có hay chưa có field này)
+    if (bodyDisplayOptions && typeof bodyDisplayOptions === 'object' && Object.keys(bodyDisplayOptions).length > 0) {
+      const displayOptionsJson = JSON.stringify(bodyDisplayOptions)
+      await prisma.$executeRaw`
+        UPDATE "ExamResult" SET "displayOptions" = ${displayOptionsJson} WHERE "id" = ${result.id}
+      `
+    }
 
     return NextResponse.json({
       success: true,
