@@ -146,6 +146,7 @@ export default function TakeExamPage() {
           answers,
           answerMappings, // Gửi mapping để backend map lại đáp án
           questionIds: examData!.questions.map((q) => q.id), // Toàn bộ câu hỏi của đề (để chấm đúng: câu không trả lời = sai)
+          displayOptions: Object.fromEntries(examData!.questions.map((q) => [q.id, (() => { try { return JSON.parse(q.options || '[]') } catch { return [] } })()])), // Giữ đúng thứ tự đáp án khi làm bài để xem chi tiết
           timeSpent,
           studentName,
           studentId: studentId || null,

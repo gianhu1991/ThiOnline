@@ -7,7 +7,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
-    const { answers, answerMappings, questionIds: bodyQuestionIds, timeSpent, studentName, studentId } = body
+    const { answers, answerMappings, questionIds: bodyQuestionIds, displayOptions: bodyDisplayOptions, timeSpent, studentName, studentId } = body
 
     const exam = await prisma.exam.findUnique({
       where: { id: params.id },
@@ -129,6 +129,7 @@ export async function POST(
         correctAnswers: correctCount,
         answers: JSON.stringify(answersToSave),
         questionIds: JSON.stringify(questionIds), // Lưu danh sách câu hỏi đã làm
+        displayOptions: bodyDisplayOptions && typeof bodyDisplayOptions === 'object' ? JSON.stringify(bodyDisplayOptions) : null, // Thứ tự đáp án khi làm bài
         timeSpent,
         attemptNumber: attemptCount + 1,
       },
