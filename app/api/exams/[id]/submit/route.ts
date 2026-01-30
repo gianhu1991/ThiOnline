@@ -119,20 +119,21 @@ export async function POST(
     const score = (correctCount / totalQuestions) * 10
 
     // Lưu kết quả - dùng answersToSave (nhãn cũ) để trang xem kết quả hiển thị đúng
+    const createData = {
+      examId: params.id,
+      studentName,
+      studentId,
+      score,
+      totalQuestions,
+      correctAnswers: correctCount,
+      answers: JSON.stringify(answersToSave),
+      questionIds: JSON.stringify(questionIds),
+      displayOptions: bodyDisplayOptions && typeof bodyDisplayOptions === 'object' ? JSON.stringify(bodyDisplayOptions) : null,
+      timeSpent,
+      attemptNumber: attemptCount + 1,
+    }
     const result = await prisma.examResult.create({
-      data: {
-        examId: params.id,
-        studentName,
-        studentId,
-        score,
-        totalQuestions,
-        correctAnswers: correctCount,
-        answers: JSON.stringify(answersToSave),
-        questionIds: JSON.stringify(questionIds), // Lưu danh sách câu hỏi đã làm
-        displayOptions: bodyDisplayOptions && typeof bodyDisplayOptions === 'object' ? JSON.stringify(bodyDisplayOptions) : null, // Thứ tự đáp án khi làm bài
-        timeSpent,
-        attemptNumber: attemptCount + 1,
-      },
+      data: createData as Parameters<typeof prisma.examResult.create>[0]['data'] & { displayOptions?: string | null },
     })
 
     return NextResponse.json({
