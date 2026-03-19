@@ -67,6 +67,7 @@ model ExamResult {
   correctAnswers Int
   answers       String   // JSON: { questionId: ["A", "B"] }
   questionIds   String?  // JSON array: ["questionId1", "questionId2", ...] - Danh sách câu hỏi đã làm trong lần thi này
+  displayOptions String? // JSON: { "questionId": ["A. ...", "B. ..."], ... } - Thứ tự đáp án khi làm bài (để xem chi tiết giữ đúng thứ tự)
   timeSpent     Int      // Thời gian làm bài (giây)
   attemptNumber Int      // Lần làm bài thứ mấy
   completedAt   DateTime @default(now())

@@ -26,9 +26,10 @@ export async function GET(
       return NextResponse.json({ error: 'Không tìm thấy kết quả' }, { status: 404 })
     }
 
-    // Parse answers và questionIds từ JSON
+    // Parse answers, questionIds, displayOptions từ JSON
     const userAnswers = JSON.parse(result.answers)
     const questionIds: string[] = result.questionIds ? JSON.parse(result.questionIds) : []
+    const displayOptionsByQuestion: Record<string, string[]> = result.displayOptions ? (() => { try { return JSON.parse(result.displayOptions!) } catch { return {} } })() : {}
 
     // Nếu không có questionIds (kết quả cũ), fallback về exam.examQuestions
     let questionsToShow: any[] = []
@@ -51,7 +52,10 @@ export async function GET(
 
         const correctAnswers = JSON.parse(question.correctAnswers)
         const userSelectedAnswers = userAnswers[questionId] || []
-        const options = JSON.parse(question.options)
+        // Dùng thứ tự đáp án khi làm bài nếu có, không thì dùng options gốc
+        const options = Array.isArray(displayOptionsByQuestion[questionId]) && displayOptionsByQuestion[questionId].length > 0
+          ? displayOptionsByQuestion[questionId]
+          : JSON.parse(question.options)
 
         // Kiểm tra đáp án đúng
         const userSorted = [...userSelectedAnswers].sort().join(',')
@@ -75,7 +79,9 @@ export async function GET(
         const question = eq.question
         const correctAnswers = JSON.parse(question.correctAnswers)
         const userSelectedAnswers = userAnswers[question.id] || []
-        const options = JSON.parse(question.options)
+        const options = Array.isArray(displayOptionsByQuestion[question.id]) && displayOptionsByQuestion[question.id].length > 0
+          ? displayOptionsByQuestion[question.id]
+          : JSON.parse(question.options)
 
         // Kiểm tra đáp án đúng
         const userSorted = [...userSelectedAnswers].sort().join(',')
