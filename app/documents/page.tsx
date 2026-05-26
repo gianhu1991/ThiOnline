@@ -483,13 +483,21 @@ export default function DocumentsPage() {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center">
                         <svg className="w-8 h-8 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {doc.title}
+                          </a>
                           {doc.description && (
                             <div className="text-sm text-gray-500 truncate max-w-md">{doc.description}</div>
                           )}
